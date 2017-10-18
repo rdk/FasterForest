@@ -90,7 +90,7 @@ installed Weka (on Windows this is commonly "C:\Program Files\Weka-3-5")
 
 4. Find the
 
-     # Lists the Classifiers I want to choose from
+     * Lists the Classifiers I want to choose from
 
 heading and scroll far down to the end of the block (first empty line), then
 add a line:
@@ -120,7 +120,7 @@ installed Weka (on Windows this is commonly "C:\Program Files\Weka-3-5")
 
 4. Under the
 
-     # Lists the Classifiers-Packages I want to choose from
+     * Lists the Classifiers-Packages I want to choose from
 
 heading, add the line
 

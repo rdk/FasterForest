@@ -1,7 +1,10 @@
 FasterForest
 ==============
 
+Streamlined version of Fran Supeks's FastRandomForest.
+Uses around 75% time and 50% memory.
 
+Does not support nominal attributes and missing values.
 
 FasterForest 1.0.0
 --------------------
@@ -9,19 +12,6 @@ FasterForest 1.0.0
 Now in it's own repo with mavenized gradle build.
 
 --rdk
-
-FasterForest v0.99.1
---------------------
-
-Streamlined version of Fran Supeks's FastRandomForest.
-Uses around 75% time and 50% memory.
-
-Does not support nominal attributes and missing values.
-
-(This code is here temporarily until it will be moved to its own repo.)
-
---rdk
-
 
 
 FastRandomForest v0.9

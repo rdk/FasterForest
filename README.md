@@ -1,3 +1,14 @@
+FasterForest
+==============
+
+
+
+FasterForest 1.0.0
+--------------------
+
+Now in it's own repo with mavenized gradle build.
+
+--rdk
 
 FasterForest v0.99.1
 --------------------

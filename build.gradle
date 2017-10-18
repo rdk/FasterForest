@@ -3,7 +3,7 @@ apply plugin: 'maven'
 
 group = 'cz.siret.prank'
 version = '1.0.0'
-description = "Fast random forests for Weka. Lite version of Fans Supek's FastRandomForest"
+description = "Fast Random Forests implementation for Weka. Streamlined version of Fans Supek's FastRandomForest."
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 

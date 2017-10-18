@@ -79,9 +79,9 @@ Using from Weka Explorer or Experimenter (3-5-8 or newer)
 ---------------------------------------------------------
 
 1. Add the FastRandomForest.jar to your Java classpath when starting Weka. This
-is normally done by editing the line beginning with �cp=� in �RunWeka.ini�
+is normally done by editing the line beginning with “cp=” in “RunWeka.ini”
 
-2. You extract the �GenericObjectEditor.props� file from weka.jar
+2. You extract the “GenericObjectEditor.props” file from weka.jar
 (jar files are in fact ordinary zip archives, the GenericObjectEditor.props is
 under /weka/gui).
 
@@ -99,7 +99,7 @@ add a line:
 
 Do not forget to append a comma and a backslash to the previous line.
 
-5. The �FastRandomForest� class is in the "hr.irb.fastRandomForest" package
+5. The “FastRandomForest” class is in the "hr.irb.fastRandomForest" package
 in the "Classify" tab. Enjoy.
 
 
@@ -108,10 +108,10 @@ Using from Weka Explorer or Experimenter (3-5-7 or earlier)
 -----------------------------------------------------------
 
 1. Add the FastRandomForest.jar to your Java classpath when starting Weka. This 
-is normally done by editing the line beginning with �cp=� in �RunWeka.ini�
+is normally done by editing the line beginning with “cp=” in “RunWeka.ini”
 If "cp=" doesn't exist, search for "cmd_default=" and add after "#wekajar#;".
 
-2. You need to extract the �GenericPropertiesCreator.props� file from your 
+2. You need to extract the “GenericPropertiesCreator.props” file from your 
 weka.jar (jar files are in fact ordinary zip archives, the 
 GenericPropertiesCreator.props is under /weka/gui).
 
@@ -128,9 +128,6 @@ heading, add the line
 
 Do not forget to add a comma and a backslash to the previous line.
 
-5. Use the �FastRandomForest� class is in the hr.irb.fastRandomForest
+5. Use the “FastRandomForest” class is in the hr.irb.fastRandomForest
 package in the "Classify" tab. The other three classes cannot be used directly.
-
-
-
 

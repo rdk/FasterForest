@@ -670,6 +670,10 @@ public class FasterForest
 
   }
 
+  public final double[] distributionForAttributes(double[] instanceAttributes, int numClasses) {
+    return m_bagger.distributionForAttributes(instanceAttributes, numClasses);
+  }
+
   /**
    * Outputs a description of this classifier.
    *

@@ -640,7 +640,7 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
    * @throws Exception if distribution can't be computed successfully
    */
   @Override
-  public double[] distributionForInstance(Instance instance) throws Exception {
+  public final double[] distributionForInstance(Instance instance) throws Exception {
 
     double[] sums = new double[instance.numClasses()], newProbs;
 
@@ -658,6 +658,36 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
       sums[0] /= (double) m_NumIterations;
       return sums;
     } else if (Utils.eq(Utils.sum(sums), 0)) {
+      return sums;
+    } else {
+      Utils.normalize(sums);
+      return sums;
+    }
+
+  }
+
+  public final double[] distributionForAttributes(double[] instanceAttributes, int numClasses) {
+
+    double[] sums = new double[numClasses];
+    double[] newProbs;
+
+    FasterTree[] classifiers = (FasterTree[]) m_Classifiers;
+
+    for (int i = 0; i < m_NumIterations; i++) {
+//      if (instance.classAttribute().isNumeric()) {
+//        sums[0] += m_Classifiers[i].classifyInstance(instance);
+//      } else {
+        newProbs = classifiers[i].distributionForAttributes(instanceAttributes);
+        for (int j = 0; j < numClasses; j++)
+          sums[j] += newProbs[j];
+//      }
+    }
+
+//    if (instance.classAttribute().isNumeric()) {
+//      sums[0] /= (double) m_NumIterations;
+//      return sums;
+//    } else
+    if (Utils.eq(Utils.sum(sums), 0)) {
       return sums;
     } else {
       Utils.normalize(sums);

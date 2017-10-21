@@ -147,7 +147,7 @@ class FasterTree
    * @return the computed class distribution
    */
   @Override
-  public double[] distributionForInstance(Instance instance) {
+  public final double[] distributionForInstance(Instance instance) {
 
     if (m_Attribute > -1) {  // ============================ node is not a leaf
 
@@ -198,6 +198,22 @@ class FasterTree
     }
 
   }
+
+  public final double[] distributionForAttributes(double[] instanceAttributes) {
+
+    if (m_Attribute > -1) {
+      if (instanceAttributes[m_Attribute] < m_SplitPoint) {
+        return sucessorLeft.distributionForAttributes(instanceAttributes);
+      } else {
+        return sucessorRight.distributionForAttributes(instanceAttributes);
+      }
+    } else { // =============================================== node is a leaf
+      return m_ClassProbs;
+    }
+    
+  }
+
+
 
   /**
    * Computes size of the tree.

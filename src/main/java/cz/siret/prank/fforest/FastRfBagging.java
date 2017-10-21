@@ -171,7 +171,7 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
 
         } else {
           throw new IllegalArgumentException("The FastRfBagging class accepts " +
-            "only FastRandomTree as its base classifier.");
+            "only FasterTreeTrainable as its base classifier.");
         }
 
       }
@@ -212,10 +212,13 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
         }
       }
 
+      FasterTree[] lightTrees = new FasterTree[m_Classifiers.length];
       // transform all trees to slim versions, TODO: parallelize
       for (int i=0; i!=m_Classifiers.length; ++i) {
-        m_Classifiers[i] = ((FasterTreeTrainable)m_Classifiers[i]).toSlimVersion();
+        lightTrees[i] = ((FasterTreeTrainable)m_Classifiers[i]).toLightVersion();
+        m_Classifiers[i] = null;
       }
+      m_Classifiers = lightTrees;
 
       threadPool.shutdown();
 

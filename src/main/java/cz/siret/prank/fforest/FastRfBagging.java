@@ -221,7 +221,7 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
               throw new RuntimeException(e);
             }
           }
-      ).toArray(Classifier[]::new);
+      ).toArray(FasterTree[]::new);
 
       threadPool.shutdown();
     } finally {

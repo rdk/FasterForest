@@ -262,10 +262,10 @@ public class FasterTreeTrainable extends FasterTree implements Runnable {
 
             // normalize by dividing with the number of instances (as of ver. 0.97)
             // unless leaf is empty - this can happen with splits on nominal attributes
-            if ( sortedIndicesLength != 0 )
-                for (int c = 0; c < classProbs.length; c++) {
-                    classProbs[c] /= sortedIndicesLength;
-                }
+//            if ( sortedIndicesLength != 0 )
+            for (int c = 0; c < classProbs.length; c++) {
+                classProbs[c] /= sortedIndicesLength;
+            }
 
             m_ClassProbs = classProbs;
 
@@ -448,43 +448,6 @@ public class FasterTreeTrainable extends FasterTree implements Runnable {
         // we might possibly want to recycle this array for the whole tree
         int[] tempArr = new int[ endAt-startAt+1 ];
 
-//    if ( data.isAttrNominal(att) ) { // ============================ if nominal
-//
-//      for (j = startAt; j <= endAt; j++) {
-//
-//        int inst = sortedIndices[att][j];
-//
-//        if ( data.isValueMissing(att, inst) ) { // ---------- has missing value
-//
-//          // decide where to put this instance randomly, with bigger branches
-//          // getting a higher chance
-//          double rn = random.nextDouble();
-//          int myBranch = -1;
-//          for (int k = 0; k < m_Prop.length; k++) {
-//            rn -= m_Prop[k];
-//            if ( (rn <= 0) || k == (m_Prop.length-1) ) {
-//              myBranch = k;
-//              break;
-//            }
-//          }
-//
-//          data.whatGoesWhere[ inst ] = myBranch;
-//          num[myBranch]++;
-//
-//        } else { // ----------------------------- does not have missing value
-//
-//          // if it matches the category to "split out", put above split
-//          // all other categories go below split
-//          int subset = ( data.vals[att][inst] == splitPoint ) ? 0 : 1;
-//          data.whatGoesWhere[ inst ] = subset;
-//          num[subset]++;
-//
-//        } // --------------------------------------- end if has missing value
-//
-//      }
-//
-//    } else { // =================================================== if numeric
-
         num = new int[2];
 
         for (j = startAt; j <= endAt ; j++) {
@@ -493,31 +456,12 @@ public class FasterTreeTrainable extends FasterTree implements Runnable {
 
             //Instance inst = data.instance(sortedIndices[att][j]);
 
-//        if ( data.isValueMissing(att, inst) ) { // ---------- has missing value
-//
-//          // decide if instance goes into subset 0 or 1 randomly,
-//          // with bigger subsets having a greater probability of getting
-//          // the instance assigned to them
-//          // instances with missing values get processed LAST (sort order)
-//          // so branch sizes are known by now (and stored in m_Prop)
-//          double rn = random.nextDouble();
-//          int branch = ( rn > m_Prop[0] ) ? 1 : 0;
-//          data.whatGoesWhere[ inst ] = branch;
-//          num[ branch ]++;
-//
-//        } else { // ----------------------------- does not have missing value
-
             int branch = ( data.vals[att][inst] < splitPoint ) ? 0 : 1;
 
             data.whatGoesWhere[ inst ] = branch;
             num[ branch ]++;
 
-        } // --------------------------------------- end if has missing value
-
-//      } // end for instance by instance
-
-//    }  // ============================================ end if nominal / numeric
-
+        }
 
         for (int a = 0; a < data.numAttributes; a++) { // xxxxxxxxxx attr by attr
 
@@ -577,46 +521,13 @@ public class FasterTreeTrainable extends FasterTree implements Runnable {
      */
     public double[] distributionForInstanceInDataCache(DataCache data, int instIdx) {
 
-        double[] returnedDist = null;
-
-        if (m_Attribute > -1) {  // ============================ node is not a leaf
-
-            //if ( data.isValueMissing(m_Attribute, instIdx) ) {  // ---------------- missing value
-            //
-            //  returnedDist = new double[m_MotherForest.m_Info.numClasses()];
-            //  // split instance up
-            //  for (int i = 0; i < m_Successors.length; i++) {
-            //    double[] help = m_Successors[i].distributionForInstanceInDataCache(data, instIdx);
-            //    if (help != null) {
-            //      for (int j = 0; j < help.length; j++) {
-            //        returnedDist[j] += m_Prop[i] * help[j];
-            //      }
-            //    }
-            //  }
-            //
-            //} else if ( data.isAttrNominal(m_Attribute) ) { // ------ nominal
-            //
-            //  //returnedDist = m_Successors[(int) instance.value(m_Attribute)]
-            //  //        .distributionForInstance(instance);
-            //
-            //  // 0.99: new - binary splits (also) for nominal attributes
-            //  if ( data.vals[m_Attribute][instIdx] == m_SplitPoint ) {
-            //    returnedDist = m_Successors[0].distributionForInstanceInDataCache(data, instIdx);
-            //  } else {
-            //    returnedDist = m_Successors[1].distributionForInstanceInDataCache(data, instIdx);
-            //  }
-            //
-            //
-            //} else { // ------------------------------------------ numeric attributes
+        if (m_Attribute != -1) {  // ============================ node is not a leaf
 
             if ( data.vals[m_Attribute][instIdx] < m_SplitPoint) {
-                returnedDist = ((FasterTreeTrainable)sucessorLeft).distributionForInstanceInDataCache(data, instIdx);
+                return ((FasterTreeTrainable)sucessorLeft).distributionForInstanceInDataCache(data, instIdx);
             } else {
-                returnedDist = ((FasterTreeTrainable)sucessorRight).distributionForInstanceInDataCache(data, instIdx);
+                return ((FasterTreeTrainable)sucessorRight).distributionForInstanceInDataCache(data, instIdx);
             }
-            //}
-
-            return returnedDist;
 
         } else { // =============================================== node is a leaf
 
@@ -817,16 +728,18 @@ public class FasterTreeTrainable extends FasterTree implements Runnable {
      * @param startAt Index in sortedIndicesOfAtt; do not touch anything below this index.
      * @param endAt Index in sortedIndicesOfAtt; do not touch anything after this index.
      */
-    protected double distributionSequentialAtt( double[] propsBestAtt, double[][] distsBestAtt,
+    protected final double distributionSequentialAtt( double[] propsBestAtt, double[][] distsBestAtt,
                                                 double scoreBestAtt, int attToExamine, int[] sortedIndicesOfAtt, int startAt, int endAt ) {
 
         double splitPoint = -Double.MAX_VALUE;
 
         // a contingency table of the split point vs class.
         double[][] dist = this.tempDists;
-        Arrays.fill( dist[0], 0.0 ); Arrays.fill( dist[1], 0.0 );
+        Arrays.fill( dist[0], 0.0 );
+        Arrays.fill( dist[1], 0.0 );
         double[][] currDist = this.tempDistsOther;
-        Arrays.fill( currDist[0], 0.0 ); Arrays.fill( currDist[1], 0.0 );
+        Arrays.fill( currDist[0], 0.0 );
+        Arrays.fill( currDist[1], 0.0 );
         //double[][] dist = new double[2][data.numClasses];
         //double[][] currDist = new double[2][data.numClasses];
 
@@ -835,102 +748,16 @@ public class FasterTreeTrainable extends FasterTree implements Runnable {
 
         // find how many missing values we have for this attribute (they're always at the end)
         int lastNonmissingValIdx = endAt;
-        for (int j = endAt; j >= startAt; j-- ) {
-            if ( data.isValueMissing(attToExamine, sortedIndicesOfAtt[j]) ) {
-                lastNonmissingValIdx = j-1;
-            } else {
-                break;
-            }
-        }
-        if ( lastNonmissingValIdx < startAt ) {  // only missing values in this feature??
-            return Double.NaN; // we cannot split on it
-        }
-
-
-//        if ( data.isAttrNominal(attToExamine) ) { // ====================== nominal attributes
-//
-//            // 0.99: new routine - makes a one-vs-all split on categorical attributes
-//
-//            int numLvls = data.attNumVals[attToExamine];
-//            int bestLvl = 0; // the index of the category which is best to "split out"
-//
-//            // note: if we have only two levels, it doesn't matter which one we "split out"
-//            // we can thus safely check only the first one
-//            if ( numLvls <= 2 ) {
-//
-//                bestLvl = 0; // this means that the category with index 0 always
-//                // goes 'above' the split and category with index 1 goes 'below' the split
-//                for (i = startAt; i <= lastNonmissingValIdx; i++) {
-//                    int inst = sortedIndicesOfAtt[i];
-//                    dist[ (int)data.vals[attToExamine][inst] ][ data.instClassValues[inst] ] += data.instWeights[inst];
-//                }
-//
-//            } else {   // for >2 levels, we have to search different splits
-//
-//                // begin with moving all instances into second subset ("below split")
-//                for (int j = startAt; j <= lastNonmissingValIdx; j++) {
-//                    int inst = sortedIndicesOfAtt[j];
-//                    currDist[1][ data.instClassValues[inst] ] += data.instWeights[inst];
-//                }
-//                // create a default dist[] which we'll modify after we find the best class to split out
-//                copyDists(currDist, dist);
-//
-//                double currVal = -Double.MAX_VALUE; // current value of splitting criterion
-//                double bestVal = -Double.MAX_VALUE; // best value of splitting criterion
-//                int lastSeen = startAt;  // used to avoid looping through all instances for every lvl
-//
-//                for ( int lvl = 0; lvl < numLvls; lvl++ ) {
-//
-//                    // reset the currDist to the default (everything "below split") - conveniently stored in dist[][]
-//                    copyDists(dist, currDist);
-//
-//                    for (i = lastSeen; i <= lastNonmissingValIdx; i++) {
-//
-//                        lastSeen = i;
-//                        int inst = sortedIndicesOfAtt[i];
-//                        if ( (int)data.vals[attToExamine][inst] < lvl ) {
-//                            continue;
-//                        } else if ( (int)data.vals[attToExamine][inst] == lvl ) {
-//                            // move to "above split" from "below split"
-//                            currDist[0][ data.instClassValues[ inst ] ] += data.instWeights[ inst ] ;
-//                            currDist[1][ data.instClassValues[ inst ] ] -= data.instWeights[ inst ] ;
-//                        } else {
-//                            break;  // no need to loop forward, no more instances of this category
-//                        }
-//
-//                    }
-//
-//                    // we filled the "dist" for the current level, find score and see if we like it
-//                    currVal = -SplitCriteria.entropyConditionedOnRows(currDist);
-//                    if ( currVal > bestVal ) {
-//                        bestVal = currVal;
-//                        bestLvl = lvl;
-//                    }
-//
-//                }  // examine how well "splitting out" of individual levels works for us
-//
-//
-//                // remember the contingency table from the best "lvl" and store it in "dist"
-//                for (i = startAt; i <= lastNonmissingValIdx; i++) {
-//
-//                    int inst = sortedIndicesOfAtt[i];
-//                    if ( (int)data.vals[attToExamine][inst] == bestLvl ) {
-//                        // move to "above split" from "below split"
-//                        dist[0][ data.instClassValues[ inst ] ] += data.instWeights[ inst ] ;
-//                        dist[1][ data.instClassValues[ inst ] ] -= data.instWeights[ inst ] ;
-//                    } else {
-//                        break;  // no need to loop forward, no more instances of this category
-//                    }
-//
-//                }
-//
+//        for (int j = endAt; j >= startAt; j-- ) {
+//            if ( data.isValueMissing(attToExamine, sortedIndicesOfAtt[j]) ) {
+//                lastNonmissingValIdx = j-1;
+//            } else {
+//                break;
 //            }
-//
-//            splitPoint = bestLvl; // signals we've found a sensible split point; by
-//            // definition, a split on a nominal attribute
-//            // will always be sensible
-//
-//        } else { // ============================================ numeric attributes
+//        }
+//        if ( lastNonmissingValIdx < startAt ) {  // only missing values in this feature??
+//            return Double.NaN; // we cannot split on it
+//        }
 
 
             // re-use the 2 x nClass temporary arrays created when tree was initialized

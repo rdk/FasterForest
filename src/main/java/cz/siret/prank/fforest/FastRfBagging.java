@@ -28,10 +28,7 @@ import weka.classifiers.RandomizableIteratedSingleClassifierEnhancer;
 import weka.core.*;
 
 import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 
 
 /**
@@ -91,8 +88,7 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
    *
    * @throws Exception if the classifier could not be built successfully
    */
-  public void buildClassifier(Instances data, int numThreads,
-                              FasterForest motherForest) throws Exception {
+  public void buildClassifier(Instances data, int numThreads, FasterForest motherForest) throws Exception {
 
     // can classifier handle the vals?
 //    getCapabilities().testWithFail(data);
@@ -212,18 +208,23 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
         }
       }
 
-      FasterTree[] lightTrees = new FasterTree[m_Classifiers.length];
-      // transform all trees to slim versions, TODO: parallelize
-      for (int i=0; i!=m_Classifiers.length; ++i) {
-        lightTrees[i] = ((FasterTreeTrainable)m_Classifiers[i]).toLightVersion();
-        m_Classifiers[i] = null;
+
+      List<Callable<FasterTree>> tasks = new ArrayList<>(m_Classifiers.length);
+      for (Classifier tree : m_Classifiers) {
+        tasks.add(((FasterTreeTrainable) tree)::toLightVersion);
       }
-      m_Classifiers = lightTrees;
+      m_Classifiers = threadPool.invokeAll(tasks).stream().map(
+          f -> {
+            try {
+              return f.get();
+            } catch (Exception e) {
+              throw new RuntimeException(e);
+            }
+          }
+      ).toArray(FasterTree[]::new);
 
       threadPool.shutdown();
-
-    }
-    finally {
+    } finally {
       threadPool.shutdownNow();
     }
   }

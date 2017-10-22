@@ -149,7 +149,7 @@ class FasterTree
   @Override
   public final double[] distributionForInstance(Instance instance) {
 
-    if (m_Attribute > -1) {  // ============================ node is not a leaf
+    if (m_Attribute != -1) {  // ============================ node is not a leaf
 
      //if (instance.isMissing(m_Attribute)) {  // ---------------- missing value
 
@@ -201,7 +201,7 @@ class FasterTree
 
   public final double[] distributionForAttributes(double[] instanceAttributes) {
 
-    if (m_Attribute > -1) {
+    if (m_Attribute != -1) {
       if (instanceAttributes[m_Attribute] < m_SplitPoint) {
         return sucessorLeft.distributionForAttributes(instanceAttributes);
       } else {

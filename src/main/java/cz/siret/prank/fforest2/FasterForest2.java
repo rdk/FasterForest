@@ -15,7 +15,7 @@
  */
 
 /*
- *    FastRandomForest.java
+ *    FasterForest2.java
  *    Copyright (C) 2001 University of Waikato, Hamilton, NZ (original code,
  *      RandomForest.java )
  *    Copyright (C) 2009 Fran Supek (adapted code)
@@ -36,7 +36,7 @@ import java.util.concurrent.ExecutionException;
  * Based on the "weka.classifiers.trees.RandomForest" class, revision 1.12,
  * by Richard Kirkby, with minor modifications:
  * <p/>
- * - uses FastRfBagger with FastRandomTree, instead of Bagger with RandomTree.
+ * - uses FastRfBagger with FasterForest2Tree, instead of Bagger with RandomTree.
  * - stores dataset header (instead of every Tree storing its own header)
  * - checks if only ZeroR model is possible (instead of each Tree checking)
  * - added "-threads" option
@@ -109,7 +109,7 @@ import java.util.concurrent.ExecutionException;
  * @author Jordi Pique (2.0 version)
  * @version $Revision: 2.0$
  */
-public class FastRandomForest
+public class FasterForest2
   extends AbstractClassifier
   implements OptionHandler, Randomizable, WeightedInstancesHandler,
              AdditionalMeasureProducer, TechnicalInformationHandler{
@@ -407,7 +407,7 @@ public class FastRandomForest
     }
     else{
       throw new IllegalArgumentException(additionalMeasureName
-        + " not supported (FastRandomForest)");
+        + " not supported (FasterForest2)");
     }
   }
 
@@ -610,7 +610,7 @@ public class FastRandomForest
    * @return the capabilities of this classifier
    */
   public Capabilities getCapabilities(){
-    return new FastRandomTree().getCapabilities();
+    return new FasterForest2Tree().getCapabilities();
   }
 
 
@@ -677,7 +677,7 @@ public class FastRandomForest
       m_numFeatTree = (m_numTrees/2)*data.numAttributes()/m_numTrees + 1;
     }
 
-    FastRandomTree rTree = new FastRandomTree();
+    FasterForest2Tree rTree = new FasterForest2Tree();
     rTree.m_MotherForest = this; // allows to retrieve KValue and MaxDepth
     // some temporary arrays which need to be separate for every tree, so
     // that the trees can be trained in parallel in different threads
@@ -726,9 +726,9 @@ public class FastRandomForest
     StringBuilder sb = new StringBuilder();
     
     if(m_bagger == null)
-      sb.append("FastRandomForest not built yet");
+      sb.append("FasterForest2 not built yet");
     else {
-      sb.append("FastRandomForest of " + m_numTrees
+      sb.append("FasterForest2 of " + m_numTrees
         + " trees, each constructed while considering "
         + m_KValue + " random feature" + (m_KValue == 1 ? "" : "s") + ".\n"
         + "Out of bag error: " + Utils.doubleToString(m_bagger.measureOutOfBagError()*100.0, 3) + "%\n"
@@ -849,7 +849,7 @@ public class FastRandomForest
    * @param argv the options
    */
   public static void main(String[] argv){
-    runClassifier(new FastRandomForest(), argv);
+    runClassifier(new FasterForest2(), argv);
   }
 
   public String getRevision(){

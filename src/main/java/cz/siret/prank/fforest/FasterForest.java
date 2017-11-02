@@ -15,7 +15,7 @@
  */
 
 /*
- *    FastRandomForest.java
+ *    FasterForest2.java
  *    Copyright (C) 2001 University of Waikato, Hamilton, NZ (original code,
  *      RandomForest.java )
  *    Copyright (C) 2009 Fran Supek (adapted code)
@@ -35,7 +35,7 @@ import java.util.Vector;
  * Based on the "weka.classifiers.trees.RandomForest" class, revision 1.12,
  * by Richard Kirkby, with minor modifications:
  * <p/>
- * - uses FastRfBagger with FastRandomTree, instead of Bagger with RandomTree.
+ * - uses FastRfBagger with FasterForest2Tree, instead of Bagger with RandomTree.
  * - stores dataset header (instead of every Tree storing its own header)
  * - checks if only ZeroR model is possible (instead of each Tree checking)
  * - added "-threads" option
@@ -409,7 +409,7 @@ public class FasterForest
     }
     else{
       throw new IllegalArgumentException(additionalMeasureName
-        + " not supported (FastRandomForest)");
+        + " not supported (FasterForest2)");
     }
   }
 
@@ -684,9 +684,9 @@ public class FasterForest
     StringBuilder sb = new StringBuilder();
     
     if(m_bagger == null)
-      sb.append("FastRandomForest not built yet");
+      sb.append("FasterForest2 not built yet");
     else {
-      sb.append("FastRandomForest of " + m_numTrees
+      sb.append("FasterForest2 of " + m_numTrees
         + " trees, each constructed while considering "
         + m_KValue + " random feature" + (m_KValue == 1 ? "" : "s") + ".\n"
         + "Out of bag error: " + Utils.doubleToString(m_bagger.measureOutOfBagError()*100.0, 3) + "%\n"

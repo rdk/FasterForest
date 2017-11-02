@@ -27,7 +27,6 @@ import weka.classifiers.Classifier;
 import weka.classifiers.RandomizableIteratedSingleClassifierEnhancer;
 import weka.core.*;
 
-import javax.xml.crypto.Data;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -38,7 +37,7 @@ import java.util.concurrent.*;
  * <ul>
  * <p/>
  * <li>Instead of Instances, produces DataCaches; consequently, FastRfBagging
- * is compatible only with FastRandomTree as base classifier
+ * is compatible only with FasterForest2Tree as base classifier
  * <p/>
  * <li>The function for resampling the data is removed; this is a responsibility
  * of the DataCache objects now
@@ -59,7 +58,7 @@ import java.util.concurrent.*;
  * leaf.
  * <p/>
  * </ul>
- * This class should be used only from within the FastRandomForest classifier.
+ * This class should be used only from within the FasterForest2 classifier.
  *
  * @author Eibe Frank (eibe@cs.waikato.ac.nz) - original code
  * @author Len Trigg (len@reeltwo.com) - original code
@@ -84,19 +83,19 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
   /**
    * Bagging method. Produces DataCache objects with bootstrap samples of
    * the original data, and feeds them to the base classifier (which can only
-   * be a FastRandomTree).
+   * be a FasterForest2Tree).
    *
    * @param data         The training set to be used for generating the
    *                     bagged classifier.
    * @param numThreads   The number of simultaneous threads to use for
    *                     computation. Pass zero (0) for autodetection.
-   * @param motherForest A reference to the FastRandomForest object that
+   * @param motherForest A reference to the FasterForest2 object that
    *                     invoked this.
    *
    * @throws Exception if the classifier could not be built successfully
    */
   public void buildClassifier(Instances data, int numThreads,
-                              FastRandomForest motherForest) throws Exception {
+                              FasterForest2 motherForest) throws Exception {
 
     // can classifier handle the vals?
     getCapabilities().testWithFail(data);
@@ -105,9 +104,9 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
     data = new Instances(data);
     data.deleteWithMissingClass();
 
-    if (!(m_Classifier instanceof FastRandomTree))
+    if (!(m_Classifier instanceof FasterForest2Tree))
       throw new IllegalArgumentException("The FastRfBagging class accepts " +
-        "only FastRandomTree as its base classifier.");
+        "only FasterForest2Tree as its base classifier.");
 
     if (m_CalcOutOfBag && (m_BagSizePercent != 100)) {
       throw new IllegalArgumentException("Bag size needs to be 100% if " +
@@ -138,7 +137,7 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
     try {
       for (int treeIdx = 0; treeIdx < m_Classifiers.length; treeIdx++) {
 
-        FastRandomTree curTree = new FastRandomTree(motherForest, myData, random.nextInt());
+        FasterForest2Tree curTree = new FasterForest2Tree(motherForest, myData, random.nextInt());
         m_Classifiers[treeIdx] = curTree;
 
         Future<?> future = threadPool.submit(curTree);
@@ -148,7 +147,7 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
       // make sure all trees have been trained before proceeding
       for (int treeIdx = 0; treeIdx < m_Classifiers.length; treeIdx++) {
         futures.get(treeIdx).get();
-        inBag[treeIdx] = ((FastRandomTree) m_Classifiers[treeIdx]).myInBag;
+        inBag[treeIdx] = ((FasterForest2Tree) m_Classifiers[treeIdx]).myInBag;
       }
 
       // calc OOB error?
@@ -229,7 +228,7 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
 
   /**
    * Compute the out-of-bag error on the instances in a DataCache. This must
-   * be the datacache used for training the FastRandomForest (this is not 
+   * be the datacache used for training the FasterForest2 (this is not
    * checked in the function!).
    *
    * @param data       the instances (as a DataCache)
@@ -412,7 +411,7 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
       ArrayList<Integer> indicesTreesWithAttr = new ArrayList<>();
       ArrayList<Integer> indicesTreesWithoutAttr = new ArrayList<>();
       for (int k = 0; k < m_Classifiers.length; ++k) {
-        FastRandomTree frt = (FastRandomTree) m_Classifiers[k];
+        FasterForest2Tree frt = (FasterForest2Tree) m_Classifiers[k];
         if (frt.subsetSelectedAttr.contains(j)) indicesTreesWithAttr.add(k);
         else indicesTreesWithoutAttr.add(k);
       }
@@ -483,7 +482,7 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
         ArrayList<Integer> indicesTreesWithIJ = new ArrayList<>();
         ArrayList<Integer> indicesTreesWithoutIJ = new ArrayList<>();
         for (int k = 0; k < m_Classifiers.length; ++k) {
-          FastRandomTree frt = (FastRandomTree) m_Classifiers[k];
+          FasterForest2Tree frt = (FasterForest2Tree) m_Classifiers[k];
           if (frt.subsetSelectedAttr.contains(i) && frt.subsetSelectedAttr.contains(j)) indicesTreesWithIJ.add(k);
           else if (frt.subsetSelectedAttr.contains(i)) indicesTreesWithI.add(k);
           else if (frt.subsetSelectedAttr.contains(j)) indicesTreesWithJ.add(k);
@@ -536,7 +535,7 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
    */
   @Override
   public void buildClassifier(Instances data) throws Exception {
-    throw new Exception("FastRfBagging can be built only from within a FastRandomForest.");
+    throw new Exception("FastRfBagging can be built only from within a FasterForest2.");
   }
 
   /**
@@ -559,7 +558,7 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
    */
   public FastRfBagging() {
 
-    m_Classifier = new FastRandomTree();
+    m_Classifier = new FasterForest2Tree();
   }
 
 
@@ -640,7 +639,7 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
    * <p/>
    * <pre> -W
    *  Full name of base classifier.
-   *  (default: fastRandomForest.classifiers.FastRandomTree)</pre>
+   *  (default: fastRandomForest.classifiers.FasterForest2Tree)</pre>
    * <p/>
    * <!-- options-end -->
    * <p/>

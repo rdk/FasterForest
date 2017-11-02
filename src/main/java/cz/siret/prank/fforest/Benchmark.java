@@ -34,7 +34,7 @@ import java.util.Random;
 
 /**
  * Runs 10 iterations of 10-fold crossvalidation on the supplied arff file(s)
- * using weka.classifiers.trees.RandomForest, and FastRandomForest, and prints
+ * using weka.classifiers.trees.RandomForest, and FasterForest2, and prints
  * accuracy, AUC (averaged over all classes) and computation time to stdout.
  * 
  * As first command-line parameter, supply an arff file, a directory name, or

@@ -27,7 +27,7 @@ import weka.core.Utils;
 import java.util.concurrent.Callable;
 
 /**
- * Used to retrieve the out-of-bag vote of an FastRandomForest classifier for a
+ * Used to retrieve the out-of-bag vote of an FasterForest2 classifier for a
  * single instance from a DataCache the forest was trained on. New in 0.99.
  * Used for OOB error calculation and feature importances. <p>
  * 
@@ -73,9 +73,9 @@ public class VotesCollectorDataCache implements Callable<Double>{
 
       numVotes++;
       
-      FastRandomTree aTree;
-      if ( m_Classifiers[treeIdx] instanceof FastRandomTree)
-        aTree = (FastRandomTree) m_Classifiers[treeIdx];
+      FasterForest2Tree aTree;
+      if ( m_Classifiers[treeIdx] instanceof FasterForest2Tree)
+        aTree = (FasterForest2Tree) m_Classifiers[treeIdx];
       else
         throw new IllegalArgumentException("Only FastRandomTrees accepted in the VotesCollector.");
 

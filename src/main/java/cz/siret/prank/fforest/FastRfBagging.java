@@ -37,7 +37,7 @@ import java.util.concurrent.*;
  * <ul>
  * <p/>
  * <li>Instead of Instances, produces DataCaches; consequently, FastRfBagging
- * is compatible only with FastRandomTree as base classifier
+ * is compatible only with FasterForest2Tree as base classifier
  * <p/>
  * <li>The function for resampling the data is removed; this is a responsibility
  * of the DataCache objects now
@@ -58,7 +58,7 @@ import java.util.concurrent.*;
  * leaf.
  * <p/>
  * </ul>
- * This class should be used only from within the FastRandomForest classifier.
+ * This class should be used only from within the FasterForest classifier.
  *
  * @author Eibe Frank (eibe@cs.waikato.ac.nz) - original code
  * @author Len Trigg (len@reeltwo.com) - original code
@@ -77,13 +77,13 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
   /**
    * Bagging method. Produces DataCache objects with bootstrap samples of
    * the original data, and feeds them to the base classifier (which can only
-   * be a FastRandomTree).
+   * be a FasterForest2Tree).
    *
    * @param data         The training set to be used for generating the
    *                     bagged classifier.
    * @param numThreads   The number of simultaneous threads to use for
    *                     computation. Pass zero (0) for autodetection.
-   * @param motherForest A reference to the FastRandomForest object that
+   * @param motherForest A reference to the FasterForest2 object that
    *                     invoked this.
    *
    * @throws Exception if the classifier could not be built successfully
@@ -277,7 +277,7 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
 
   /**
    * Compute the out-of-bag error on the instances in a DataCache. This must
-   * be the datacache used for training the FastRandomForest (this is not
+   * be the datacache used for training the FasterForest2 (this is not
    * checked in the function!).
    *
    * @param data       the instances (as a DataCache)
@@ -371,7 +371,7 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
    */
   @Override
   public void buildClassifier(Instances data) throws Exception {
-    throw new Exception("FastRfBagging can be built only from within a FastRandomForest.");
+    throw new Exception("FastRfBagging can be built only from within a FasterForest2.");
   }
 
   /**
@@ -475,7 +475,7 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
    * <p/>
    * <pre> -W
    *  Full name of base classifier.
-   *  (default: fastRandomForest.classifiers.FastRandomTree)</pre>
+   *  (default: fastRandomForest.classifiers.FasterForest2Tree)</pre>
    * <p/>
    * <!-- options-end -->
    * <p/>

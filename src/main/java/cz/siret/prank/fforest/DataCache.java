@@ -15,7 +15,7 @@
  */
 
 /*
- *    FastRandomForest.java
+ *    FasterForest2.java
  *    Copyright (C) 2009 Fran Supek
  */
 

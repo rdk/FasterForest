@@ -21,7 +21,7 @@ public class FRFAttributeEval extends ASEvaluation implements AttributeEvaluator
   private double[] m_Importances;
 
   /** The prototype for the rf. */
-  private FastRandomForest m_frfProto = new FastRandomForest();
+  private FasterForest2 m_frfProto = new FasterForest2();
 
   /** Constructor */
   public FRFAttributeEval() {
@@ -32,13 +32,13 @@ public class FRFAttributeEval extends ASEvaluation implements AttributeEvaluator
    *
    * @param frfProto the prototype for the random forest.
    */
-  public FRFAttributeEval(FastRandomForest frfProto) {
+  public FRFAttributeEval(FasterForest2 frfProto) {
     m_frfProto = frfProto;
   }
 
   /** {@inheritDoc} */
   public void buildEvaluator(Instances data) throws Exception {
-    FastRandomForest forest = (FastRandomForest) AbstractClassifier.makeCopy(m_frfProto);
+    FasterForest2 forest = (FasterForest2) AbstractClassifier.makeCopy(m_frfProto);
     forest.buildClassifier(data);
     m_Importances = forest.getFeatureImportances();
   }
@@ -49,12 +49,12 @@ public class FRFAttributeEval extends ASEvaluation implements AttributeEvaluator
   }
 
   /** @return the prototype for the random forest */
-  public FastRandomForest getFrfProto() {
+  public FasterForest2 getFrfProto() {
     return m_frfProto;
   }
 
   /** @param frfProto the prototype for the random forest */
-  public void setFrfProto(FastRandomForest frfProto) {
+  public void setFrfProto(FasterForest2 frfProto) {
     m_frfProto = frfProto;
   }
 

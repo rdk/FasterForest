@@ -80,7 +80,7 @@ public class FasterTreeTrainable extends FasterTree implements Runnable {
      * <li>pre-split entropy is not recalculated unnecessarily
      *
      * <li>uses DataCache instead of weka.core.Instances, the reference to the
-     *     DataCache is stored as a field in FastRandomTree class and not passed
+     *     DataCache is stored as a field in FasterForest2Tree class and not passed
      *     recursively down new buildTree() calls
      *
      * <li>similarly, a reference to the random number generator is stored
@@ -283,12 +283,12 @@ public class FasterTreeTrainable extends FasterTree implements Runnable {
 //   * with the following changes: <p>
 //   *
 //   * - When handling instances with missing values in attribute chosen for the
-//   * split, the FastRandomTree assignes the instance to one of the branches at
+//   * split, the FasterForest2Tree assignes the instance to one of the branches at
 //   * random, with bigger branches having a higher probability of getting the
 //   * instance. <p>
 //   *
 //   * - When splitting sortedIndices into two or more subsetIndices,
-//   * FastRandomTree checks whether an instance's split attribute value was above
+//   * FasterForest2Tree checks whether an instance's split attribute value was above
 //   * splitpoint only once per instances, and stores result into the DataCache's
 //   * whatGoesWhere field, which is then read in splitting subsetIndices. <p>
 //   *
@@ -508,10 +508,10 @@ public class FasterTreeTrainable extends FasterTree implements Runnable {
 
 
     /**
-     * Computes class distribution of an instance using the FastRandomTree. <p>
+     * Computes class distribution of an instance using the FasterForest2Tree. <p>
      *
      * Works correctly only if the DataCache has the same attributes as the one
-     * used to train the FastRandomTree - but this function does not check for
+     * used to train the FasterForest2Tree - but this function does not check for
      * that! <p>
      *
      * Main use of this is to compute out-of-bag error (also when finding feature
@@ -941,7 +941,7 @@ public class FasterTreeTrainable extends FasterTree implements Runnable {
      * function. The name "run()" is used to support multithreading via an
      * ExecutorService. <p>
      *
-     * The "data" field of the FastRandomTree should contain a
+     * The "data" field of the FasterForest2Tree should contain a
      * reference to a DataCache prior to calling this function, and that
      * DataCache should have the "reusableRandomGenerator" field initialized.
      * The FastRfBagging class normally takes care of this before invoking this

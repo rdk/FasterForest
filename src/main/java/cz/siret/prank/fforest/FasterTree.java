@@ -15,7 +15,7 @@
  */
 
 /*
- *    FastRandomTree.java
+ *    FasterForest2Tree.java
  *    Copyright (C) 2001 University of Waikato, Hamilton, NZ (original code,
  *      RandomTree.java)
  *    Copyright (C) 2013 Fran Supek (adapted code)
@@ -37,16 +37,16 @@ import java.io.Serializable;
  * 
  * Please refer to the Javadoc of buildTree, splitData and distribution
  * function, as well as the changelog.txt, for the details of changes to 
- * FastRandomTree.
+ * FasterTreeTrainable.
  * 
- * This class should be used only from within the FastRandomForest classifier.
+ * This class should be used only from within the FasterForest classifier.
  * 
  * @author Eibe Frank (eibe@cs.waikato.ac.nz) - original code
  * @author Richard Kirkby (rkirkby@cs.waikato.ac.nz) - original code
  * @author Fran Supek (fran.supek[AT]irb.hr) - adapted code
  * @version $Revision: 0.99$
  */
-class FasterTree
+public class FasterTree
         // extends AbstractClassifier
         implements Classifier, Serializable, Cloneable, CapabilitiesHandler, WeightedInstancesHandler {
 
@@ -58,7 +58,6 @@ class FasterTree
 
 
   /** The subtrees appended to this tree (node). */
-  //protected FasterTree[] m_Successors;
   protected FasterTree sucessorLeft;
   protected FasterTree sucessorRight;
 
@@ -75,6 +74,16 @@ class FasterTree
   /** Class probabilities from the training vals. */
   protected double[] m_ClassProbs = null;
 
+
+  public FasterTree(FasterTree sucessorLeft, FasterTree sucessorRight, int m_Attribute, double m_SplitPoint, double[] m_ClassProbs) {
+    this.sucessorLeft = sucessorLeft;
+    this.sucessorRight = sucessorRight;
+    this.m_Attribute = m_Attribute;
+    this.m_SplitPoint = m_SplitPoint;
+    this.m_ClassProbs = m_ClassProbs;
+  }
+
+  public FasterTree() {}
 
   /**
    * Get the value of MinNum.
@@ -123,7 +132,7 @@ class FasterTree
 
 
   /**
-   * This function is not supported by FastRandomTree, as it requires a
+   * This function is not supported by FasterForest2Tree, as it requires a
    * DataCache for training.
 
    * @throws Exception every time this function is called
@@ -136,11 +145,11 @@ class FasterTree
 
 
   /**
-   * Computes class distribution of an instance using the FastRandomTree.<p>
+   * Computes class distribution of an instance using the FasterForest2Tree.<p>
    *
    * In Weka's RandomTree, the distributions were normalized so that all
    * probabilities sum to 1; this would abolish the effect of instance weights
-   * on voting. In FastRandomForest 0.97 onwards, the distributions are
+   * on voting. In FasterForest2 0.97 onwards, the distributions are
    * normalized by dividing with the number of instances going into a leaf.<p>
    *
    * @param instance the instance to compute the distribution for
@@ -248,7 +257,7 @@ class FasterTree
 
 
   /**
-   * destroys this tree in the process to fee up memory
+   * destroys this tree in the process to free up memory
    */
   public FasterTree toLightVersion() {
     FasterTree left = sucessorLeft==null ? null : sucessorLeft.toLightVersion();
@@ -256,12 +265,7 @@ class FasterTree
     FasterTree right = sucessorRight==null ? null : sucessorRight.toLightVersion();
     sucessorRight = null;
 
-    FasterTree res = new FasterTree();
-    res.sucessorLeft = left;
-    res.sucessorRight = right;
-    res.m_Attribute = m_Attribute;
-    res.m_SplitPoint = m_SplitPoint;
-    res.m_ClassProbs = m_ClassProbs;
+    FasterTree res = new FasterTree(left, right, m_Attribute, m_SplitPoint, m_ClassProbs);
 
     return res;
   }

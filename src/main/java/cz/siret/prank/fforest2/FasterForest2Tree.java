@@ -15,7 +15,7 @@
  */
 
 /*
- *    FastRandomTree.java
+ *    FasterForest2Tree.java
  *    Copyright (C) 2001 University of Waikato, Hamilton, NZ (original code,
  *      RandomTree.java)
  *    Copyright (C) 2013 Fran Supek (adapted code)
@@ -23,6 +23,7 @@
 
 package cz.siret.prank.fforest2;
 
+import cz.siret.prank.fforest.FasterTree;
 import weka.classifiers.AbstractClassifier;
 import weka.core.*;
 import weka.core.Capabilities.Capability;
@@ -39,9 +40,9 @@ import java.util.Random;
  * 
  * Please refer to the Javadoc of buildTree, splitData and distribution
  * function, as well as the changelog.txt, for the details of changes to 
- * FastRandomTree.
+ * FasterForest2Tree.
  * 
- * This class should be used only from within the FastRandomForest classifier.
+ * This class should be used only from within the FasterForest2 classifier.
  * 
  * @author Eibe Frank (eibe@cs.waikato.ac.nz) - original code
  * @author Richard Kirkby (rkirkby@cs.waikato.ac.nz) - original code
@@ -49,7 +50,7 @@ import java.util.Random;
  * @author Jordi Pique (2.0 version)
  * @version $Revision: 2.0$
  */
-class FastRandomTree
+class FasterForest2Tree
         extends AbstractClassifier
         implements OptionHandler, WeightedInstancesHandler, Runnable {
 
@@ -67,10 +68,10 @@ class FastRandomTree
   public HashSet<Integer> subsetSelectedAttr;
   
   /** The subtrees appended to this tree (node). */
-  protected FastRandomTree[] m_Successors;
+  protected FasterForest2Tree[] m_Successors;
 
   /** For access to parameters of the RF (k, or maxDepth). */
-  protected FastRandomForest m_MotherForest;
+  protected FasterForest2 m_MotherForest;
 
   /** The attribute to split on. */
   protected int m_Attribute = -10000;
@@ -113,7 +114,7 @@ class FastRandomTree
    * This constructor should not be used. Instead, use the next two constructors
    */
   @Deprecated
-  public FastRandomTree() {
+  public FasterForest2Tree() {
   }
 
   /**
@@ -121,7 +122,7 @@ class FastRandomTree
    * @param motherForest
    * @param data
    */
-  public FastRandomTree(FastRandomForest motherForest, DataCache data, int seed) {
+  public FasterForest2Tree(FasterForest2 motherForest, DataCache data, int seed) {
     int numClasses = data.numClasses;
     this.m_seed = seed;
     this.data = data;
@@ -146,8 +147,8 @@ class FastRandomTree
    * @param tempDistsOther
    * @param tempProps
    */
-  public FastRandomTree(FastRandomForest motherForest, DataCache data, double[][] tempDists,
-                        double[][] tempDistsOther, double[] tempProps) {
+  public FasterForest2Tree(FasterForest2 motherForest, DataCache data, double[][] tempDists,
+                           double[][] tempDistsOther, double[] tempProps) {
     this.m_MotherForest = motherForest;
     this.data = data;
     // new in 0.99 - used in distributionSequentialAtt()
@@ -219,14 +220,14 @@ class FastRandomTree
 
 
   /**
-   * This function is not supported by FastRandomTree, as it requires a
+   * This function is not supported by FasterForest2Tree, as it requires a
    * DataCache for training.
 
    * @throws Exception every time this function is called
    */
   @Override
   public void buildClassifier(Instances data) throws Exception {
-    throw new Exception("FastRandomTree can be used only by FastRandomForest " +
+    throw new Exception("FasterForest2Tree can be used only by FasterForest2 " +
             "and FastRfBagger classes, not directly.");
   }
 
@@ -269,11 +270,11 @@ class FastRandomTree
   
 
   /**
-   * Computes class distribution of an instance using the FastRandomTree.<p>
+   * Computes class distribution of an instance using the FasterForest2Tree.<p>
    *
    * In Weka's RandomTree, the distributions were normalized so that all
    * probabilities sum to 1; this would abolish the effect of instance weights
-   * on voting. In FastRandomForest 0.97 onwards, the distributions are
+   * on voting. In FasterForest2 0.97 onwards, the distributions are
    * normalized by dividing with the number of instances going into a leaf.<p>
    * 
    * @param instance the instance to compute the distribution for
@@ -335,10 +336,10 @@ class FastRandomTree
 
 
 //  /**
-//   * Computes class distribution of an instance using the FastRandomTree. <p>
+//   * Computes class distribution of an instance using the FasterForest2Tree. <p>
 //   *
 //   * Works correctly only if the DataCache has the same attributes as the one
-//   * used to train the FastRandomTree - but this function does not check for
+//   * used to train the FasterForest2Tree - but this function does not check for
 //   * that! <p>
 //   *
 //   * Main use of this is to compute out-of-bag error (also when finding feature
@@ -349,20 +350,20 @@ class FastRandomTree
 //   * @throws Exception if computation fails
 //   */
 //  public double[] distributionForInstanceInDataCache(DataCache data, int instIdx) {
-//    FastRandomTree frt = this;
+//    FasterForest2Tree frt = this;
 //    while (frt.m_Attribute > -1) {
 //      // 0.99: new - binary splits (also) for nominal attributes
 //      if (data.isAttrNominal(frt.m_Attribute)) {
 //        if ( data.vals[frt.m_Attribute][instIdx] == frt.m_SplitPoint ) {
-//          frt = (FastRandomTree) frt.m_Successors[0];
+//          frt = (FasterForest2Tree) frt.m_Successors[0];
 //        } else {
-//          frt = (FastRandomTree) frt.m_Successors[1];
+//          frt = (FasterForest2Tree) frt.m_Successors[1];
 //        }
 //      } else {
 //        if (data.vals[frt.m_Attribute][instIdx] < frt.m_SplitPoint) {
-//          frt = (FastRandomTree) frt.m_Successors[0];
+//          frt = (FasterForest2Tree) frt.m_Successors[0];
 //        } else {
-//          frt = (FastRandomTree) frt.m_Successors[1];
+//          frt = (FasterForest2Tree) frt.m_Successors[1];
 //        }
 //      }
 //    }
@@ -370,10 +371,10 @@ class FastRandomTree
 //  }
 
   /**
-   * Computes class distribution of an instance using the FastRandomTree. <p>
+   * Computes class distribution of an instance using the FasterForest2Tree. <p>
    *
    * Works correctly only if the DataCache has the same attributes as the one
-   * used to train the FastRandomTree - but this function does not check for
+   * used to train the FasterForest2Tree - but this function does not check for
    * that! <p>
    *
    * Main use of this is to compute out-of-bag error (also when finding feature
@@ -426,11 +427,11 @@ class FastRandomTree
   private int countNodes() {
     if (m_Attribute != -1) {
       int result = 1;
-      if (m_Successors[0] instanceof FastRandomTree)  {
-        result += ((FastRandomTree) m_Successors[0]).countNodes();
+      if (m_Successors[0] instanceof FasterForest2Tree)  {
+        result += ((FasterForest2Tree) m_Successors[0]).countNodes();
       }
-      if (m_Successors[1] instanceof FastRandomTree)  {
-        result += ((FastRandomTree) m_Successors[1]).countNodes();
+      if (m_Successors[1] instanceof FasterForest2Tree)  {
+        result += ((FasterForest2Tree) m_Successors[1]).countNodes();
       }
       return result;
     } else {
@@ -463,7 +464,7 @@ class FastRandomTree
    * <li>pre-split entropy is not recalculated unnecessarily
    *
    * <li>uses DataCache instead of weka.core.Instances, the reference to the
-   *     DataCache is stored as a field in FastRandomTree class and not passed
+   *     DataCache is stored as a field in FasterForest2Tree class and not passed
    *     recursively down new buildTree() calls
    *
    * <li>similarly, a reference to the random number generator is stored
@@ -596,9 +597,9 @@ class FastRandomTree
       int belowTheSplitStartsAt = splitDataNew(  m_Attribute, m_SplitPoint, sortedIndices, startAt, endAt, dist );
 //      Benchmark.updateTime(System.nanoTime() - t);
 
-      m_Successors = new FastRandomTree[dist.length];  // dist.length now always == 2
+      m_Successors = new FasterForest2Tree[dist.length];  // dist.length now always == 2
       for (int i = 0; i < dist.length; i++) {
-        FastRandomTree auxTree = new FastRandomTree(m_MotherForest, data, tempDists, tempDistsOther, tempProps);
+        FasterForest2Tree auxTree = new FasterForest2Tree(m_MotherForest, data, tempDists, tempDistsOther, tempProps);
 
         // check if we're about to make an empty branch - this can happen with
         // nominal attributes with more than two categories (as of ver. 0.98)
@@ -1054,7 +1055,7 @@ class FastRandomTree
    * @param argv the commandline parameters
    */
   public static void main(String[] argv) {
-    runClassifier(new FastRandomTree(), argv);
+    runClassifier(new FasterForest2Tree(), argv);
   }
 
 
@@ -1064,6 +1065,28 @@ class FastRandomTree
     return RevisionUtils.extract("$Revision: 2.0$");
   }
 
+
+  /**
+   * Convert tree to leaner version.
+   */
+  public FasterTree toFasterTree() {
+    boolean leaf = (m_Successors==null);
+    FasterTree leftChild = null;
+    FasterTree rightChild = null;
+    if (!leaf) {
+      leftChild = m_Successors[0].toFasterTree();
+      rightChild = m_Successors[1].toFasterTree();
+    }
+    int attribute = m_Attribute;
+    if (attribute < 0) {
+      attribute = -1;
+    }
+    double[] classProbs = (leaf) ? null : m_ClassProbs;
+
+    FasterTree res = new FasterTree(leftChild, rightChild, attribute, m_SplitPoint, classProbs);
+
+    return res;
+  }
 
   
 }

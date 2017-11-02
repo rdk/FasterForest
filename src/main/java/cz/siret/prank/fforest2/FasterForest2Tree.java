@@ -74,7 +74,7 @@ class FasterForest2Tree
   protected FasterForest2 m_MotherForest;
 
   /** The attribute to split on. */
-  protected int m_Attribute = -10000;
+  protected int m_Attribute = -1;
 
   /** The split point. */
   protected double m_SplitPoint = Double.NaN;
@@ -286,7 +286,7 @@ class FasterForest2Tree
 
     double[] returnedDist = null;
 
-    if (m_Attribute > -1) {  // ============================ node is not a leaf
+    if (m_Attribute != -1) {  // ============================ node is not a leaf
 
 //      if (instance.isMissing(m_Attribute)) {  // ---------------- missing value
 //
@@ -386,39 +386,39 @@ class FasterForest2Tree
    */
   public double[] distributionForInstanceInDataCache(DataCache data, int instIdx) {
 
-    if (m_Attribute > -1) {  // ============================ node is not a leaf
+    if (m_Attribute != -1) {  // ============================ node is not a leaf
       double[] returnedDist = null;
 
-      if ( data.isValueMissing(m_Attribute, instIdx) ) {  // ---------------- missing value
-
-        returnedDist = new double[m_MotherForest.m_Info.numClasses()];
-        // split instance up
-        for (int i = 0; i < m_Successors.length; i++) {
-          double[] help = m_Successors[i].distributionForInstanceInDataCache(data, instIdx);
-          if (help != null) {
-            for (int j = 0; j < help.length; j++) {
-              returnedDist[j] += m_Prop[i] * help[j];
-            }
-          }
-        }
-
-      } else if ( data.isAttrNominal(m_Attribute) ) { // ------ nominal
-        // 0.99: new - binary splits (also) for nominal attributes
-        if ( data.vals[m_Attribute][instIdx] == m_SplitPoint ) {
-          returnedDist = m_Successors[0].distributionForInstanceInDataCache(data, instIdx);
-        } else {
-          returnedDist = m_Successors[1].distributionForInstanceInDataCache(data, instIdx);
-        }
-
-      } else { // ------------------------------------------ numeric attributes
+//      if ( data.isValueMissing(m_Attribute, instIdx) ) {  // ---------------- missing value
+//
+//        returnedDist = new double[m_MotherForest.m_Info.numClasses()];
+//        // split instance up
+//        for (int i = 0; i < m_Successors.length; i++) {
+//          double[] help = m_Successors[i].distributionForInstanceInDataCache(data, instIdx);
+//          if (help != null) {
+//            for (int j = 0; j < help.length; j++) {
+//              returnedDist[j] += m_Prop[i] * help[j];
+//            }
+//          }
+//        }
+//
+//      } else if ( data.isAttrNominal(m_Attribute) ) { // ------ nominal
+//        // 0.99: new - binary splits (also) for nominal attributes
+//        if ( data.vals[m_Attribute][instIdx] == m_SplitPoint ) {
+//          returnedDist = m_Successors[0].distributionForInstanceInDataCache(data, instIdx);
+//        } else {
+//          returnedDist = m_Successors[1].distributionForInstanceInDataCache(data, instIdx);
+//        }
+//
+//      } else { // ------------------------------------------ numeric attributes
         if ( data.vals[m_Attribute][instIdx] < m_SplitPoint) {
           returnedDist = m_Successors[0].distributionForInstanceInDataCache(data, instIdx);
         } else {
           returnedDist = m_Successors[1].distributionForInstanceInDataCache(data, instIdx);
         }
-      }
+//      }
       return returnedDist;
-
+//
     } else { // =============================================== node is a leaf
       return m_ClassProbs;
     }

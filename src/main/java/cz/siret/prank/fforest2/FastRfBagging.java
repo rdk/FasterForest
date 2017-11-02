@@ -23,6 +23,8 @@
 
 package cz.siret.prank.fforest2;
 
+import cz.siret.prank.fforest.FasterTree;
+import cz.siret.prank.fforest.FasterTreeTrainable;
 import weka.classifiers.Classifier;
 import weka.classifiers.RandomizableIteratedSingleClassifierEnhancer;
 import weka.core.*;
@@ -175,6 +177,28 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
       if (m_computeInteractionsNew) {
         computeInteractionsNew();
       }
+
+
+
+      // convert to light version
+      List<Callable<FasterTree>> tasks = new ArrayList<>(m_Classifiers.length);
+      for (Classifier tree : m_Classifiers) {
+        tasks.add(((FasterForest2Tree) tree)::toLightVersion);
+      }
+      m_Classifiers = threadPool.invokeAll(tasks).stream().map(
+          f -> {
+            try {
+              return f.get();
+            } catch (Exception e) {
+              throw new RuntimeException(e);
+            }
+          }
+      ).toArray(FasterTree[]::new);
+      //
+
+
+
+
 
       threadPool.shutdown();
 

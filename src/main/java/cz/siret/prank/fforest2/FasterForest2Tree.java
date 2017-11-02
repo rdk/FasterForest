@@ -1068,13 +1068,13 @@ class FasterForest2Tree
   /**
    * Convert tree to leaner version.
    */
-  public FasterTree toFasterTree() {
+  public FasterTree toLightVersion() {
     boolean leaf = (m_Successors==null);
     FasterTree leftChild = null;
     FasterTree rightChild = null;
     if (!leaf) {
-      leftChild = m_Successors[0].toFasterTree();
-      rightChild = m_Successors[1].toFasterTree();
+      leftChild = m_Successors[0].toLightVersion();
+      rightChild = m_Successors[1].toLightVersion();
     }
     int attribute = m_Attribute;
     if (attribute < 0) {

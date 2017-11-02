@@ -151,6 +151,16 @@ public class FasterForest2
   protected AbstractClassifier m_ZeroR;
 
   /**
+   * Whether to calculate the out of bag error
+   */
+  protected boolean m_CalcOutOfBag = true;
+
+  /**
+   * The size of each bag sample, as a percentage of the training size
+   */
+  protected int m_BagSizePercent = 100;
+
+  /**
    * Returns a string describing classifier
    *
    * @return a description suitable for
@@ -332,6 +342,25 @@ public class FasterForest2
   public void setNumThreads(int value){
     m_NumThreads = value;
   }
+
+
+  public boolean isCalcOutOfBag() {
+    return m_CalcOutOfBag;
+  }
+
+  public void setCalcOutOfBag(boolean m_CalcOutOfBag) {
+    this.m_CalcOutOfBag = m_CalcOutOfBag;
+  }
+
+  public int getBagSizePercent() {
+    return m_BagSizePercent;
+  }
+
+  public void setBagSizePercent(int m_BagSizePercent) {
+    this.m_BagSizePercent = m_BagSizePercent;
+  }
+
+
 
   ////////////////////////////
   // Feature importances stuff
@@ -686,7 +715,8 @@ public class FasterForest2
     m_bagger.setClassifier(rTree);
     m_bagger.setSeed(m_randomSeed);
     m_bagger.setNumIterations(m_numTrees);
-    m_bagger.setCalcOutOfBag(true);
+    m_bagger.setBagSizePercent(m_BagSizePercent);
+    m_bagger.setCalcOutOfBag(m_CalcOutOfBag);
     m_bagger.setComputeImportances( this.getComputeImportances() );
     m_bagger.setComputeDropoutImportance(this.getComputeDropoutImportance());
     m_bagger.setComputeInteractions(this.getComputeInteractions());
@@ -838,6 +868,8 @@ public class FasterForest2
   public void setComputeInteractionsNew(boolean computeInteractionsNew) {
     m_computeInteractionsNew = computeInteractionsNew;
   }
+
+
 
   ////////////////////////////
   // /Feature importances stuff

@@ -1067,20 +1067,25 @@ class FasterForest2Tree
 
   /**
    * Convert tree to leaner version.
+   * Dismantles this tree in the process.
    */
   public FasterTree toLightVersion() {
-    boolean leaf = (m_Successors==null);
-    FasterTree leftChild = null;
-    FasterTree rightChild = null;
-    if (!leaf) {
-      leftChild = m_Successors[0].toLightVersion();
-      rightChild = m_Successors[1].toLightVersion();
-    }
     int attribute = m_Attribute;
     if (attribute < 0) {
       attribute = -1;
     }
-    double[] classProbs = (leaf) ? null : m_ClassProbs;
+    boolean isLeaf = (attribute == -1);
+
+    FasterTree leftChild = null;
+    FasterTree rightChild = null;
+    if (!isLeaf) {
+      leftChild = m_Successors[0].toLightVersion();
+      m_Successors[0] = null;  // to allow gc
+      rightChild = m_Successors[1].toLightVersion();
+      m_Successors = null;     // to allow gc
+    }
+
+    double[] classProbs = (isLeaf) ? m_ClassProbs : null;
 
     FasterTree res = new FasterTree(leftChild, rightChild, attribute, m_SplitPoint, classProbs);
 

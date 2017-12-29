@@ -9,6 +9,9 @@ import java.util.Arrays;
  */
 public class FasterTreeTrainable extends FasterTree implements Runnable {
 
+    /** for serialization */
+    static final long serialVersionUID = -9136056750085906361L;
+
     /**
      * For access to parameters of the RF (k, or maxDepth).
      */

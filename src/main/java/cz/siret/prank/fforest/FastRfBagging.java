@@ -211,7 +211,7 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
 
       List<Callable<FasterTree>> tasks = new ArrayList<>(m_Classifiers.length);
       for (Classifier tree : m_Classifiers) {
-        tasks.add(((FasterTreeTrainable) tree)::toLightVersion);
+        tasks.add(((FasterTreeTrainable) tree)::toSlimVersion);
       }
       m_Classifiers = threadPool.invokeAll(tasks).stream().map(
           f -> {

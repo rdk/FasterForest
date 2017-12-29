@@ -259,10 +259,10 @@ public class FasterTree
   /**
    * destroys this tree in the process to free up memory
    */
-  public FasterTree toLightVersion() {
-    FasterTree left = sucessorLeft==null ? null : sucessorLeft.toLightVersion();
+  public FasterTree toSlimVersion() {
+    FasterTree left = sucessorLeft==null ? null : sucessorLeft.toSlimVersion();
     sucessorLeft = null;
-    FasterTree right = sucessorRight==null ? null : sucessorRight.toLightVersion();
+    FasterTree right = sucessorRight==null ? null : sucessorRight.toSlimVersion();
     sucessorRight = null;
 
     FasterTree res = new FasterTree(left, right, m_Attribute, m_SplitPoint, m_ClassProbs);

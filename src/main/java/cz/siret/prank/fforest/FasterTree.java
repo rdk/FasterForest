@@ -158,51 +158,53 @@ public class FasterTree
   @Override
   public final double[] distributionForInstance(Instance instance) {
 
-    if (m_Attribute != -1) {  // ============================ node is not a leaf
-
-     //if (instance.isMissing(m_Attribute)) {  // ---------------- missing value
-
-     //  returnedDist = new double[m_MotherForest.m_Info.numClasses()];
-     //  // split instance up
-     //  for (int i = 0; i < m_Successors.length; i++) {
-     //    double[] help = m_Successors[i].distributionForInstance(instance);
-     //    if (help != null) {
-     //      for (int j = 0; j < help.length; j++) {
-     //        returnedDist[j] += m_Prop[i] * help[j];
-     //      }
-     //    }
-     //  }
-
-     //} else if (m_MotherForest.m_Info
-     //        .attribute(m_Attribute).isNominal()) { // ------ nominal
-
-     //  //returnedDist = m_Successors[(int) instance.value(m_Attribute)]
-     //  //        .distributionForInstance(instance);
-
-     //  // 0.99: new - binary splits (also) for nominal attributes
-     //  if ( instance.value(m_Attribute) == m_SplitPoint ) {
-     //    returnedDist = m_Successors[0].distributionForInstance(instance);
-     //  } else {
-     //    returnedDist = m_Successors[1].distributionForInstance(instance);
-     //  }
-
-
-     //} else { // ------------------------------------------ numeric attributes
-
-      double[] returnedDist;
-
-        if (instance.value(m_Attribute) < m_SplitPoint) {
-          returnedDist = sucessorLeft.distributionForInstance(instance);
-        } else {
-          returnedDist = sucessorRight.distributionForInstance(instance);
-        }
-     // }
-
-      return returnedDist;
-
-    } else { // =============================================== node is a leaf
+    if (m_Attribute == -1) {  // ============================ node is a leaf
 
       return m_ClassProbs;
+
+    } else { // =============================================== node is not a leaf
+
+      //if (instance.isMissing(m_Attribute)) {  // ---------------- missing value
+
+      //  returnedDist = new double[m_MotherForest.m_Info.numClasses()];
+      //  // split instance up
+      //  for (int i = 0; i < m_Successors.length; i++) {
+      //    double[] help = m_Successors[i].distributionForInstance(instance);
+      //    if (help != null) {
+      //      for (int j = 0; j < help.length; j++) {
+      //        returnedDist[j] += m_Prop[i] * help[j];
+      //      }
+      //    }
+      //  }
+
+      //} else if (m_MotherForest.m_Info
+      //        .attribute(m_Attribute).isNominal()) { // ------ nominal
+
+      //  //returnedDist = m_Successors[(int) instance.value(m_Attribute)]
+      //  //        .distributionForInstance(instance);
+
+      //  // 0.99: new - binary splits (also) for nominal attributes
+      //  if ( instance.value(m_Attribute) == m_SplitPoint ) {
+      //    returnedDist = m_Successors[0].distributionForInstance(instance);
+      //  } else {
+      //    returnedDist = m_Successors[1].distributionForInstance(instance);
+      //  }
+
+      //} else { // ------------------------------------------ numeric attributes
+
+      FasterTree node = this;
+
+      while (true) {
+        if (instance.value(node.m_Attribute) < node.m_SplitPoint) {
+          node = sucessorLeft;
+        } else {
+          node = sucessorRight;
+        }
+
+        if (node.m_Attribute == -1) {  // node is a leaf
+          return m_ClassProbs;
+        }
+      }
 
     }
 
@@ -210,16 +212,30 @@ public class FasterTree
 
   public final double[] distributionForAttributes(double[] instanceAttributes) {
 
-    if (m_Attribute != -1) {
-      if (instanceAttributes[m_Attribute] < m_SplitPoint) {
-        return sucessorLeft.distributionForAttributes(instanceAttributes);
-      } else {
-        return sucessorRight.distributionForAttributes(instanceAttributes);
-      }
-    } else { // =============================================== node is a leaf
+
+    if (m_Attribute == -1) {  // ============================ node is a leaf
+
       return m_ClassProbs;
+
+    } else { // =============================================== node is not a leaf
+
+      FasterTree node = this;
+
+      while (true) {
+        if (instanceAttributes[m_Attribute] < node.m_SplitPoint) {
+          node = sucessorLeft;
+        } else {
+          node = sucessorRight;
+        }
+
+        if (node.m_Attribute == -1) {  // node is a leaf
+          return m_ClassProbs;
+        }
+      }
+
     }
-    
+
+
   }
 
 

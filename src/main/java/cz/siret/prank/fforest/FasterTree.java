@@ -202,7 +202,7 @@ public class FasterTree
         }
 
         if (node.m_Attribute == -1) {  // node is a leaf
-          return m_ClassProbs;
+          return node.m_ClassProbs;
         }
       }
 
@@ -229,7 +229,7 @@ public class FasterTree
         }
 
         if (node.m_Attribute == -1) {  // node is a leaf
-          return m_ClassProbs;
+          return node.m_ClassProbs;
         }
       }
 

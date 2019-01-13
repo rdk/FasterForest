@@ -196,9 +196,9 @@ public class FasterTree
 
       while (true) {
         if (instance.value(node.m_Attribute) < node.m_SplitPoint) {
-          node = sucessorLeft;
+          node = node.sucessorLeft;
         } else {
-          node = sucessorRight;
+          node = node.sucessorRight;
         }
 
         if (node.m_Attribute == -1) {  // node is a leaf
@@ -223,9 +223,9 @@ public class FasterTree
 
       while (true) {
         if (instanceAttributes[m_Attribute] < node.m_SplitPoint) {
-          node = sucessorLeft;
+          node = node.sucessorLeft;
         } else {
-          node = sucessorRight;
+          node = node.sucessorRight;
         }
 
         if (node.m_Attribute == -1) {  // node is a leaf

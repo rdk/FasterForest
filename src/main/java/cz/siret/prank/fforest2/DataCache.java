@@ -116,12 +116,15 @@ public class DataCache {
     }
     return toReturn;
   }
-  
-  
+
+
   /**
    * Creates a DataCache by copying data from a weka.core.Instances object.
+   *
+   * @param origData
+   * @param parallel use parallel processing in cache construction
    */
-  public DataCache(Instances origData) throws Exception {
+  public DataCache(Instances origData, boolean parallel) throws Exception {
 
     classIndex = origData.classIndex();
     numAttributes = origData.numAttributes();
@@ -172,13 +175,13 @@ public class DataCache {
         // Handling nominal attributes: as of FastRF 0.99, they're sorted as well
         // missing values are coded as Float.MAX_VALUE and go to the end
 
-        sortedIndices[a] = FastRfUtils.sort(vals[a]);
+        sortedIndices[a] = cz.siret.prank.fforest.FastRfUtils.sortIndices(vals[a], parallel);
 
       } else { // ----------------------------------------------------- numeric
 
         // Sorted indices are computed for numeric attributes
         // missing values are coded as Float.MAX_VALUE and go to the end
-        sortedIndices[a] = FastRfUtils.sort(vals[a]); 
+        sortedIndices[a] = cz.siret.prank.fforest.FastRfUtils.sortIndices(vals[a], parallel);
 
       } // ---------------------------------------------------------- attr kind
     } // ========================================================= attr by attr

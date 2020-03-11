@@ -26,6 +26,7 @@ package cz.siret.prank.fforest;
 import weka.core.Instance;
 import weka.core.Instances;
 
+import java.util.Arrays;
 import java.util.Random;
 
 /**
@@ -39,6 +40,49 @@ import java.util.Random;
  * @author Fran Supek (fran.supek[AT]irb.hr) - adapted code
  */
 public class FastRfUtils {
+
+  /**
+   * The minimum array length below which a parallel sorting
+   * algorithm will not further partition the sorting task. Using
+   * smaller sizes typically results in memory contention across
+   * tasks that makes parallel speedups unlikely.
+   *
+   * taken from java.util.Arrays
+   */
+  private static final int MIN_ARRAY_SORT_GRAN = 1 << 13; // 8192
+
+
+  public static int[] sortIndices(float[] array, boolean parallel) {
+    if (parallel && array.length > MIN_ARRAY_SORT_GRAN) {
+      return sortIndicesParallel(array);
+    } else {
+      return sort(array);
+    }
+  }
+
+
+  private static int[] newIndices(int n) {
+    int[] index = new int[n];
+    for (int i = 0; i < n; i++)
+      index[i] = i;
+    return index;
+  }
+
+  private static int[] sortIndicesParallel(float[] array) {
+    int n = array.length;
+
+    Integer[] index = new Integer[n];
+    for (int i = 0; i < n; i++)
+      index[i] = i;
+
+    Arrays.parallelSort(index, (o1, o2) -> Float.compare(array[o1], array[o2]));
+
+    int[] pindex = new int[n];
+    for (int i = 0; i < n; i++)
+      pindex[i] = index[i];
+
+    return pindex;
+  }
 
 
   /**
@@ -54,11 +98,9 @@ public class FastRfUtils {
    * @return an array of integers with the positions in the sorted
    *         array.
    */
-  public static /*@pure@*/ int[] sort(/*@non_null@*/ float[] array) {
-    int[] index = new int[array.length];
-    for (int i = 0; i < index.length; i++)
-      index[i] = i;
-    array = array.clone();
+  public static int[] sort(float[] array) {
+    int[] index = newIndices(array.length);
+    // array = array.clone(); // no need as original array wont ever change
     quickSort(array, index, 0, array.length - 1);
     return index;
   }

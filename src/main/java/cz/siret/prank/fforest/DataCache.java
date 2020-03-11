@@ -15,7 +15,7 @@
  */
 
 /*
- *    FasterForest2.java
+ *    FasterForest.java
  *    Copyright (C) 2009 Fran Supek
  */
 
@@ -96,11 +96,13 @@ public class DataCache {
     return toReturn;
   }
   
-  
   /**
    * Creates a DataCache by copying data from a weka.core.Instances object.
+   *
+   * @param origData
+   * @param parallel use parallel processing in cache construction
    */
-  public DataCache(Instances origData) throws Exception {
+  public DataCache(Instances origData, boolean parallel) throws Exception {
 
     classIndex = origData.classIndex();
     numAttributes = origData.numAttributes();
@@ -144,42 +146,22 @@ public class DataCache {
       if (a == classIndex) 
         continue;
 
-      if (attNumVals[a] > 0) { // ------------------------------------- nominal
+      if (attNumVals[a] > 0) { // ------------------------------------- nominal  ... not supported anymore
 
         // Handling nominal attributes: as of FastRF 0.99, they're sorted as well
         // missing values are coded as Float.MAX_VALUE and go to the end
-        
-        sortedIndices[a] = new int[numInstances];
-        //int count = 0;
 
-        sortedIndices[a] = FastRfUtils.sort(vals[a]);
-        
-        /*for (int i = 0; i < numInstances; i++) {
-          if ( !this.isValueMissing(a, i) ) {
-            sortedIndices[a][count] = i;
-            count++;
-          }
-        }
-
-        for (int i = 0; i < numInstances; i++) {
-          if ( this.isValueMissing(a, i) ) {
-            sortedIndices[a][count] = i;
-            count++;
-          }
-        }*/
+        sortedIndices[a] = FastRfUtils.sortIndices(vals[a], parallel);
 
       } else { // ----------------------------------------------------- numeric
 
         // Sorted indices are computed for numeric attributes
         // missing values are coded as Float.MAX_VALUE and go to the end
-        sortedIndices[a] = FastRfUtils.sort(vals[a]);
+        sortedIndices[a] = FastRfUtils.sortIndices(vals[a], parallel);
 
       } // ---------------------------------------------------------- attr kind
 
     } // ========================================================= attr by attr
-
-    // System.out.println(" Done.");
-
   }
 
   

@@ -124,8 +124,10 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
      * normally does. */
     m_Classifiers = new Classifier[m_NumIterations];
 
+    boolean parallel = motherForest.m_NumThreads != 1;
+
     // sorting is performed inside this constructor
-    myData = new DataCache(data);
+    myData = new DataCache(data, parallel);
     int bagSize = data.numInstances() * m_BagSizePercent / 100;
     myData.bagSize = bagSize; // no m'acaba d'agradar aquesta assignacio
     random = new Random(m_Seed);

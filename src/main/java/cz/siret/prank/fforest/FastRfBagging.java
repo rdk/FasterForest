@@ -130,9 +130,10 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
         "out-of-bag error is to be calculated!");
     }
 
+    boolean parallel = motherForest.m_NumThreads != 1;
 
     // sorting is performed inside this constructor
-    DataCache myData = new DataCache(data);
+    DataCache myData = new DataCache(data, parallel);
 
     int bagSize = data.numInstances() * m_BagSizePercent / 100;
     Random random = new Random(m_Seed);

@@ -37,6 +37,8 @@ import java.util.Random;
  * @author Len Trigg - original code
  * @author Julien Prados - original code
  * @author Fran Supek (fran.supek[AT]irb.hr) - adapted code
+ *
+ *
  */
 public class FastRfUtils {
 
@@ -53,12 +55,15 @@ public class FastRfUtils {
    *
    * @return an array of integers with the positions in the sorted
    *         array.
+   *
+   *         cz.siret.prank.fforest.FastRfUtils is used instead
    */
+  @Deprecated
   public static /*@pure@*/ int[] sort(/*@non_null@*/ float[] array) {
     int[] index = new int[array.length];
     for (int i = 0; i < index.length; i++)
       index[i] = i;
-    array = array.clone();
+    // array = array.clone();
     quickSort(array, index, 0, array.length - 1);
     return index;
   }

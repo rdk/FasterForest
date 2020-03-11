@@ -70,21 +70,41 @@ public class SplitCriteria {
 
   public static double giniConditionedOnRows(double[][] matrix) {
 
-    double returnValue = 0, sumForBranch, auxSum;
+    double returnValue = 0;
+    double auxSum;
+    double sumForBranch;
 
-    for (int branchNum = 0; branchNum < matrix.length; branchNum++) {
-      auxSum = matrix[branchNum][0] * matrix[branchNum][0];
-      sumForBranch = matrix[branchNum][0];
-      for (int classNum = 1; classNum < matrix[0].length; classNum++) {
-        auxSum += matrix[branchNum][classNum] * matrix[branchNum][classNum];
-        sumForBranch += matrix[branchNum][classNum];
+    for (double[] branch : matrix) {
+      auxSum = 0;
+      sumForBranch = 0;
+
+      for (double v : branch) {
+        auxSum += v * v;
+        sumForBranch += v;
       }
-      returnValue += sumForBranch - auxSum/sumForBranch;
+      returnValue += sumForBranch - auxSum / sumForBranch;
     }
 
     return returnValue;
   }
-  
+
+
+//  public static double giniConditionedOnRows(double[][] matrix) {
+//
+//    double returnValue = 0, sumForBranch, auxSum;
+//
+//    for (int branchNum = 0; branchNum < matrix.length; branchNum++) {
+//      auxSum = matrix[branchNum][0] * matrix[branchNum][0];
+//      sumForBranch = matrix[branchNum][0];
+//      for (int classNum = 1; classNum < matrix[0].length; classNum++) {
+//        auxSum += matrix[branchNum][classNum] * matrix[branchNum][classNum];
+//        sumForBranch += matrix[branchNum][classNum];
+//      }
+//      returnValue += sumForBranch - auxSum/sumForBranch;
+//    }
+//
+//    return returnValue;
+//  }
 
   /**
    * Similar to weka.core.ContingencyTables.entropyOverColumns

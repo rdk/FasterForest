@@ -206,14 +206,14 @@ class FasterForest2Tree
     result.disableAll(); 
 
     // attributes
-    result.enable(Capability.NOMINAL_ATTRIBUTES);
+    //result.enable(Capability.NOMINAL_ATTRIBUTES);
     result.enable(Capability.NUMERIC_ATTRIBUTES);
-    result.enable(Capability.DATE_ATTRIBUTES);
-    result.enable(Capability.MISSING_VALUES);
+    //result.enable(Capability.DATE_ATTRIBUTES);
+    //result.enable(Capability.MISSING_VALUES);
 
     // class
     result.enable(Capability.NOMINAL_CLASS);
-    result.enable(Capability.MISSING_CLASS_VALUES);
+    //result.enable(Capability.MISSING_CLASS_VALUES);
 
     return result;
   }
@@ -914,16 +914,21 @@ class FasterForest2Tree
       double bestVal = -Double.MAX_VALUE; // best value of splitting criterion
       int bestI = 0; // the value of "i" BEFORE which the splitpoint is placed
 
+      float[] dataValsAtt = data.vals[attToExamine]; // values of examined attribute
+
       for (i = startAt+1; i <= lastNonmissingValIdx; i++) {  // --- try all split points
 
         int inst = sortedIndicesOfAtt[i];
         int prevInst = sortedIndicesOfAtt[i-1];
 
-        currDist[0][ data.instClassValues[ prevInst ] ] += data.instWeights[ prevInst ] ;
-        currDist[1][ data.instClassValues[ prevInst ] ] -= data.instWeights[ prevInst ] ;
+        int prevInstClass = data.instClassValues[ prevInst ];
+        double prevInstWeight = data.instWeights[ prevInst ];
+
+        currDist[0][prevInstClass] += prevInstWeight;
+        currDist[1][prevInstClass] -= prevInstWeight;
 
         // do not allow splitting between two instances with the same class or with the same value
-        if (data.instClassValues[prevInst] != data.instClassValues[inst] && data.vals[attToExamine][inst] > data.vals[attToExamine][prevInst] ) {
+        if (prevInstClass != data.instClassValues[inst] && dataValsAtt[inst] > dataValsAtt[prevInst] ) {
           currVal = -SplitCriteria.giniConditionedOnRows(currDist);
           if (currVal > bestVal) {
             bestVal = currVal;
@@ -944,16 +949,19 @@ class FasterForest2Tree
 
         int instJustBeforeSplit = sortedIndicesOfAtt[bestI-1];
         int instJustAfterSplit = sortedIndicesOfAtt[bestI];
-        splitPoint = ( data.vals[ attToExamine ][ instJustAfterSplit ]
-                + data.vals[ attToExamine ][ instJustBeforeSplit ] ) / 2.0;
+        splitPoint = ( dataValsAtt[ instJustAfterSplit ]
+                + dataValsAtt[ instJustBeforeSplit ] ) / 2.0;
 
         // now make the correct dist[] (for the best split point) from the
         // default dist[] (all instances in the second branch, by iterating
         // through instances until we reach bestI, and then stop.
         for ( int ii = startAt; ii < bestI; ii++ ) {
           int inst = sortedIndicesOfAtt[ii];
-          dist[0][ data.instClassValues[ inst ] ] += data.instWeights[ inst ] ;
-          dist[1][ data.instClassValues[ inst ] ] -= data.instWeights[ inst ] ;
+          int instClass = data.instClassValues[inst];
+          double instWeight = data.instWeights[inst];
+
+          dist[0][instClass] += instWeight;
+          dist[1][instClass] -= instWeight;
         }
       }
 
@@ -964,8 +972,11 @@ class FasterForest2Tree
       // start 1 after the non-missing val (if there is anything)
       for (i = lastNonmissingValIdx + 1; i <= endAt; ++i) {
         int inst = sortedIndicesOfAtt[i];
-        dist[ 0 ][ data.instClassValues[inst] ] += props[ 0 ] * data.instWeights[ inst ] ;
-        dist[ 1 ][ data.instClassValues[inst] ] += props[ 1 ] * data.instWeights[ inst ] ;
+        int instClass = data.instClassValues[inst];
+        double instWeight = data.instWeights[inst];
+        
+        dist[ 0 ][ instClass ] += props[ 0 ] * instWeight ;
+        dist[ 1 ][ instClass ] += props[ 1 ] * instWeight ;
       }
 //    } // ================================================== nominal or numeric?
 
@@ -998,9 +1009,7 @@ class FasterForest2Tree
       props[k] = Utils.sum(dist[k]);
     }
     if (Utils.eq(Utils.sum(props), 0)) {
-      for (int k = 0; k < props.length; k++) {
-        props[k] = 1.0 / (double) props.length;
-      }
+      Arrays.fill(props, 1.0 / (double) props.length);
     } else {
       FastRfUtils.normalize(props);
     }
@@ -1020,10 +1029,8 @@ class FasterForest2Tree
     for (int k = 0; k < props.length; k++) {
       props[k] = Utils.sum(dist[k]);
     }
-    if (Utils.eq(Utils.sum(props), 0)) {
-      for (int k = 0; k < props.length; k++) {
-        props[k] = 1.0 / (double) props.length;
-      }
+    if (Utils.eq(Utils.sum(props), 0.0)) {
+      Arrays.fill(props, 1.0 / (double) props.length);
     } else {
       FastRfUtils.normalize(props);
     }
@@ -1082,6 +1089,7 @@ class FasterForest2Tree
       leftChild = m_Successors[0].toLightVersion();
       m_Successors[0] = null;  // to allow gc
       rightChild = m_Successors[1].toLightVersion();
+      m_Successors[1] = null;     // to allow gc
       m_Successors = null;     // to allow gc
     }
 

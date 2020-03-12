@@ -367,11 +367,6 @@ public class FasterForest2
   ////////////////////////////
 
   /**
-   * The value of the features importances.
-   */
-  private double[] m_FeatureImportances;
-  
-  /**
    * Whether to compute the importances or not.
    */
   private boolean m_computeImportances = false;

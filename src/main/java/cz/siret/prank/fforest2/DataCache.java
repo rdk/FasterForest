@@ -48,7 +48,7 @@ public class DataCache {
   protected int[] attInSortedIndices;
 
   /** Matrix that will be used for a tree to compute the distribution for a categorical feature */
-  protected double[][] levelsClasses;
+  //protected double[][] levelsClasses;
 
   /** The dataset, first indexed by attribute, then by instance. */
   protected final float[][] vals;
@@ -93,7 +93,7 @@ public class DataCache {
 
   /** Array that will be used for a tree to store the indices of the instances that have a missing values for
    * a gives attribute */
-  protected int[] instancesMissVal;
+  // protected int[] instancesMissVal;
 
   protected boolean isClassNominal;
   
@@ -288,7 +288,7 @@ public class DataCache {
   protected void createInBagSortedIndicesNew() {
 
     int[][] newSortedIndices = new int[ numAttributes ][ ];
-    instancesMissVal = new int[numInBag];
+    // instancesMissVal = new int[numInBag];
     int idx = 0;
     int maxLvl = 0; // maximum number of values for the categorical features
 
@@ -297,25 +297,29 @@ public class DataCache {
 
     for (int a : selectedAttributes) {
       // we will add, at most, only one categorical feature in sortedIndices
-      if (isAttrNominal(a)) {
-        maxLvl = Math.max(maxLvl, attNumVals[a]);
-        if (!(allCategorical && a == selectedAttributes[0])) continue;
-      }
 
-      attInSortedIndices[idx] = a; ++idx;
-      newSortedIndices[a] = new int[this.numInBag];
+      //if (isAttrNominal(a)) {
+      //  maxLvl = Math.max(maxLvl, attNumVals[a]);
+      //  if (!(allCategorical && a == selectedAttributes[0])) continue;
+      //}
+
+      attInSortedIndices[idx] = a;
+      ++idx;
+
+      int[] sortedIndicesA = sortedIndices[a];
+      int[] newSortedIndicesA = new int[this.numInBag];
+      newSortedIndices[a] = newSortedIndicesA;
 
       int inBagIdx = 0;
-      for (int j = 0; j < sortedIndices[a].length; j++) {
-        int origIdx = sortedIndices[a][j];
-        if ( !this.inBag[origIdx] )
-          continue;
-        newSortedIndices[a][inBagIdx] = sortedIndices[a][j];
-        inBagIdx++;
+      for (int origIdx : sortedIndicesA) {
+        if (inBag[origIdx]) {
+          newSortedIndicesA[inBagIdx] = origIdx;
+          inBagIdx++;
+        }
       }
     }
     this.sortedIndices = newSortedIndices;
-    this.levelsClasses = new double[maxLvl][numClasses];
+    // this.levelsClasses = new double[maxLvl][numClasses];
   }
 
 

@@ -102,10 +102,13 @@ class FasterForest2Tree
    * in distributionSequentialAtt(). This is meant to avoid frequent 
    * creating/destroying of these arrays.
    */
-  protected transient double[][] tempDists;  
-  protected transient double[][] tempDistsOther;
-  
-  
+  //protected transient double[][] tempDists;
+  //protected transient double[][] tempDistsOther;
+
+  protected transient double[] tempDistsL;
+  protected transient double[] tempDistsR;
+  protected transient double[] tempDistsOtherL;
+  protected transient double[] tempDistsOtherR;
 
   /** Minimum number of instances for leaf. */
   protected static final int m_MinNum = 1;
@@ -131,29 +134,39 @@ class FasterForest2Tree
     // 0.99: reference to these arrays will get passed down all nodes so the array can be re-used 
     // 0.99: this array is of size two as now all splits are binary - even categorical ones
     this.tempProps = new double[2];
-    this.tempDists = new double[2][];
-    this.tempDists[0] = new double[numClasses];
-    this.tempDists[1] = new double[numClasses];
-    this.tempDistsOther = new double[2][];
-    this.tempDistsOther[0] = new double[numClasses];
-    this.tempDistsOther[1] = new double[numClasses];
+
+    this.tempDistsL = new double[numClasses];
+    this.tempDistsR = new double[numClasses];
+    this.tempDistsOtherL = new double[numClasses];
+    this.tempDistsOtherR = new double[numClasses];
+
+    //this.tempDists = new double[2][];
+    //this.tempDists[0] = new double[numClasses];
+    //this.tempDists[1] = new double[numClasses];
+    //this.tempDistsOther = new double[2][];
+    //this.tempDistsOther[0] = new double[numClasses];
+    //this.tempDistsOther[1] = new double[numClasses];
   }
 
   /**
    * Constructor for all the nodes except the root
    * @param motherForest
    * @param data
-   * @param tempDists
-   * @param tempDistsOther
    * @param tempProps
    */
-  public FasterForest2Tree(FasterForest2 motherForest, DataCache data, double[][] tempDists,
-                           double[][] tempDistsOther, double[] tempProps) {
+  public FasterForest2Tree(FasterForest2 motherForest, DataCache data, double[] tempDistsL, double[] tempDistsR,
+                           double[] tempDistsOtherL, double[] tempDistsOtherR, double[] tempProps) {
     this.m_MotherForest = motherForest;
     this.data = data;
     // new in 0.99 - used in distributionSequentialAtt()
-    this.tempDists = tempDists;
-    this.tempDistsOther = tempDistsOther;
+    //this.tempDists = tempDists;
+    //this.tempDistsOther = tempDistsOther;
+
+    this.tempDistsL = tempDistsL;
+    this.tempDistsR = tempDistsR;
+    this.tempDistsOtherL = tempDistsOtherL;
+    this.tempDistsOtherR = tempDistsOtherR;
+
     this.tempProps = tempProps;
   }
 
@@ -599,7 +612,7 @@ class FasterForest2Tree
 
       m_Successors = new FasterForest2Tree[dist.length];  // dist.length now always == 2
       for (int i = 0; i < dist.length; i++) {
-        FasterForest2Tree auxTree = new FasterForest2Tree(m_MotherForest, data, tempDists, tempDistsOther, tempProps);
+        FasterForest2Tree auxTree = new FasterForest2Tree(m_MotherForest, data, tempDistsL, tempDistsR, tempDistsOtherL, tempDistsOtherR, tempProps);
 
         // check if we're about to make an empty branch - this can happen with
         // nominal attributes with more than two categories (as of ver. 0.98)
@@ -711,13 +724,13 @@ class FasterForest2Tree
       for (j = startAt; j <= endAt ; j++) {
         int inst = sortedIndices[att][j];
         int branch;
-        if ( data.isValueMissing(att, inst) ) { // ---------- has missing value
-          // decide where to put this instance randomly, with bigger branches getting a higher chance
-          double rn = random.nextDouble();
-          branch = ( rn > m_Prop[0] ) ? 1 : 0;
-        } else { // ----------------------------- does not have missing value
+        //if ( data.isValueMissing(att, inst) ) { // ---------- has missing value
+        //  // decide where to put this instance randomly, with bigger branches getting a higher chance
+        //  double rn = random.nextDouble();
+        //  branch = ( rn > m_Prop[0] ) ? 1 : 0;
+        //} else { // ----------------------------- does not have missing value
           branch = ( data.vals[att][inst] < splitPoint ) ? 0 : 1;
-        } // --------------------------------------- end if has missing value
+        //} // --------------------------------------- end if has missing value
         data.whatGoesWhere[ inst ] = branch;
         dist[branch][data.instClassValues[inst]] += data.instWeights[inst];
         num[branch] += 1;
@@ -767,6 +780,8 @@ class FasterForest2Tree
    *   RandomForest
    * </ul>
    *
+   * Edit: works only with numeric attributes
+   *
    * @param propsBestAtt gets filled with relative sizes of branches (total = 1)
    * for the best examined attribute so far; updated ONLY if current attribute is
    * better that the previous best
@@ -787,208 +802,128 @@ class FasterForest2Tree
     double splitPoint = -Double.MAX_VALUE;
 
     // a contingency table of the split point vs class.
-    double[][] dist = this.tempDists;
-    double[][] currDist = this.tempDistsOther;
+    double[] distL = this.tempDistsL;
+    double[] distR = this.tempDistsR;
+    double[] currDistL = this.tempDistsOtherL;
+    double[] currDistR = this.tempDistsOtherR;
     // Copy the current class distribution
     for (int i = 0; i < classProbs.length; ++i) {
-      currDist[1][i] = classProbs[i];
+      currDistR[i] = classProbs[i];
     }
 
     double[] props = this.tempProps;
 
     int i;
-    int sortedIndicesOfAttLength = endAt - startAt + 1;
+    //int sortedIndicesOfAttLength = endAt - startAt + 1;
 
-//    if ( data.isAttrNominal(attToExamine) ) { // ====================== nominal attributes
-//
-//      // 0.99: new routine - makes a one-vs-all split on categorical attributes
-//
-//      int numLvls = data.attNumVals[attToExamine];
-//      int bestLvl = 0; // the index of the category which is best to "split out"
-//      int idxMissVal = 0;
-//      sortedIndicesOfAtt = data.sortedIndices[data.attInSortedIndices[0]];
-//
-//      // note: if we have only two levels, it doesn't matter which one we "split out"
-//      // we can thus safely check only the first one
-//      if ( numLvls <= 2 ) {
-//        Arrays.fill( dist[0], 0.0 ); Arrays.fill( dist[1], 0.0 );
-//        bestLvl = 0; // this means that the category with index 0 always
-//        // goes 'above' the split and category with index 1 goes 'below' the split
-//        for (i = startAt; i <= endAt; i++) {
-//          int inst = sortedIndicesOfAtt[i];
-//          if (! data.isValueMissing(attToExamine, inst)) {
-//            dist[ (int)data.vals[attToExamine][inst] ][ data.instClassValues[inst] ] += data.instWeights[inst];
-//          } else {
-//            data.instancesMissVal[idxMissVal] = inst; ++idxMissVal;
-//          }
-//        }
-//        if (idxMissVal == sortedIndicesOfAttLength) return Double.NaN; // all values missing
-//
-//      } else {   // for >2 levels, we have to search different splits
-//        // fill a matrix that has the number of instances of lvl "i" and class "j"
-//        double[][] levelsClasses = data.levelsClasses;
-//        for (i = 0; i < numLvls; ++i) Arrays.fill(levelsClasses[i], 0.0);
-//
-//        for (i = startAt; i <= endAt; i++) {
-//          int inst = sortedIndicesOfAtt[i];
-//          if (! data.isValueMissing(attToExamine, inst)) {
-//            levelsClasses[(int) data.vals[attToExamine][inst]] [data.instClassValues[inst]] += data.instWeights[inst];
-//          } else { // we work now only with non missing values
-//            currDist[1][data.instClassValues[inst]] -= data.instWeights[inst];
-//            data.instancesMissVal[idxMissVal] = inst; ++idxMissVal;
-//          }
-//        }
-//        if (idxMissVal == sortedIndicesOfAttLength) return Double.NaN; // all values missing
-//        // entropy..Rows(levelsClasses, numLvls)
-//        // com decideixo el splitPoint? Hauria de ser un array. O podria ser a numLvls/2.
-//
-//        // copy the values of currDist[1] to dist[1]
-//        System.arraycopy(currDist[1], 0, dist[1], 0, currDist[1].length);
-//
-//        // TODO Here we should implement the total split, not the one vs all
-//        currDist[0] = levelsClasses[0];
-//        for (i = 0; i < data.numClasses; ++i) {
-//          currDist[1][i] -= levelsClasses[0][i];
-//        }
-//        double currVal = -SplitCriteria.giniConditionedOnRows(currDist);; // current value of splitting criterion
-//        double bestVal = currVal; // best value of splitting criterion
-//
-//        for ( int lvl = 1; lvl < numLvls; lvl++ ) {
-//
-//          currDist[0] = levelsClasses[lvl];
-//          for (i = 0; i < data.numClasses; ++i) {
-//            currDist[1][i] += levelsClasses[lvl-1][i];
-//            currDist[1][i] -= levelsClasses[lvl][i];
-//          }
-//
-//          // we filled the "dist" for the current level, find score and see if we like it
-//          currVal = -SplitCriteria.giniConditionedOnRows(currDist);
-//          if ( currVal > bestVal ) {
-//            bestVal = currVal;
-//            bestLvl = lvl;
-//          }
-//        }  // examine how well "splitting out" of individual levels works for us
-//
-//        // remember the contingency table from the best "lvl" and store it in "dist"
-//        for (i = 0; i < data.numClasses; ++i) {
-//          dist[0][i] = levelsClasses[bestLvl][i];
-//          dist[1][i] -= levelsClasses[bestLvl][i];
-//        }
-//      }
-//
-//      splitPoint = bestLvl; // signals we've found a sensible split point; by
-//      // definition, a split on a nominal attribute will always be sensible
-//
-//      // compute total weights for each branch (= props)
-//      // again, we reuse the tempProps of the tree not to create/destroy new arrays
-//      countsToFreqs(dist, props);  // props gets overwritten, previous contents don't matters
-//      // distribute *counts* of instances with missing values using the "props"
-//      for (i = 0; i < idxMissVal; ++i) {//for (i = 0; i < idxMissVal; ++i) {
-//        int inst = data.instancesMissVal[i];
-//        dist[ 0 ][ data.instClassValues[inst] ] += props[ 0 ] * data.instWeights[ inst ] ;
-//        dist[ 1 ][ data.instClassValues[inst] ] += props[ 1 ] * data.instWeights[ inst ] ;
-//      }
-//
-//    } else { // ============================================ numeric attributes
-      Arrays.fill( currDist[0], 0.0 );
+    Arrays.fill( currDistL, 0.0 );
 
-      // find how many missing values we have for this attribute (they're always at the end)
-      // update the distribution to the future second son
-      int lastNonmissingValIdx = endAt;
-      for (int j = endAt; j >= startAt; j-- ) {
-        int inst = sortedIndicesOfAtt[j];
-        if ( data.isValueMissing(attToExamine, sortedIndicesOfAtt[j]) ) {
-          currDist[1][data.instClassValues[inst]] -= data.instWeights[inst];
-          lastNonmissingValIdx = j-1;
-        } else {
-          break;
+    // find how many missing values we have for this attribute (they're always at the end)
+    // update the distribution to the future second son
+    int lastNonmissingValIdx = endAt;
+
+    // removed support for missing values
+    //for (int j = endAt; j >= startAt; j-- ) {
+    //  int inst = sortedIndicesOfAtt[j];
+    //  if ( data.isValueMissing(attToExamine, sortedIndicesOfAtt[j]) ) {
+    //    currDist[1][data.instClassValues[inst]] -= data.instWeights[inst];
+    //    lastNonmissingValIdx = j-1;
+    //  } else {
+    //    break;
+    //  }
+    //}
+    //if ( lastNonmissingValIdx < startAt ) {  // only missing values in this feature??
+    //  return Double.NaN; // we cannot split on it
+    //}
+
+    copyDist(currDistL, distL);
+    copyDist(currDistR, distR);
+
+
+    double currVal; // current value of splitting criterion
+    double bestVal = -Double.MAX_VALUE; // best value of splitting criterion
+    int bestI = 0; // the value of "i" BEFORE which the splitpoint is placed
+
+    float[] dataValsAtt = data.vals[attToExamine]; // values of examined attribute
+
+    for (i = startAt+1; i <= lastNonmissingValIdx; i++) {  // --- try all split points
+
+      int inst = sortedIndicesOfAtt[i];
+      int prevInst = sortedIndicesOfAtt[i-1];
+
+      int prevInstClass = data.instClassValues[ prevInst ];
+      double prevInstWeight = data.instWeights[ prevInst ];
+
+      currDistL[prevInstClass] += prevInstWeight;
+      currDistR[prevInstClass] -= prevInstWeight;
+
+      // do not allow splitting between two instances with the same class or with the same value
+      if (prevInstClass != data.instClassValues[inst] && dataValsAtt[inst] > dataValsAtt[prevInst] ) {
+        currVal = -SplitCriteria.giniConditionedOnRowsLR(currDistL, currDistR);
+        if (currVal > bestVal) {
+          bestVal = currVal;
+          bestI = i;
         }
       }
-      if ( lastNonmissingValIdx < startAt ) {  // only missing values in this feature??
-        return Double.NaN; // we cannot split on it
-      }
+    }                                             // ------- end trying split points
 
-      copyDists(currDist, dist);
+    /*
+     * Determine the best split point:
+     * bestI == 0 only if all instances had missing values, or there were
+     * less than 2 instances; splitPoint will remain set as -Double.MAX_VALUE.
+     * This is not really a useful split, as all of the instances are 'below'
+     * the split line, but at least it's formally correct. And the dists[]
+     * also has a default value set previously.
+     */
+    if ( bestI > startAt ) { // ...at least one valid splitpoint was found
 
-      double currVal = -Double.MAX_VALUE; // current value of splitting criterion
-      double bestVal = -Double.MAX_VALUE; // best value of splitting criterion
-      int bestI = 0; // the value of "i" BEFORE which the splitpoint is placed
+      int instJustBeforeSplit = sortedIndicesOfAtt[bestI-1];
+      int instJustAfterSplit = sortedIndicesOfAtt[bestI];
+      splitPoint = ( dataValsAtt[ instJustAfterSplit ]
+              + dataValsAtt[ instJustBeforeSplit ] ) / 2.0;
 
-      float[] dataValsAtt = data.vals[attToExamine]; // values of examined attribute
-
-      for (i = startAt+1; i <= lastNonmissingValIdx; i++) {  // --- try all split points
-
-        int inst = sortedIndicesOfAtt[i];
-        int prevInst = sortedIndicesOfAtt[i-1];
-
-        int prevInstClass = data.instClassValues[ prevInst ];
-        double prevInstWeight = data.instWeights[ prevInst ];
-
-        currDist[0][prevInstClass] += prevInstWeight;
-        currDist[1][prevInstClass] -= prevInstWeight;
-
-        // do not allow splitting between two instances with the same class or with the same value
-        if (prevInstClass != data.instClassValues[inst] && dataValsAtt[inst] > dataValsAtt[prevInst] ) {
-          currVal = -SplitCriteria.giniConditionedOnRows(currDist);
-          if (currVal > bestVal) {
-            bestVal = currVal;
-            bestI = i;
-          }
-        }
-      }                                             // ------- end trying split points
-
-      /*
-       * Determine the best split point:
-       * bestI == 0 only if all instances had missing values, or there were
-       * less than 2 instances; splitPoint will remain set as -Double.MAX_VALUE.
-       * This is not really a useful split, as all of the instances are 'below'
-       * the split line, but at least it's formally correct. And the dists[]
-       * also has a default value set previously.
-       */
-      if ( bestI > startAt ) { // ...at least one valid splitpoint was found
-
-        int instJustBeforeSplit = sortedIndicesOfAtt[bestI-1];
-        int instJustAfterSplit = sortedIndicesOfAtt[bestI];
-        splitPoint = ( dataValsAtt[ instJustAfterSplit ]
-                + dataValsAtt[ instJustBeforeSplit ] ) / 2.0;
-
-        // now make the correct dist[] (for the best split point) from the
-        // default dist[] (all instances in the second branch, by iterating
-        // through instances until we reach bestI, and then stop.
-        for ( int ii = startAt; ii < bestI; ii++ ) {
-          int inst = sortedIndicesOfAtt[ii];
-          int instClass = data.instClassValues[inst];
-          double instWeight = data.instWeights[inst];
-
-          dist[0][instClass] += instWeight;
-          dist[1][instClass] -= instWeight;
-        }
-      }
-
-      // compute total weights for each branch (= props)
-      // again, we reuse the tempProps of the tree not to create/destroy new arrays
-      countsToFreqs(dist, props);  // props gets overwritten, previous contents don't matters
-      // distribute *counts* of instances with missing values using the "props"
-      // start 1 after the non-missing val (if there is anything)
-      for (i = lastNonmissingValIdx + 1; i <= endAt; ++i) {
-        int inst = sortedIndicesOfAtt[i];
+      // now make the correct dist[] (for the best split point) from the
+      // default dist[] (all instances in the second branch, by iterating
+      // through instances until we reach bestI, and then stop.
+      for ( int ii = startAt; ii < bestI; ii++ ) {
+        int inst = sortedIndicesOfAtt[ii];
         int instClass = data.instClassValues[inst];
         double instWeight = data.instWeights[inst];
-        
-        dist[ 0 ][ instClass ] += props[ 0 ] * instWeight ;
-        dist[ 1 ][ instClass ] += props[ 1 ] * instWeight ;
+
+        distL[instClass] += instWeight;
+        distR[instClass] -= instWeight;
       }
-//    } // ================================================== nominal or numeric?
+    }
+
+    // compute total weights for each branch (= props)
+    // again, we reuse the tempProps of the tree not to create/destroy new arrays
+    countsToFreqsLR(distL, distR, props);  // props gets overwritten, previous contents don't matters
+    // distribute *counts* of instances with missing values using the "props"
+    // start 1 after the non-missing val (if there is anything)
+    // removed support for missing values
+    //for (i = lastNonmissingValIdx + 1; i <= endAt; ++i) {
+    //  int inst = sortedIndicesOfAtt[i];
+    //  int instClass = data.instClassValues[inst];
+    //  double instWeight = data.instWeights[inst];
+    //
+    //  dist[ 0 ][ instClass ] += props[ 0 ] * instWeight ;
+    //  dist[ 1 ][ instClass ] += props[ 1 ] * instWeight ;
+    //}
 
     // update the distribution after split and best split point
     // but ONLY if better than the previous one -- we need to recalculate the
     // entropy (because this changes after redistributing the instances with
     // missing values in the current attribute). Also, for categorical variables
     // it was not calculated before.
-    double curScore = -SplitCriteria.giniConditionedOnRows(dist);
+    double curScore = -SplitCriteria.giniConditionedOnRowsLR(distL, distR);
     if ( curScore > scoreBestAtt && splitPoint > -Double.MAX_VALUE ) {  // overwrite the "distsBestAtt" and "propsBestAtt" with current values
-      copyDists(dist, distsBestAtt);
-      System.arraycopy( props, 0, propsBestAtt, 0, props.length );
+
+      copyDist(distL, distsBestAtt[0]);
+      copyDist(distR, distsBestAtt[1]);
+
+      propsBestAtt[0] = props[0];
+      propsBestAtt[1] = props[1];
+
       return splitPoint;
     } else {
       // returns a NaN instead of the splitpoint if the attribute was not better than a previous one.
@@ -1022,19 +957,31 @@ class FasterForest2Tree
    * 
    * Overwrites the supplied "props"! <p>
    * 
-   * props.length must be == dist.length.
+   * props.length must be == dist.length == 2.
    */  
   protected static void countsToFreqs( double[][] dist, double[] props ) {
     
     for (int k = 0; k < props.length; k++) {
       props[k] = Utils.sum(dist[k]);
     }
+
     if (Utils.eq(Utils.sum(props), 0.0)) {
       Arrays.fill(props, 1.0 / (double) props.length);
     } else {
       FastRfUtils.normalize(props);
     }
 
+  }
+
+  protected static void countsToFreqsLR( double[] distL, double[] distR, double[] props ) {
+    props[0] = Utils.sum(distL);
+    props[1] = Utils.sum(distR);
+
+    if (Utils.eq(Utils.sum(props), 0.0)) {
+      Arrays.fill(props, 1.0 / (double) props.length);
+    } else {
+      FastRfUtils.normalize(props);
+    }
   }
 
   
@@ -1053,6 +1000,11 @@ class FasterForest2Tree
     }
   }
 
+  protected static void copyDist( double[] distFrom, double[] distTo ) {
+    for (int i = 0; i < distFrom.length; i++) {
+      distTo[i] = distFrom[i];
+    }
+  }
   
   
   /**

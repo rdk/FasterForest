@@ -88,6 +88,22 @@ public class SplitCriteria {
     return returnValue;
   }
 
+  public static double giniConditionedOnRowsLR(double[] distL, double[] distR) {
+    return giniRow(distL) + giniRow(distR);
+  }
+
+  public static double giniRow(double[] dist) {
+    double auxSum = 0;
+    double sumForBranch = 0;
+
+    for (double v : dist) {
+      auxSum += v * v;
+      sumForBranch += v;
+    }
+
+    return sumForBranch - auxSum / sumForBranch;
+  }
+
 
 //  public static double giniConditionedOnRows(double[][] matrix) {
 //

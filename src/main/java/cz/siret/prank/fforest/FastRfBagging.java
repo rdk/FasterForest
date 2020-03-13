@@ -90,13 +90,6 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
    */
   public void buildClassifier(Instances data, int numThreads, FasterForest motherForest) throws Exception {
 
-    // can classifier handle the vals?
-//    getCapabilities().testWithFail(data);
-
-    // remove instances with missing class
-//   data = new Instances(data);
-//    data.deleteWithMissingClass();
-
     if (!(m_Classifier instanceof FasterTreeTrainable))
       throw new IllegalArgumentException("The FastRfBagging class accepts " +
         "only FasterTreeTrainable as its base classifier.");

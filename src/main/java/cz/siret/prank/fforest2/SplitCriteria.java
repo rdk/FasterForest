@@ -48,9 +48,9 @@ public class SplitCriteria {
    * @param matrix the contingency table
    * @return the conditional entropy of the columns given the rows
    */
-  public static double entropyConditionedOnRows(double[][] matrix) {
+  public static double entropyConditionedOnRows(float[][] matrix) {
 
-    double returnValue = 0, sumForBranch;
+    float returnValue = 0, sumForBranch;
     //double total = 0;
 
     for (int branchNum = 0; branchNum < matrix.length; branchNum++) {
@@ -68,17 +68,17 @@ public class SplitCriteria {
          
   }
 
-  public static double giniConditionedOnRows(double[][] matrix) {
+  public static float giniConditionedOnRows(float[][] matrix) {
 
-    double returnValue = 0;
-    double auxSum;
-    double sumForBranch;
+    float returnValue = 0;
+    float auxSum;
+    float sumForBranch;
 
-    for (double[] branch : matrix) {
+    for (float[] branch : matrix) {
       auxSum = 0;
       sumForBranch = 0;
 
-      for (double v : branch) {
+      for (float v : branch) {
         auxSum += v * v;
         sumForBranch += v;
       }
@@ -88,15 +88,15 @@ public class SplitCriteria {
     return returnValue;
   }
 
-  public static double giniConditionedOnRowsLR(double[] distL, double[] distR) {
+  public static float giniConditionedOnRowsLR(float[] distL, float[] distR) {
     return giniRow(distL) + giniRow(distR);
   }
 
-  public static double giniRow(double[] dist) {
-    double auxSum = 0;
-    double sumForBranch = 0;
+  public static float giniRow(float[] dist) {
+    float auxSum = 0;
+    float sumForBranch = 0;
 
-    for (double v : dist) {
+    for (float v : dist) {
       auxSum += v * v;
       sumForBranch += v;
     }
@@ -134,11 +134,11 @@ public class SplitCriteria {
    * @param matrix the contingency table
    * @return the columns' entropy
    */
-  public static double entropyOverColumns(double[][] matrix) {
+  public static double entropyOverColumns(float[][] matrix) {
 
     //return ContingencyTables.entropyOverColumns(matrix);
 
-    double returnValue = 0, sumForColumn, total = 0;
+    float returnValue = 0, sumForColumn, total = 0;
 
     for (int j = 0; j < matrix[0].length; j++) {
       sumForColumn = 0;
@@ -154,9 +154,9 @@ public class SplitCriteria {
 
   }
 
-  public static double giniOverColumns(double[][] matrix) {
+  public static float giniOverColumns(float[][] matrix) {
 
-    double auxSum = 0, sumForColumn, total = 0;
+    float auxSum = 0, sumForColumn, total = 0;
 
     for (int j = 0; j < matrix[0].length; j++) {
       sumForColumn = matrix[0][j];
@@ -199,12 +199,12 @@ public class SplitCriteria {
   /**
    * Help method for computing entropy.
    */
-  public static double lnFunc(double num) {
+  public static float lnFunc(float num) {
 
     if (num <= 1e-6) {
       return 0;
     } else {
-      return num * fastLog2( (float) num );
+      return num * fastLog2( num );
       //return num * Math.log( num );
     }
     

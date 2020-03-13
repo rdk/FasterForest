@@ -81,7 +81,7 @@ public class DataCache {
   protected int[][] sortedIndices;
   
   /** Weights of instances. */
-  protected double[] instWeights;
+  protected float[] instWeights;
   
   /** Is instance in 'bag' created by bootstrap sampling. */
   protected boolean[] inBag = null;
@@ -146,18 +146,20 @@ public class DataCache {
     /* Array is indexed by attribute first, to speed access in RF splitting. */
     vals = new float[numAttributes][numInstances];
     for (int a = 0; a < numAttributes; a++) {
+      float[] valsA = vals[a];
       for (int i = 0; i < numInstances; i++) {
-        if (origData.instance(i).isMissing(a))
-          vals[a][i] = Float.MAX_VALUE;  // to make sure missing values go to the end
-        else
-          vals[a][i] = (float) origData.instance(i).value(a);  // deep copy
+        //if (origData.instance(i).isMissing(a))
+        //  vals[a][i] = Float.MAX_VALUE;  // to make sure missing values go to the end
+        //else
+
+        valsA[i] = (float) origData.instance(i).value(a);  // deep copy
       }
     }
 
-    instWeights = new double[numInstances];
+    instWeights = new float[numInstances];
     instClassValues = new int[numInstances];
     for (int i = 0; i < numInstances; i++) {
-      instWeights[i] = origData.instance(i).weight();
+      instWeights[i] = (float) origData.instance(i).weight();
       instClassValues[i] = (int) origData.instance(i).classValue();
     }
 
@@ -244,7 +246,7 @@ public class DataCache {
 
     result.reusableRandomGenerator = random;
     // Time ~ 160908 ns
-    double[] newWeights = new double[ numInstances ]; // all 0.0 by default
+    float[] newWeights = new float[ numInstances ]; // all 0.0 by default
     
     for ( int r = 0; r < bagSize; r++ ) {
       

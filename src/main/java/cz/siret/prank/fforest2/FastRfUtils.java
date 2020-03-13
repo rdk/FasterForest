@@ -43,6 +43,46 @@ import java.util.Random;
 public class FastRfUtils {
 
 
+  public static double[] toDoubles2(float[] a) {
+    double[] res = new double[2];
+    res[0] = a[0];
+    res[1] = a[1];
+    return res;
+  }
+
+  public static float sum(float[] doubles) {
+
+    float sum = 0;
+
+    for (float d : doubles) {
+      sum += d;
+    }
+    return sum;
+  }
+
+
+  /**
+   * Returns index of maximum element in a given array of doubles. First maximum
+   * is returned.
+   *
+   * @param doubles the array of doubles
+   * @return the index of the maximum element
+   */
+  public static/* @pure@ */int maxIndex(float[] doubles) {
+
+    double maximum = 0;
+    int maxIndex = 0;
+
+    for (int i = 0; i < doubles.length; i++) {
+      if ((i == 0) || (doubles[i] > maximum)) {
+        maxIndex = i;
+        maximum = doubles[i];
+      }
+    }
+
+    return maxIndex;
+  }
+
   /**
    * Sorts a given array of floats in ascending order and returns an
    * array of integers with the positions of the elements of the
@@ -141,9 +181,9 @@ public class FastRfUtils {
    *
    * @throws IllegalArgumentException if sum is NaN
    */
-  public static void normalize(double[] doubles) {
+  public static void normalize(float[] doubles) {
 
-    double sum = 0;
+    float sum = 0;
     for (int i = 0; i < doubles.length; i++) {
       sum += doubles[i];
     }
@@ -161,9 +201,9 @@ public class FastRfUtils {
    *
    * @throws IllegalArgumentException if sum is zero or NaN
    */
-  private static void normalize(double[] doubles, double sum) {
+  private static void normalize(float[] doubles, float sum) {
 
-    if (Double.isNaN(sum)) {
+    if (Float.isNaN(sum)) {
       throw new IllegalArgumentException("Can't normalize array. Sum is NaN.");
     }
     if (sum == 0) {

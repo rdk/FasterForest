@@ -77,13 +77,13 @@ class FasterForest2Tree
   protected int m_Attribute = -1;
 
   /** The split point. */
-  protected double m_SplitPoint = Double.NaN;
+  protected float m_SplitPoint = Float.NaN;
   
   /** The proportions of training instances going down each branch. */
-  protected double[] m_Prop = null;
+  protected float[] m_Prop = null;
 
   /** Class probabilities from the training vals. */
-  protected double[] m_ClassProbs = null;
+  protected float[] m_ClassProbs = null;
 
   /** The dataset used for training. */
   protected transient DataCache data = null;
@@ -94,7 +94,7 @@ class FasterForest2Tree
    * distributionSequentialAtt(). This is meant to avoid frequent 
    * creating/destroying of these arrays.
    */
-  protected transient double[] tempProps;  
+  protected transient float[] tempProps;
   
   /**
    * Since 0.99: holds references to temporary arrays re-used by all nodes
@@ -105,10 +105,10 @@ class FasterForest2Tree
   //protected transient double[][] tempDists;
   //protected transient double[][] tempDistsOther;
 
-  protected transient double[] tempDistsL;
-  protected transient double[] tempDistsR;
-  protected transient double[] tempDistsOtherL;
-  protected transient double[] tempDistsOtherR;
+  protected transient float[] tempDistsL;
+  protected transient float[] tempDistsR;
+  protected transient float[] tempDistsOtherL;
+  protected transient float[] tempDistsOtherR;
 
   /** Minimum number of instances for leaf. */
   protected static final int m_MinNum = 1;
@@ -133,12 +133,12 @@ class FasterForest2Tree
     this.m_MotherForest = motherForest;
     // 0.99: reference to these arrays will get passed down all nodes so the array can be re-used 
     // 0.99: this array is of size two as now all splits are binary - even categorical ones
-    this.tempProps = new double[2];
+    this.tempProps = new float[2];
 
-    this.tempDistsL = new double[numClasses];
-    this.tempDistsR = new double[numClasses];
-    this.tempDistsOtherL = new double[numClasses];
-    this.tempDistsOtherR = new double[numClasses];
+    this.tempDistsL = new float[numClasses];
+    this.tempDistsR = new float[numClasses];
+    this.tempDistsOtherL = new float[numClasses];
+    this.tempDistsOtherR = new float[numClasses];
 
     //this.tempDists = new double[2][];
     //this.tempDists[0] = new double[numClasses];
@@ -154,8 +154,8 @@ class FasterForest2Tree
    * @param data
    * @param tempProps
    */
-  public FasterForest2Tree(FasterForest2 motherForest, DataCache data, double[] tempDistsL, double[] tempDistsR,
-                           double[] tempDistsOtherL, double[] tempDistsOtherR, double[] tempProps) {
+  public FasterForest2Tree(FasterForest2 motherForest, DataCache data, float[] tempDistsL, float[] tempDistsR,
+                           float[] tempDistsOtherL, float[] tempDistsOtherR, float[] tempProps) {
     this.m_MotherForest = motherForest;
     this.data = data;
     // new in 0.99 - used in distributionSequentialAtt()
@@ -258,7 +258,7 @@ class FasterForest2Tree
     myInBag = data.inBag;
 
     // compute initial class counts
-    double[] classProbs = new double[data.numClasses];
+    float[] classProbs = new float[data.numClasses];
     for (int i = 0; i < data.numInstances; i++) {
       classProbs[data.instClassValues[i]] += data.instWeights[i];
     }
@@ -341,7 +341,7 @@ class FasterForest2Tree
 
     } else { // =============================================== node is a leaf
 
-      return m_ClassProbs;
+      return FastRfUtils.toDoubles2(m_ClassProbs);
 
     }
 
@@ -433,7 +433,7 @@ class FasterForest2Tree
       return returnedDist;
 //
     } else { // =============================================== node is a leaf
-      return m_ClassProbs;
+      return FastRfUtils.toDoubles2(m_ClassProbs);
     }
   }
 
@@ -512,7 +512,7 @@ class FasterForest2Tree
    * @param depth the current depth
    */
   protected void buildTree(int[][] sortedIndices, int startAt, int endAt,
-          double[] classProbs,
+          float[] classProbs,
           boolean debug,
           int[] attIndicesWindow,
           int depth)  {
@@ -523,7 +523,7 @@ class FasterForest2Tree
     // Check if node doesn't contain enough instances or is pure 
     // or maximum depth reached, make leaf.
     if ( ( sortedIndicesLength < Math.max(2, getMinNum()) )  // small
-            || Utils.eq( classProbs[Utils.maxIndex(classProbs)], Utils.sum(classProbs) )       // pure
+            || Utils.eq( classProbs[FastRfUtils.maxIndex(classProbs)], FastRfUtils.sum(classProbs) )       // pure
             || ( (getMaxDepth() > 0)  &&  (depth >= getMaxDepth()) )                           // deep
             ) {
       m_Attribute = -1;  // indicates leaf (no useful attribute to split on)
@@ -541,18 +541,18 @@ class FasterForest2Tree
     } // (leaf making)
     
     // new 0.99: all the following are for the best attribute only! they're updated while sequentially through the attributes
-    double val = Double.NaN; // value of splitting criterion
-    double[][] dist = new double[2][data.numClasses];  // class distributions (contingency table), indexed first by branch, then by class
-    double[] prop = new double[2]; // the branch sizes (as fraction)
-    double split = Double.NaN;  // split point
+    float val = Float.NaN; // value of splitting criterion
+    float[][] dist = new float[2][data.numClasses];  // class distributions (contingency table), indexed first by branch, then by class
+    float[] prop = new float[2]; // the branch sizes (as fraction)
+    float split = Float.NaN;  // split point
 
     // Investigate K random attributes
     int attIndex = 0;
     int windowSize = attIndicesWindow.length;
     int k = getKValue();
     boolean sensibleSplitFound = false;
-    double prior = Double.NaN;
-    double bestNegPosterior = -Double.MAX_VALUE;
+    float prior = Float.NaN;
+    float bestNegPosterior = -Float.MAX_VALUE;
     int bestAttIdx = -1;
 
     while ((windowSize > 0) && (k-- > 0 || !sensibleSplitFound ) ) {
@@ -567,24 +567,24 @@ class FasterForest2Tree
 
       // new: 0.99
 //      long t = System.nanoTime();
-      double candidateSplit = distributionSequentialAtt( prop, dist,
+      float candidateSplit = distributionSequentialAtt( prop, dist,
               bestNegPosterior, attIndex, 
               sortedIndices[attIndex], startAt, endAt, classProbs);
 //      Benchmark.updateTime(System.nanoTime() - t);
 
 
-      if ( Double.isNaN(candidateSplit) ) {
+      if ( Float.isNaN(candidateSplit) ) {
         continue;  // we did not improve over a previous attribute! "dist" is unchanged from before
       }
       // by this point we know we have an improvement, so we keep the new split point
       split = candidateSplit;
       bestAttIdx = attIndex;
       
-      if ( Double.isNaN(prior) ) { // needs to be computed only once per branch - is same for all attributes (even regardless of missing values)
+      if ( Float.isNaN(prior) ) { // needs to be computed only once per branch - is same for all attributes (even regardless of missing values)
         prior = SplitCriteria.giniOverColumns(dist);
       }
       
-      double negPosterior = - SplitCriteria.giniConditionedOnRows(dist);  // this is an updated dist
+      float negPosterior = - SplitCriteria.giniConditionedOnRows(dist);  // this is an updated dist
       if ( negPosterior > bestNegPosterior ) {
         bestNegPosterior = negPosterior;
       } else {
@@ -692,7 +692,7 @@ class FasterForest2Tree
    */
   protected int splitDataNew(
           int att, double splitPoint,
-          int[][] sortedIndices, int startAt, int endAt, double[][] dist ) {
+          int[][] sortedIndices, int startAt, int endAt, float[][] dist ) {
 
     Random random = data.reusableRandomGenerator;
     int j;
@@ -795,28 +795,28 @@ class FasterForest2Tree
    * @param startAt Index in sortedIndicesOfAtt; do not touch anything below this index.
    * @param endAt Index in sortedIndicesOfAtt; do not touch anything after this index.
    */
-  protected double distributionSequentialAtt( double[] propsBestAtt, double[][] distsBestAtt,
-                                              double scoreBestAtt, int attToExamine, int[] sortedIndicesOfAtt,
-                                              int startAt, int endAt, double[] classProbs ) {
+  protected float distributionSequentialAtt( float[] propsBestAtt, float[][] distsBestAtt,
+                                              float scoreBestAtt, int attToExamine, int[] sortedIndicesOfAtt,
+                                              int startAt, int endAt, float[] classProbs ) {
 
-    double splitPoint = -Double.MAX_VALUE;
+    float splitPoint = -Float.MAX_VALUE;
 
     // a contingency table of the split point vs class.
-    double[] distL = this.tempDistsL;
-    double[] distR = this.tempDistsR;
-    double[] currDistL = this.tempDistsOtherL;
-    double[] currDistR = this.tempDistsOtherR;
+    float[] distL = this.tempDistsL;
+    float[] distR = this.tempDistsR;
+    float[] currDistL = this.tempDistsOtherL;
+    float[] currDistR = this.tempDistsOtherR;
     // Copy the current class distribution
     for (int i = 0; i < classProbs.length; ++i) {
       currDistR[i] = classProbs[i];
     }
 
-    double[] props = this.tempProps;
+    float[] props = this.tempProps;
 
     int i;
     //int sortedIndicesOfAttLength = endAt - startAt + 1;
 
-    Arrays.fill( currDistL, 0.0 );
+    Arrays.fill( currDistL, 0.0f );
 
     // find how many missing values we have for this attribute (they're always at the end)
     // update the distribution to the future second son
@@ -840,8 +840,8 @@ class FasterForest2Tree
     copyDist(currDistR, distR);
 
 
-    double currVal; // current value of splitting criterion
-    double bestVal = -Double.MAX_VALUE; // best value of splitting criterion
+    float currVal; // current value of splitting criterion
+    float bestVal = -Float.MAX_VALUE; // best value of splitting criterion
     int bestI = 0; // the value of "i" BEFORE which the splitpoint is placed
 
     float[] dataValsAtt = data.vals[attToExamine]; // values of examined attribute
@@ -880,7 +880,7 @@ class FasterForest2Tree
       int instJustBeforeSplit = sortedIndicesOfAtt[bestI-1];
       int instJustAfterSplit = sortedIndicesOfAtt[bestI];
       splitPoint = ( dataValsAtt[ instJustAfterSplit ]
-              + dataValsAtt[ instJustBeforeSplit ] ) / 2.0;
+              + dataValsAtt[ instJustBeforeSplit ] ) / 2f;
 
       // now make the correct dist[] (for the best split point) from the
       // default dist[] (all instances in the second branch, by iterating
@@ -915,7 +915,7 @@ class FasterForest2Tree
     // entropy (because this changes after redistributing the instances with
     // missing values in the current attribute). Also, for categorical variables
     // it was not calculated before.
-    double curScore = -SplitCriteria.giniConditionedOnRowsLR(distL, distR);
+    float curScore = -SplitCriteria.giniConditionedOnRowsLR(distL, distR);
     if ( curScore > scoreBestAtt && splitPoint > -Double.MAX_VALUE ) {  // overwrite the "distsBestAtt" and "propsBestAtt" with current values
 
       copyDist(distL, distsBestAtt[0]);
@@ -927,7 +927,7 @@ class FasterForest2Tree
       return splitPoint;
     } else {
       // returns a NaN instead of the splitpoint if the attribute was not better than a previous one.
-      return Double.NaN;
+      return Float.NaN;
     }
   }
 
@@ -936,15 +936,15 @@ class FasterForest2Tree
    * instead of counts (stored in "dist"). Creates a new double[] which it 
    * returns.
    */  
-  protected static double[] countsToFreqs( double[][] dist ) {
-    
-    double[] props = new double[dist.length];
+  protected static float[] countsToFreqs( float[][] dist ) {
+
+    float[] props = new float[dist.length];
     
     for (int k = 0; k < props.length; k++) {
-      props[k] = Utils.sum(dist[k]);
+      props[k] = FastRfUtils.sum(dist[k]);
     }
-    if (Utils.eq(Utils.sum(props), 0)) {
-      Arrays.fill(props, 1.0 / (double) props.length);
+    if (Utils.eq(FastRfUtils.sum(props), 0)) {
+      Arrays.fill(props, 1.0f / (float) props.length);
     } else {
       FastRfUtils.normalize(props);
     }
@@ -959,26 +959,26 @@ class FasterForest2Tree
    * 
    * props.length must be == dist.length == 2.
    */  
-  protected static void countsToFreqs( double[][] dist, double[] props ) {
+  protected static void countsToFreqs( float[][] dist, float[] props ) {
     
     for (int k = 0; k < props.length; k++) {
-      props[k] = Utils.sum(dist[k]);
+      props[k] = FastRfUtils.sum(dist[k]);
     }
 
-    if (Utils.eq(Utils.sum(props), 0.0)) {
-      Arrays.fill(props, 1.0 / (double) props.length);
+    if (Utils.eq(FastRfUtils.sum(props), 0.0)) {
+      Arrays.fill(props, 1.0f / (float) props.length);
     } else {
       FastRfUtils.normalize(props);
     }
 
   }
 
-  protected static void countsToFreqsLR( double[] distL, double[] distR, double[] props ) {
-    props[0] = Utils.sum(distL);
-    props[1] = Utils.sum(distR);
+  protected static void countsToFreqsLR( float[] distL, float[] distR, float[] props ) {
+    props[0] = FastRfUtils.sum(distL);
+    props[1] = FastRfUtils.sum(distR);
 
-    if (Utils.eq(Utils.sum(props), 0.0)) {
-      Arrays.fill(props, 1.0 / (double) props.length);
+    if (Utils.eq(FastRfUtils.sum(props), 0.0)) {
+      Arrays.fill(props, 1.0f / (float) props.length);
     } else {
       FastRfUtils.normalize(props);
     }
@@ -1000,7 +1000,7 @@ class FasterForest2Tree
     }
   }
 
-  protected static void copyDist( double[] distFrom, double[] distTo ) {
+  protected static void copyDist( float[] distFrom, float[] distTo ) {
     for (int i = 0; i < distFrom.length; i++) {
       distTo[i] = distFrom[i];
     }
@@ -1045,7 +1045,7 @@ class FasterForest2Tree
       m_Successors = null;     // to allow gc
     }
 
-    double[] classProbs = (isLeaf) ? m_ClassProbs : null;
+    double[] classProbs = (isLeaf) ? FastRfUtils.toDoubles2(m_ClassProbs) : null;
 
     FasterTree res = new FasterTree(leftChild, rightChild, attribute, m_SplitPoint, classProbs);
 

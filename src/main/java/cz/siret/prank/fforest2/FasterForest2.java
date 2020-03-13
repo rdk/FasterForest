@@ -651,8 +651,8 @@ public class FasterForest2
     getCapabilities().testWithFail(data);
 
     // remove instances with missing class
-    data = new Instances(data);
-    data.deleteWithMissingClass();
+    // data = new Instances(data);
+    // data.deleteWithMissingClass();
 
     // only class? -> build ZeroR model
     if(data.numAttributes() == 1){

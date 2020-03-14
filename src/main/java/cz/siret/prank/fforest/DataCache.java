@@ -281,7 +281,7 @@ public class DataCache {
     return attNumVals[attIndex] > 0;
   }
   
-  
+
   /**
    * Returns a random number generator. The initial seed of the random
    * number generator depends on the given seed and the contents of the
@@ -299,6 +299,7 @@ public class DataCache {
             .hashCode();
     r.setSeed( dataSignature + seed );
     return r;
-    
+
   }
+
 }

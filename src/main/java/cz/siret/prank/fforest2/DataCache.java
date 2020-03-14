@@ -242,6 +242,7 @@ public class DataCache {
     }
     // makes shallow copy of vals matrix
     // makes a deep copy of each instance, but with a shallow copy of its attributes
+    // TODO create DataCacheView to avion allocating this and int[] inBag in the constructor
     DataCache result = new DataCache(this);
 
     result.reusableRandomGenerator = random;
@@ -337,25 +338,6 @@ public class DataCache {
     return attNumVals[attIndex] > 0;
   }
   
-  
-  ///**
-  // * Returns a random number generator. The initial seed of the random
-  // * number generator depends on the given seed and the contents of the
-  // * sortedIndices array (a single attribute is picked, its sortedIndices
-  // * converted to String and a hashcode computed).
-  // *
-  // * @param seed the given seed
-  // * @return the random number generator
-  // */
-  //public Random getRandomNumberGenerator(long seed) {
-  //
-  //  Random r = new Random(seed);
-  //  long dataSignature
-  //          = Arrays.toString( sortedIndices[ r.nextInt( numAttributes ) ] )
-  //          .hashCode();
-  //  r.setSeed( dataSignature + seed );
-  //  return r;
-  //}
 
   /**
    * Returns a random number generator. The initial seed of the random

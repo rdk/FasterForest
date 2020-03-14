@@ -37,6 +37,11 @@ public class FasterTreeTrainable extends FasterTree implements Runnable {
     protected transient double[][] tempDists;
     protected transient double[][] tempDistsOther;
 
+    /**
+     * created in run(), one for each root tree
+     */
+    private int[] tempIndices = null;
+
 
     /**
      * Get the value of K.
@@ -447,7 +452,7 @@ public class FasterTreeTrainable extends FasterTree implements Runnable {
         //int[] num; //= new int[2]; // how many instances go to each branch
 
         // we might possibly want to recycle this array for the whole tree
-        int[] tempArr = new int[ endAt-startAt+1 ];
+        int[] tempArr = tempIndices;
 
         //num = new int[2];
 
@@ -488,17 +493,19 @@ public class FasterTreeTrainable extends FasterTree implements Runnable {
             //  num[branch] = 0;
             //}
 
+            int[] sortedIndicesA = sortedIndices[a];
+
             // fill them with stuff by looking at goesWhere array
             for (j = startAt; j <= endAt; j++) {
 
-                int inst = sortedIndices[ a ][j];
+                int inst = sortedIndicesA[j];
                 int branch = whatGoesWhere[ inst ];  // can be only 0 or 1
 
                 if ( branch==0 ) {
-                    tempArr[ startAbove ] = sortedIndices[a][j];
+                    tempArr[ startAbove ] = inst;
                     startAbove++;
                 } else {
-                    tempArr[ startBelow ] = sortedIndices[a][j];
+                    tempArr[ startBelow ] = inst;
                     startBelow++;
                 }
 
@@ -508,7 +515,7 @@ public class FasterTreeTrainable extends FasterTree implements Runnable {
             }
 
             // now copy the tempArr into the sortedIndices, thus overwriting it
-            System.arraycopy( tempArr, 0, sortedIndices[a], startAt, endAt-startAt+1 );
+            System.arraycopy( tempArr, 0, sortedIndicesA, startAt, endAt-startAt+1 );
 
         } // xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx end for attr by attr
 
@@ -981,10 +988,11 @@ public class FasterTreeTrainable extends FasterTree implements Runnable {
      * function.
      */
     public void run() {
+        int n = data.numInstances;
 
         // compute initial class counts
         double[] classProbs = new double[data.numClasses];
-        for (int i = 0; i < data.numInstances; i++) {
+        for (int i = 0; i < n; i++) {
             classProbs[data.instClassValues[i]] += data.instWeights[i];
         }
 
@@ -1002,6 +1010,8 @@ public class FasterTreeTrainable extends FasterTree implements Runnable {
         // ... creating the sortedIndices
         data.whatGoesWhere = new int[ data.inBag.length ];
         data.createInBagSortedIndices();
+
+        tempIndices = new int[n];
 
         buildTree(data.sortedIndices, 0, data.sortedIndices[0].length-1,
             classProbs, attIndicesWindow, 0);

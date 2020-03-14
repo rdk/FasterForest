@@ -23,6 +23,8 @@
 
 package cz.siret.prank.fforest;
 
+import cz.siret.prank.utils.sort.IndexParallelSorter;
+import cz.siret.prank.utils.sort.IntComparator;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -69,6 +71,21 @@ public class FastRfUtils {
   }
 
   private static int[] sortIndicesParallel(float[] array) {
+    return sortIndicesParallel_ours(array);
+    //return sortIndicesParallel_jre();
+  }
+
+  private static int[] sortIndicesParallel_ours(float[] array) {
+    int[] index = newIndices(array.length);
+    IndexParallelSorter.parallelSortIndices(index, (i1, i2) -> Float.compare(array[i1], array[i2]));
+    return index;
+  }
+
+
+  /**
+   * needs to do conversion frm int[] to Integer[] and back
+   */
+  private static int[] sortIndicesParallel_jre(float[] array) {
     int n = array.length;
 
     Integer[] index = new Integer[n];

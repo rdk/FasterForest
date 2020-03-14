@@ -782,42 +782,49 @@ class FasterForest2Tree
     float splitPoint = -Float.MAX_VALUE;
 
     // a contingency table of the split point vs class.
-    float[] distL = this.tempDistsL;
-    float[] distR = this.tempDistsR;
-    float[] currDistL = this.tempDistsOtherL;
-    float[] currDistR = this.tempDistsOtherR;
-    // Copy the current class distribution
-    for (int i = 0; i < classProbs.length; ++i) {
-      currDistR[i] = classProbs[i];
-    }
+    //float[] distL = this.tempDistsL;
+    //float[] distR = this.tempDistsR;
+    //float[] currDistL = this.tempDistsOtherL;
+    //float[] currDistR = this.tempDistsOtherR;
 
-    float[] props = this.tempProps;
+    float distL0;
+    float distL1;
+    float distR0;
+    float distR1;
+    float currDistL0;
+    float currDistL1;
+    float currDistR0;
+    float currDistR1;
+
+    // Copy the current class distribution
+    //for (int i = 0; i < classProbs.length; ++i) {
+    //  currDistR[i] = classProbs[i];
+    //}
+    currDistR0 = classProbs[0];
+    currDistR1 = classProbs[1];
+
+    //float[] props = this.tempProps;
+    float props0;
+    float props1;
+
 
     int i;
     //int sortedIndicesOfAttLength = endAt - startAt + 1;
 
-    Arrays.fill( currDistL, 0.0f );
+    //Arrays.fill( currDistL, 0.0f );
+    currDistL0 = currDistL1 = 0f;
 
     // find how many missing values we have for this attribute (they're always at the end)
     // update the distribution to the future second son
     int lastNonmissingValIdx = endAt;
 
-    // removed support for missing values
-    //for (int j = endAt; j >= startAt; j-- ) {
-    //  int inst = sortedIndicesOfAtt[j];
-    //  if ( data.isValueMissing(attToExamine, sortedIndicesOfAtt[j]) ) {
-    //    currDist[1][data.instClassValues[inst]] -= data.instWeights[inst];
-    //    lastNonmissingValIdx = j-1;
-    //  } else {
-    //    break;
-    //  }
-    //}
-    //if ( lastNonmissingValIdx < startAt ) {  // only missing values in this feature??
-    //  return Double.NaN; // we cannot split on it
-    //}
 
-    copyDist(currDistL, distL);
-    copyDist(currDistR, distR);
+    //copyDist(currDistL, distL);
+    //copyDist(currDistR, distR);
+    distL0 = currDistL0;
+    distL1 = currDistL1;
+    distR0 = currDistR0;
+    distR1 = currDistR1;
 
 
     float currVal; // current value of splitting criterion
@@ -834,12 +841,19 @@ class FasterForest2Tree
       int prevInstClass = data.instClassValues[ prevInst ];
       double prevInstWeight = data.instWeights[ prevInst ];
 
-      currDistL[prevInstClass] += prevInstWeight;
-      currDistR[prevInstClass] -= prevInstWeight;
+      //currDistL[prevInstClass] += prevInstWeight;
+      //currDistR[prevInstClass] -= prevInstWeight;
+      if (prevInstClass==0) {
+        currDistL0 += prevInstWeight;
+        currDistR0 -= prevInstWeight;
+      } else {
+        currDistL1 += prevInstWeight;
+        currDistR1 -= prevInstWeight;
+      }
 
       // do not allow splitting between two instances with the same class or with the same value
       if (prevInstClass != data.instClassValues[inst] && dataValsAtt[inst] > dataValsAtt[prevInst] ) {
-        currVal = -SplitCriteria.giniConditionedOnRowsLR(currDistL, currDistR);
+        currVal = -SplitCriteria.giniConditionedOnRowsLR2(currDistL0, currDistL1, currDistR0, currDistR1);
         if (currVal > bestVal) {
           bestVal = currVal;
           bestI = i;
@@ -870,14 +884,33 @@ class FasterForest2Tree
         int instClass = data.instClassValues[inst];
         double instWeight = data.instWeights[inst];
 
-        distL[instClass] += instWeight;
-        distR[instClass] -= instWeight;
+        //distL[instClass] += instWeight;
+        //distR[instClass] -= instWeight;
+        if (instClass==0) {
+          distL0 += instWeight;
+          distR0 -= instWeight;
+        } else {
+          distL1 += instWeight;
+          distR1 -= instWeight;
+        }
       }
     }
 
     // compute total weights for each branch (= props)
     // again, we reuse the tempProps of the tree not to create/destroy new arrays
-    countsToFreqsLR(distL, distR, props);  // props gets overwritten, previous contents don't matters
+    //countsToFreqsLR2(distL0, distL1, distR0, distR1, props);  // props gets overwritten, previous contents don't matters
+    props0 = distL0 + distL1;
+    props1 = distR0 + distR1;
+
+    float propsSum = props0 + props1;
+    if (propsSum == 0.0f) {
+      props0 = 0.5f;
+      props1 = 0.5f;
+    } else {
+      props0 /= propsSum;
+      props1 /= propsSum;
+    }
+
     // distribute *counts* of instances with missing values using the "props"
     // start 1 after the non-missing val (if there is anything)
     // removed support for missing values
@@ -895,14 +928,18 @@ class FasterForest2Tree
     // entropy (because this changes after redistributing the instances with
     // missing values in the current attribute). Also, for categorical variables
     // it was not calculated before.
-    float curScore = -SplitCriteria.giniConditionedOnRowsLR(distL, distR);
+    float curScore = -SplitCriteria.giniConditionedOnRowsLR2(distL0, distL1, distR0, distR1);
     if ( curScore > scoreBestAtt && splitPoint > -Double.MAX_VALUE ) {  // overwrite the "distsBestAtt" and "propsBestAtt" with current values
 
-      copyDist(distL, distsBestAtt[0]);
-      copyDist(distR, distsBestAtt[1]);
+      //copyDist(distL, distsBestAtt[0]);
+      //copyDist(distR, distsBestAtt[1]);
+      distsBestAtt[0][0] = distL0;
+      distsBestAtt[0][1] = distL1;
+      distsBestAtt[1][0] = distR0;
+      distsBestAtt[1][1] = distR1;
 
-      propsBestAtt[0] = props[0];
-      propsBestAtt[1] = props[1];
+      propsBestAtt[0] = props0;
+      propsBestAtt[1] = props1;
 
       return splitPoint;
     } else {
@@ -961,6 +998,20 @@ class FasterForest2Tree
       Arrays.fill(props, 1.0f / (float) props.length);
     } else {
       FastRfUtils.normalize(props);
+    }
+  }
+
+  protected static void countsToFreqsLR2( float distL0, float distL1, float distR0, float distR1, float[] props ) {
+    props[0] = distL0 + distL1;
+    props[1] = distR0 + distR1;
+
+    float sum = props[0] + props[1];
+    if (sum == 0.0f) {
+      props[0] = 0.5f;
+      props[1] = 0.5f;
+    } else {
+      props[0] /= sum;
+      props[1] /= sum;
     }
   }
 

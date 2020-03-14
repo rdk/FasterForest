@@ -104,6 +104,18 @@ public class SplitCriteria {
     return sumForBranch - auxSum / sumForBranch;
   }
 
+  public static float giniConditionedOnRowsLR2(float distL0, float distL1, float distR0, float distR1) {
+    float auxSum = distL0*distL0 + distL1*distL1;
+    float sumForBranch = distL0 + distL1;
+    float res = sumForBranch - auxSum / sumForBranch;
+
+    auxSum = distR0*distR0 + distR1*distR1;
+    sumForBranch = distR0 + distR1;
+    res += sumForBranch - auxSum / sumForBranch;
+
+    return res;
+  }
+
 
 //  public static double giniConditionedOnRows(double[][] matrix) {
 //

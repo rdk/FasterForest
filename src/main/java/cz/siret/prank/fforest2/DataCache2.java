@@ -38,7 +38,7 @@ import java.util.Random;
  * @author Fran Supek (fran.supek[AT]irb.hr)
  * @author Jordi Pique (2.0 version)
  */
-public class DataCache {
+public class DataCache2 {
 
   /** Array with the indices of the selected attributes of the instances */
   protected int[] selectedAttributes;
@@ -47,11 +47,8 @@ public class DataCache {
    * a tree but they probably not be represented in sortedIndices */
   protected int[] attInSortedIndices;
 
-  /** Matrix that will be used for a tree to compute the distribution for a categorical feature */
-  //protected double[][] levelsClasses;
-
   /** The dataset, first indexed by attribute, then by instance. */
-  protected final float[][] vals;
+  public final float[][] vals;
 
   /**
    * Attribute description - holds a 0 for numeric attributes, and the number
@@ -124,7 +121,7 @@ public class DataCache {
    * @param origData
    * @param parallel use parallel processing in cache construction
    */
-  public DataCache(Instances origData, boolean parallel) throws Exception {
+  public DataCache2(Instances origData, boolean parallel) throws Exception {
 
     classIndex = origData.classIndex();
     numAttributes = origData.numAttributes();
@@ -197,7 +194,7 @@ public class DataCache {
    * 
    * @param origData
    */
-  public DataCache(DataCache origData) {
+  public DataCache2(DataCache2 origData) {
 
     classIndex = origData.classIndex;       // copied
     numAttributes = origData.numAttributes; // copied
@@ -236,14 +233,14 @@ public class DataCache {
    * @return a new DataCache - consult "DataCache(DataCache origData)"
    * constructor to see what's deep / shallow copied
    */
-  public DataCache resample(Random random, int nAttrVirtual) {
+  public DataCache2 resample(Random random, int nAttrVirtual) {
     if (nAttrVirtual >= numAttributes) {
       throw new ValueException("nAttr must be less than numAttributes");
     }
     // makes shallow copy of vals matrix
     // makes a deep copy of each instance, but with a shallow copy of its attributes
     // TODO create DataCacheView to avion allocating this and int[] inBag in the constructor
-    DataCache result = new DataCache(this);
+    DataCache2 result = new DataCache2(this);
 
     result.reusableRandomGenerator = random;
     // Time ~ 160908 ns

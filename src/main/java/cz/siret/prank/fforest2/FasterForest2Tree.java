@@ -52,7 +52,7 @@ import java.util.Random;
  */
 class FasterForest2Tree
         extends AbstractClassifier
-        implements OptionHandler, WeightedInstancesHandler, Runnable {
+        implements OptionHandler, WeightedInstancesHandler {
 
   /** for serialization */
   static final long serialVersionUID = 8934314652175299375L;
@@ -86,10 +86,10 @@ class FasterForest2Tree
   protected float[] m_ClassProbs = null;
 
   /** The dataset used for training. */
-  protected transient DataCache data = null;
+  protected transient DataCache2 data = null;
 
   /**
-   * created in run(), one for each root tree
+   * created in buildRootTree(), one for each root tree
    */
   private int[] tempIndices = null;
 
@@ -111,7 +111,7 @@ class FasterForest2Tree
    * @param motherForest
    * @param data
    */
-  public FasterForest2Tree(FasterForest2 motherForest, DataCache data, int seed) {
+  public FasterForest2Tree(FasterForest2 motherForest, DataCache2 data, int seed) {
     this.m_seed = seed;
     this.data = data;
     // all parameters for training will be looked up in the motherForest (maxDepth, k_Value)
@@ -203,10 +203,9 @@ class FasterForest2Tree
 
   /**
    * Builds classifier. Makes the initial call to the recursive buildTree 
-   * function. The name "run()" is used to support multithreading via an
-   * ExecutorService.
+   * function. 
    */
-  public void run() {
+  public void buildRootTree() {
     // makes a copy of data and selects randomly which are the inBag instances and the subset of features
     data = data.resample(data.getRandomNumberGenerator(m_seed), m_MotherForest.m_numFeatTree);
     // we need to save the inBag[] array in order to have access to it after this.data is destroyed
@@ -291,7 +290,7 @@ class FasterForest2Tree
    * @return the computed class distribution
    * @throws Exception if computation fails
    */
-  public double[] distributionForInstanceInDataCache(DataCache data, int instIdx) {
+  public double[] distributionForInstanceInDataCache(DataCache2 data, int instIdx) {
 
     if (m_Attribute != -1) {  // ============================ node is not a leaf
       double[] returnedDist = null;
@@ -962,6 +961,9 @@ class FasterForest2Tree
 
     return res;
   }
+
+
+  
 
   
 }

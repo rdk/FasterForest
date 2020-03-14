@@ -23,6 +23,7 @@
 
 package cz.siret.prank.fforest;
 
+import cz.siret.prank.fforest2.DataCache2;
 import weka.classifiers.Classifier;
 import weka.core.*;
 import weka.core.Capabilities.Capability;
@@ -235,6 +236,46 @@ public class FasterTree
 
     }
 
+  }
+
+
+
+  /**
+   * Computes class distribution of an instance using the FasterForest2Tree. <p>
+   *
+   * Works correctly only if the DataCache has the same attributes as the one
+   * used to train the FasterForest2Tree - but this function does not check for
+   * that! <p>
+   *
+   * Main use of this is to compute out-of-bag error (also when finding feature
+   * importances).
+   *
+   * @param instIdx the index of the instance to compute the distribution for
+   * @return the computed class distribution
+   */
+  public final double[] distributionForInstanceInDataCache2(DataCache2 data, int instIdx) {
+
+    if (m_Attribute == -1) {  // ============================ node is a leaf
+
+      return m_ClassProbs;
+
+    } else { // =============================================== node is not a leaf
+
+      FasterTree node = this;
+
+      while (true) {
+        if (data.vals[m_Attribute][instIdx] < node.m_SplitPoint) {
+          node = node.sucessorLeft;
+        } else {
+          node = node.sucessorRight;
+        }
+
+        if (node.m_Attribute == -1) {  // node is a leaf
+          return node.m_ClassProbs;
+        }
+      }
+
+    }
 
   }
 

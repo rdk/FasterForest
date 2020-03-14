@@ -42,13 +42,13 @@ public class VotesCollectorDataCache implements Callable<Double>{
 
   protected final Classifier[] m_Classifiers;
   protected final int instanceIdx;
-  protected final DataCache data;
+  protected final DataCache2 data;
   /** NumTrees x numInstances indicating out-of-bag instances. */
   protected final boolean[][] inBag;
 
 
   public VotesCollectorDataCache(Classifier[] m_Classifiers, int instanceIdx,
-                        DataCache data, boolean[][] inBag){
+                                 DataCache2 data, boolean[][] inBag){
     this.m_Classifiers = m_Classifiers;
     this.instanceIdx = instanceIdx;
     this.data = data;

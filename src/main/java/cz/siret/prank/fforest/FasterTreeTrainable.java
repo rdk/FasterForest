@@ -493,7 +493,7 @@ public class FasterTreeTrainable extends FasterTree implements Runnable {
             // the first index of the sortedIndices in the above branch, and the first index in the below
             int startAbove = 0, startBelow = num0; // always only 2 sub-branches, remember where second starts
 
-            Arrays.fill(tempArr, 0);
+            Arrays.fill(tempArr, 0, endAt-startAt+1, 0);
 
             //for (int branch = 0; branch < num.length; branch++) {
             //  num[branch] = 0;

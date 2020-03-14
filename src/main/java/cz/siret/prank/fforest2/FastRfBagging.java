@@ -24,7 +24,6 @@
 package cz.siret.prank.fforest2;
 
 import cz.siret.prank.fforest.FasterTree;
-import cz.siret.prank.fforest.FasterTreeTrainable;
 import weka.classifiers.Classifier;
 import weka.classifiers.RandomizableIteratedSingleClassifierEnhancer;
 import weka.core.*;
@@ -72,7 +71,7 @@ import java.util.concurrent.*;
 class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
   implements WeightedInstancesHandler, AdditionalMeasureProducer {
 
-  protected DataCache myData;
+  protected DataCache2 myData;
   protected boolean[][] inBag;
   protected Random random;
   protected ExecutorService threadPool;
@@ -120,42 +119,50 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
     boolean parallel = motherForest.m_NumThreads != 1;
 
     // sorting is performed inside this constructor
-    myData = new DataCache(data, parallel);
+    myData = new DataCache2(data, parallel);
     int bagSize = data.numInstances() * m_BagSizePercent / 100;
     myData.bagSize = bagSize; // no m'acaba d'agradar aquesta assignacio
     random = new Random(m_Seed);
     inBag = new boolean[m_Classifiers.length][];
 
     // thread management
-    threadPool = Executors.newFixedThreadPool(numThreads > 0 ? numThreads : Runtime.getRuntime().availableProcessors());
-    List<Future<?>> futures = new ArrayList<Future<?>>(m_Classifiers.length);
+    int threads = numThreads > 0 ? numThreads : Runtime.getRuntime().availableProcessors();
+    threadPool = Executors.newFixedThreadPool(threads);
+    List<Future<FasterTree>> futures = new ArrayList<>(m_Classifiers.length);
 
     try {
-      for (int treeIdx = 0; treeIdx < m_Classifiers.length; treeIdx++) {
+      for (int i = 0; i < m_Classifiers.length; i++) {
+        final int treeIdx = i;
 
-        int seed = random.nextInt();
-        FasterForest2Tree curTree = new FasterForest2Tree(motherForest, myData, seed);
-        m_Classifiers[treeIdx] = curTree;
+        final int seed = random.nextInt();
 
-        Future<?> future = threadPool.submit(curTree);
+        Future<FasterTree> future = threadPool.submit(() -> {
+          // built tree and convert to lightweight version
+
+          FasterForest2Tree curTree = new FasterForest2Tree(motherForest, myData, seed);
+          curTree.buildRootTree();
+
+          if (getCalcOutOfBag() || getComputeImportances()) {
+            inBag[treeIdx] = curTree.myInBag; // large fiels, remember only if we need it
+          }
+
+          return curTree.toLightVersion();
+        });
+
         futures.add(future);
       }
 
       // make sure all trees have been trained before proceeding
       for (int treeIdx = 0; treeIdx < m_Classifiers.length; treeIdx++) {
-        futures.get(treeIdx).get();
-        inBag[treeIdx] = ((FasterForest2Tree) m_Classifiers[treeIdx]).myInBag;
+        m_Classifiers[treeIdx] = futures.get(treeIdx).get();
       }
 
-      // calc OOB error?
       if (getCalcOutOfBag() || getComputeImportances()) {
-        //m_OutOfBagError = computeOOBError(data, inBag, threadPool);
-        m_OutOfBagError = computeOOBError( myData, inBag, threadPool, m_Classifiers);
+        m_OutOfBagError = computeOOBError(myData, inBag, threadPool, m_Classifiers);
       } else {
         m_OutOfBagError = 0;
       }
 
-      //calc feature importances
       if (getComputeImportances()) {
         computeImportances();
       }
@@ -173,28 +180,6 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
         computeInteractionsNew();
       }
 
-
-
-      // convert to light version
-      List<Callable<FasterTree>> tasks = new ArrayList<>(m_Classifiers.length);
-      for (Classifier tree : m_Classifiers) {
-        tasks.add(((FasterForest2Tree) tree)::toLightVersion);
-      }
-      m_Classifiers = threadPool.invokeAll(tasks).stream().map(
-          f -> {
-            try {
-              return f.get();
-            } catch (Exception e) {
-              throw new RuntimeException(e);
-            }
-          }
-      ).toArray(FasterTree[]::new);
-      //
-
-
-
-
-
       threadPool.shutdown();
 
     }
@@ -202,6 +187,7 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
       threadPool.shutdownNow();
     }
   }
+
 
   /**
    * Compute the out-of-bag error for a set of instances.
@@ -256,12 +242,10 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
    *
    * @return the oob error
    */
-  private double computeOOBError(DataCache data, boolean[][] inBag, ExecutorService threadPool,
+  private double computeOOBError(DataCache2 data, boolean[][] inBag, ExecutorService threadPool,
                                  Classifier[] classifiers) throws InterruptedException, ExecutionException {
 
-
-    List<Future<Double>> votes =
-      new ArrayList<Future<Double>>(data.numInstances);
+    List<Future<Double>> votes = new ArrayList<>(data.numInstances);
     for (int i = 0; i < data.numInstances; i++) {
       VotesCollectorDataCache aCollector = new VotesCollectorDataCache(classifiers, i, data, inBag);
       votes.add(threadPool.submit(aCollector));

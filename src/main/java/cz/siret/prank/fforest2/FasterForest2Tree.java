@@ -94,7 +94,7 @@ class FasterForest2Tree
    * distributionSequentialAtt(). This is meant to avoid frequent 
    * creating/destroying of these arrays.
    */
-  protected transient float[] tempProps;
+  //protected transient float[] tempProps;
   
   /**
    * Since 0.99: holds references to temporary arrays re-used by all nodes
@@ -105,13 +105,15 @@ class FasterForest2Tree
   //protected transient double[][] tempDists;
   //protected transient double[][] tempDistsOther;
 
-  protected transient float[] tempDistsL;
-  protected transient float[] tempDistsR;
-  protected transient float[] tempDistsOtherL;
-  protected transient float[] tempDistsOtherR;
+  //protected transient float[] tempDistsL;
+  //protected transient float[] tempDistsR;
+  //protected transient float[] tempDistsOtherL;
+  //protected transient float[] tempDistsOtherR;
 
   /** Minimum number of instances for leaf. */
   protected static final int m_MinNum = 1;
+
+  protected static final int m_MinInstancesForSplit = Math.max(2, m_MinNum);
 
   /**
    * This constructor should not be used. Instead, use the next two constructors
@@ -126,19 +128,19 @@ class FasterForest2Tree
    * @param data
    */
   public FasterForest2Tree(FasterForest2 motherForest, DataCache data, int seed) {
-    int numClasses = data.numClasses;
+    //int numClasses = data.numClasses;
     this.m_seed = seed;
     this.data = data;
     // all parameters for training will be looked up in the motherForest (maxDepth, k_Value)
     this.m_MotherForest = motherForest;
     // 0.99: reference to these arrays will get passed down all nodes so the array can be re-used 
     // 0.99: this array is of size two as now all splits are binary - even categorical ones
-    this.tempProps = new float[2];
+    //this.tempProps = new float[2];
 
-    this.tempDistsL = new float[numClasses];
-    this.tempDistsR = new float[numClasses];
-    this.tempDistsOtherL = new float[numClasses];
-    this.tempDistsOtherR = new float[numClasses];
+    //this.tempDistsL = new float[numClasses];
+    //this.tempDistsR = new float[numClasses];
+    //this.tempDistsOtherL = new float[numClasses];
+    //this.tempDistsOtherR = new float[numClasses];
 
     //this.tempDists = new double[2][];
     //this.tempDists[0] = new double[numClasses];
@@ -152,22 +154,21 @@ class FasterForest2Tree
    * Constructor for all the nodes except the root
    * @param motherForest
    * @param data
-   * @param tempProps
    */
-  public FasterForest2Tree(FasterForest2 motherForest, DataCache data, float[] tempDistsL, float[] tempDistsR,
-                           float[] tempDistsOtherL, float[] tempDistsOtherR, float[] tempProps) {
+  public FasterForest2Tree(FasterForest2 motherForest, DataCache data /*, float[] tempDistsL, float[] tempDistsR,
+                           float[] tempDistsOtherL, float[] tempDistsOtherR, float[] tempProps*/) {
     this.m_MotherForest = motherForest;
     this.data = data;
     // new in 0.99 - used in distributionSequentialAtt()
     //this.tempDists = tempDists;
     //this.tempDistsOther = tempDistsOther;
 
-    this.tempDistsL = tempDistsL;
-    this.tempDistsR = tempDistsR;
-    this.tempDistsOtherL = tempDistsOtherL;
-    this.tempDistsOtherR = tempDistsOtherR;
+    //this.tempDistsL = tempDistsL;
+    //this.tempDistsR = tempDistsR;
+    //this.tempDistsOtherL = tempDistsOtherL;
+    //this.tempDistsOtherR = tempDistsOtherR;
 
-    this.tempProps = tempProps;
+    //this.tempProps = tempProps;
   }
 
   /**
@@ -273,7 +274,7 @@ class FasterForest2Tree
     data.createInBagSortedIndicesNew();
     // first recursive call
     buildTree(data.sortedIndices, 0, data.numInBag - 1,
-            classProbs, m_Debug, attIndicesWindow, 0);
+            classProbs, attIndicesWindow, 0);
 
     this.data = null;
 //    int nNodes = countNodes();
@@ -507,34 +508,34 @@ class FasterForest2Tree
    * @param startAt First index of the instance to consider in this split; inclusive.
    * @param endAt Last index of the instance to consider; inclusive.
    * @param classProbs the class distribution
-   * @param debug whether debugging is on
    * @param attIndicesWindow the attribute window to choose attributes from
    * @param depth the current depth
    */
   protected void buildTree(int[][] sortedIndices, int startAt, int endAt,
           float[] classProbs,
-          boolean debug,
           int[] attIndicesWindow,
           int depth)  {
 
-    m_Debug = debug;
     int sortedIndicesLength = endAt - startAt + 1;
 
     // Check if node doesn't contain enough instances or is pure 
     // or maximum depth reached, make leaf.
-    if ( ( sortedIndicesLength < Math.max(2, getMinNum()) )  // small
-            || Utils.eq( classProbs[FastRfUtils.maxIndex(classProbs)], FastRfUtils.sum(classProbs) )       // pure
-            || ( (getMaxDepth() > 0)  &&  (depth >= getMaxDepth()) )                           // deep
+    if ( ( sortedIndicesLength < m_MinInstancesForSplit )  // small
+            || FastRfUtils.isPureDist(classProbs[0], classProbs[1])       // pure
+            || ( depth >= m_MotherForest.m_MaxDepth && m_MotherForest.m_MaxDepth > 0 )                           // deep
             ) {
       m_Attribute = -1;  // indicates leaf (no useful attribute to split on)
       
       // normalize by dividing with the number of instances (as of ver. 0.97)
       // unless leaf is empty - this can happen with splits on nominal
       // attributes with more than two categories
-      if ( sortedIndicesLength != 0 )
-        for (int c = 0; c < classProbs.length; c++) {
-          classProbs[c] /= sortedIndicesLength;
-        } 
+      if ( sortedIndicesLength != 0 ) {
+        //for (int c = 0; c < classProbs.length; c++) {
+        //  classProbs[c] /= sortedIndicesLength;
+        //}
+        classProbs[0] /= sortedIndicesLength;
+        classProbs[1] /= sortedIndicesLength;
+      }
       m_ClassProbs = classProbs;
       this.data = null;
       return;
@@ -555,15 +556,17 @@ class FasterForest2Tree
     float bestNegPosterior = -Float.MAX_VALUE;
     int bestAttIdx = -1;
 
+    Random random = data.reusableRandomGenerator;
+
     while ((windowSize > 0) && (k-- > 0 || !sensibleSplitFound ) ) {
 
-      int chosenIndex = data.reusableRandomGenerator.nextInt(windowSize);
+      int chosenIndex = random.nextInt(windowSize);
       attIndex = attIndicesWindow[chosenIndex];
 
       // shift chosen attIndex out of window
-      attIndicesWindow[chosenIndex] = attIndicesWindow[windowSize - 1];
-      attIndicesWindow[windowSize - 1] = attIndex;
       windowSize--;
+      attIndicesWindow[chosenIndex] = attIndicesWindow[windowSize];
+      attIndicesWindow[windowSize] = attIndex;
 
       // new: 0.99
 //      long t = System.nanoTime();
@@ -607,12 +610,12 @@ class FasterForest2Tree
       prop = null; // can be GC'ed
 
 //      long t = System.nanoTime();
-      int belowTheSplitStartsAt = splitDataNew(  m_Attribute, m_SplitPoint, sortedIndices, startAt, endAt, dist );
+      int belowTheSplitStartsAt = splitDataNew(m_Attribute, m_SplitPoint, sortedIndices, startAt, endAt, dist);
 //      Benchmark.updateTime(System.nanoTime() - t);
 
-      m_Successors = new FasterForest2Tree[dist.length];  // dist.length now always == 2
-      for (int i = 0; i < dist.length; i++) {
-        FasterForest2Tree auxTree = new FasterForest2Tree(m_MotherForest, data, tempDistsL, tempDistsR, tempDistsOtherL, tempDistsOtherR, tempProps);
+      m_Successors = new FasterForest2Tree[2];  // dist.length now always == 2
+      for (int i = 0; i < 2; i++) {
+        FasterForest2Tree auxTree = new FasterForest2Tree(m_MotherForest, data /*, tempDistsL, tempDistsR, tempDistsOtherL, tempDistsOtherR, tempProps*/);
 
         // check if we're about to make an empty branch - this can happen with
         // nominal attributes with more than two categories (as of ver. 0.98)
@@ -621,16 +624,19 @@ class FasterForest2Tree
           // the current, before-split class probabilities, properly normalized
           // by the number of instances (as we won't be able to normalize
           // after the split)
-          for (int j = 0; j < dist[i].length; j++)
-            dist[i][j] = classProbs[j] / sortedIndicesLength;
+          //for (int j = 0; j < dist[i].length; j++)
+          //  dist[i][j] = classProbs[j] / sortedIndicesLength;
+
+          dist[i][0] = classProbs[0] / sortedIndicesLength;
+          dist[i][1] = classProbs[1] / sortedIndicesLength;
         }
 
         if (i == 0) {   // before split
           auxTree.buildTree(sortedIndices, startAt, belowTheSplitStartsAt - 1,
-                  dist[i], m_Debug, attIndicesWindow, depth + 1);
+                  dist[i], attIndicesWindow, depth + 1);
         } else {  // after split
           auxTree.buildTree(sortedIndices, belowTheSplitStartsAt, endAt,
-                  dist[i], m_Debug, attIndicesWindow, depth + 1);
+                  dist[i], attIndicesWindow, depth + 1);
         }
 
         dist[i] = null;
@@ -644,10 +650,13 @@ class FasterForest2Tree
 
       // normalize by dividing with the number of instances (as of ver. 0.97)
       // unless leaf is empty - this can happen with splits on nominal attributes
-      if ( sortedIndicesLength != 0 )
-        for (int c = 0; c < classProbs.length; c++) {
-          classProbs[c] /= sortedIndicesLength;
-        }
+      if ( sortedIndicesLength != 0 ) {
+        //for (int c = 0; c < classProbs.length; c++) {
+        //  classProbs[c] /= sortedIndicesLength;
+        //}
+        classProbs[0] /= sortedIndicesLength;
+        classProbs[1] /= sortedIndicesLength;
+      }
       m_ClassProbs = classProbs;
     }
     this.data = null; // dereference all pointers so data can be GC'd after tree is built

@@ -42,6 +42,24 @@ import java.util.Random;
  */
 public class FastRfUtils {
 
+  private static final float FLOAT_EPSILON = 0.00001f;
+
+  /**
+   * Tests if a is equal to b.
+   *
+   * @param a a double
+   * @param b a double
+   */
+  public static boolean eq(float a, float b) {
+    return Math.abs(a - b) < FLOAT_EPSILON;
+    //return (a == b) || ((a - b < FLOAT_EPSILON) && (b - a < FLOAT_EPSILON));
+  }
+
+  public static boolean isPureDist(float class0, float class1) {
+
+    return Math.abs(class0 - 0.0f) < FLOAT_EPSILON || Math.abs(class1 - 0.0f) < FLOAT_EPSILON;
+  }
+
 
   public static double[] toDoubles2(float[] a) {
     double[] res = new double[2];

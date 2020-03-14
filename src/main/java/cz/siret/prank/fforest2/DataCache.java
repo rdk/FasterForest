@@ -301,11 +301,6 @@ public class DataCache {
     for (int a : selectedAttributes) {
       // we will add, at most, only one categorical feature in sortedIndices
 
-      //if (isAttrNominal(a)) {
-      //  maxLvl = Math.max(maxLvl, attNumVals[a]);
-      //  if (!(allCategorical && a == selectedAttributes[0])) continue;
-      //}
-
       attInSortedIndices[idx] = a;
       ++idx;
 
@@ -322,7 +317,6 @@ public class DataCache {
       }
     }
     this.sortedIndices = newSortedIndices;
-    // this.levelsClasses = new double[maxLvl][numClasses];
   }
 
 

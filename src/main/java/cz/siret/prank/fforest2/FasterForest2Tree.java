@@ -93,28 +93,6 @@ class FasterForest2Tree
    */
   private int[] tempIndices = null;
 
-  
-  /**
-   * Since 0.99: holds references to temporary arrays re-used by all nodes
-   * in the tree, used while calculating the "props" for various attributes in
-   * distributionSequentialAtt(). This is meant to avoid frequent 
-   * creating/destroying of these arrays.
-   */
-  //protected transient float[] tempProps;
-  
-  /**
-   * Since 0.99: holds references to temporary arrays re-used by all nodes
-   * in the tree, used while calculating the "dists" for various attributes
-   * in distributionSequentialAtt(). This is meant to avoid frequent 
-   * creating/destroying of these arrays.
-   */
-  //protected transient double[][] tempDists;
-  //protected transient double[][] tempDistsOther;
-
-  //protected transient float[] tempDistsL;
-  //protected transient float[] tempDistsR;
-  //protected transient float[] tempDistsOtherL;
-  //protected transient float[] tempDistsOtherR;
 
   /** Minimum number of instances for leaf. */
   protected static final int m_MinNum = 1;
@@ -283,41 +261,11 @@ class FasterForest2Tree
 
     if (m_Attribute != -1) {  // ============================ node is not a leaf
 
-//      if (instance.isMissing(m_Attribute)) {  // ---------------- missing value
-//
-//        returnedDist = new double[m_MotherForest.m_Info.numClasses()];
-//        // split instance up
-//        for (int i = 0; i < m_Successors.length; i++) {
-//          double[] help = m_Successors[i].distributionForInstance(instance);
-//          if (help != null) {
-//            for (int j = 0; j < help.length; j++) {
-//              returnedDist[j] += m_Prop[i] * help[j];
-//            }
-//          }
-//        }
-//
-//      } else if (m_MotherForest.m_Info
-//              .attribute(m_Attribute).isNominal()) { // ------ nominal
-//
-//        //returnedDist = m_Successors[(int) instance.value(m_Attribute)]
-//        //        .distributionForInstance(instance);
-//
-//        // 0.99: new - binary splits (also) for nominal attributes
-//        if ( instance.value(m_Attribute) == m_SplitPoint ) {
-//          returnedDist = m_Successors[0].distributionForInstance(instance);
-//        } else {
-//          returnedDist = m_Successors[1].distributionForInstance(instance);
-//        }
-//
-//
-//      } else { // ------------------------------------------ numeric attributes
-
         if (instance.value(m_Attribute) < m_SplitPoint) {
           returnedDist = m_Successors[0].distributionForInstance(instance);
         } else {
           returnedDist = m_Successors[1].distributionForInstance(instance);
         }
-//      }
 
       return returnedDist;
 
@@ -328,42 +276,6 @@ class FasterForest2Tree
     }
 
   }
-
-
-//  /**
-//   * Computes class distribution of an instance using the FasterForest2Tree. <p>
-//   *
-//   * Works correctly only if the DataCache has the same attributes as the one
-//   * used to train the FasterForest2Tree - but this function does not check for
-//   * that! <p>
-//   *
-//   * Main use of this is to compute out-of-bag error (also when finding feature
-//   * importances).
-//   *
-//   * @param instIdx the index of the instance to compute the distribution for
-//   * @return the computed class distribution
-//   * @throws Exception if computation fails
-//   */
-//  public double[] distributionForInstanceInDataCache(DataCache data, int instIdx) {
-//    FasterForest2Tree frt = this;
-//    while (frt.m_Attribute > -1) {
-//      // 0.99: new - binary splits (also) for nominal attributes
-//      if (data.isAttrNominal(frt.m_Attribute)) {
-//        if ( data.vals[frt.m_Attribute][instIdx] == frt.m_SplitPoint ) {
-//          frt = (FasterForest2Tree) frt.m_Successors[0];
-//        } else {
-//          frt = (FasterForest2Tree) frt.m_Successors[1];
-//        }
-//      } else {
-//        if (data.vals[frt.m_Attribute][instIdx] < frt.m_SplitPoint) {
-//          frt = (FasterForest2Tree) frt.m_Successors[0];
-//        } else {
-//          frt = (FasterForest2Tree) frt.m_Successors[1];
-//        }
-//      }
-//    }
-//    return frt.m_ClassProbs;
-//  }
 
   /**
    * Computes class distribution of an instance using the FasterForest2Tree. <p>
@@ -383,37 +295,12 @@ class FasterForest2Tree
 
     if (m_Attribute != -1) {  // ============================ node is not a leaf
       double[] returnedDist = null;
-
-//      if ( data.isValueMissing(m_Attribute, instIdx) ) {  // ---------------- missing value
-//
-//        returnedDist = new double[m_MotherForest.m_Info.numClasses()];
-//        // split instance up
-//        for (int i = 0; i < m_Successors.length; i++) {
-//          double[] help = m_Successors[i].distributionForInstanceInDataCache(data, instIdx);
-//          if (help != null) {
-//            for (int j = 0; j < help.length; j++) {
-//              returnedDist[j] += m_Prop[i] * help[j];
-//            }
-//          }
-//        }
-//
-//      } else if ( data.isAttrNominal(m_Attribute) ) { // ------ nominal
-//        // 0.99: new - binary splits (also) for nominal attributes
-//        if ( data.vals[m_Attribute][instIdx] == m_SplitPoint ) {
-//          returnedDist = m_Successors[0].distributionForInstanceInDataCache(data, instIdx);
-//        } else {
-//          returnedDist = m_Successors[1].distributionForInstanceInDataCache(data, instIdx);
-//        }
-//
-//      } else { // ------------------------------------------ numeric attributes
         if ( data.vals[m_Attribute][instIdx] < m_SplitPoint) {
           returnedDist = m_Successors[0].distributionForInstanceInDataCache(data, instIdx);
         } else {
           returnedDist = m_Successors[1].distributionForInstanceInDataCache(data, instIdx);
         }
-//      }
       return returnedDist;
-//
     } else { // =============================================== node is a leaf
       return FastRfUtils.toDoubles2(m_ClassProbs);
     }

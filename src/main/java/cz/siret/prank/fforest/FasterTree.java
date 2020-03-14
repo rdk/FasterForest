@@ -250,10 +250,11 @@ public class FasterTree
    * Main use of this is to compute out-of-bag error (also when finding feature
    * importances).
    *
+   * @param dataValues first indexed by attribute then instance
    * @param instIdx the index of the instance to compute the distribution for
    * @return the computed class distribution
    */
-  public final double[] distributionForInstanceInDataCache2(DataCache2 data, int instIdx) {
+  public final double[] distributionForInstanceInDataCache(float[][] dataValues, int instIdx) {
 
     if (m_Attribute == -1) {  // ============================ node is a leaf
 
@@ -264,7 +265,7 @@ public class FasterTree
       FasterTree node = this;
 
       while (true) {
-        if (data.vals[m_Attribute][instIdx] < node.m_SplitPoint) {
+        if (dataValues[m_Attribute][instIdx] < node.m_SplitPoint) {
           node = node.sucessorLeft;
         } else {
           node = node.sucessorRight;

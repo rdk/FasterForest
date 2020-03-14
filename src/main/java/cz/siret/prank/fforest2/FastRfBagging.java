@@ -131,10 +131,15 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
     List<Future<FasterTree>> futures = new ArrayList<>(m_Classifiers.length);
 
     try {
+      final int[] seeds = new int[m_Classifiers.length];
+      for (int i = 0; i < m_Classifiers.length; i++) {
+        seeds[i] = random.nextInt();
+      }
+
       for (int i = 0; i < m_Classifiers.length; i++) {
         final int treeIdx = i;
 
-        final int seed = random.nextInt();
+        final int seed = seeds[treeIdx];
 
         Future<FasterTree> future = threadPool.submit(() -> {
           // built tree and convert to lightweight version
@@ -143,7 +148,7 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
           curTree.buildRootTree();
 
           if (getCalcOutOfBag() || getComputeImportances()) {
-            inBag[treeIdx] = curTree.myInBag; // large fiels, remember only if we need it
+            inBag[treeIdx] = curTree.myInBag; // large array, store only if we need it
           }
 
           return curTree.toLightVersion();

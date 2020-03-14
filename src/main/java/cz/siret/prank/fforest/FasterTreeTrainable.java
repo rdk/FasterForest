@@ -7,7 +7,7 @@ import java.util.Arrays;
 /**
  * Extended version of FasterForest used in training.
  */
-public class FasterTreeTrainable extends FasterTree implements Runnable {
+public class FasterTreeTrainable extends FasterTree {
 
     /** for serialization */
     static final long serialVersionUID = -9136056750085906361L;
@@ -993,7 +993,8 @@ public class FasterTreeTrainable extends FasterTree implements Runnable {
      * The FastRfBagging class normally takes care of this before invoking this
      * function.
      */
-    public void run() {
+    public void buildRootTree(DataCache data) {
+        this.data = data;
         int n = data.numInstances;
 
         // compute initial class counts

@@ -230,6 +230,8 @@ public class DataCache {
 
     result.instWeights = newWeights;
 
+    result.reusableRandomGenerator = result.getRandomNumberGenerator(random.nextInt());
+
     // we also need to fill sortedIndices by peeking into the inBag array, but
     // this can be postponed until the tree training begins
     // we will use the "createInBagSortedIndices()" for this

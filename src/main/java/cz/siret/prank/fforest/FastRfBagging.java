@@ -134,45 +134,44 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
     boolean[][] inBag = new boolean[m_Classifiers.length][];
 
     // thread management
-    ExecutorService threadPool = Executors.newFixedThreadPool(
-      numThreads > 0 ? numThreads : Runtime.getRuntime().availableProcessors());
-    List<Future<?>> futures =
-      new ArrayList<>(m_Classifiers.length);
+    int threads = numThreads > 0 ? numThreads : Runtime.getRuntime().availableProcessors();
+    ExecutorService threadPool = Executors.newFixedThreadPool(threads);
+    List<Future<FasterTree>> futures =  new ArrayList<>(m_Classifiers.length);
 
     try {
+      final int[] seeds = new int[m_Classifiers.length];
+      for (int i = 0; i < m_Classifiers.length; i++) {
+        seeds[i] = random.nextInt();
+      }
 
-      for (int treeIdx = 0; treeIdx < m_Classifiers.length; treeIdx++) {
+      for (int i = 0; i < m_Classifiers.length; i++) {
+        int treeIdx = i;
 
-        // create the in-bag dataset (and be sure to remember what's in bag)
-        // for computing the out-of-bag error later
-        DataCache bagData = myData.resample(bagSize, random);
-        bagData.reusableRandomGenerator = bagData.getRandomNumberGenerator(
-          random.nextInt());
-        inBag[treeIdx] = bagData.inBag; // store later for OOB error calculation
+        Future<FasterTree> future = threadPool.submit(() -> {
+          // create the in-bag dataset (and be sure to remember what's in bag)
+          // for computing the out-of-bag error later
 
-        // build the classifier
-        if (m_Classifiers[treeIdx] instanceof FasterTreeTrainable) {
+          Random rand = new Random(seeds[treeIdx]);
+          DataCache bagData = myData.resample(bagSize, rand);
+
+          if (getCalcOutOfBag() || getComputeImportances()) {
+            inBag[treeIdx] = bagData.inBag; // large array, store only if we need it
+          }
 
           FasterTreeTrainable aTree = (FasterTreeTrainable) m_Classifiers[treeIdx];
-          aTree.data = bagData;
+          aTree.buildRootTree(bagData);
 
-          Future<?> future = threadPool.submit(aTree);
-          futures.add(future);
+          return aTree.toSlimVersion();
+        });
 
-        } else {
-          throw new IllegalArgumentException("The FastRfBagging class accepts " +
-            "only FasterTreeTrainable as its base classifier.");
-        }
-
+        futures.add(future);
       }
 
       // make sure all trees have been trained before proceeding
+      // collect lightweight trees
       for (int treeIdx = 0; treeIdx < m_Classifiers.length; treeIdx++) {
-        futures.get(treeIdx).get();
+        m_Classifiers[treeIdx] = futures.get(treeIdx).get();
       }
-
-
-
 
       // calc OOB error?
       if (getCalcOutOfBag() || getComputeImportances()) {
@@ -201,21 +200,6 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
           //m_FeatureNames[j] = data.attribute(j).name();
         }
       }
-
-
-      List<Callable<FasterTree>> tasks = new ArrayList<>(m_Classifiers.length);
-      for (Classifier tree : m_Classifiers) {
-        tasks.add(((FasterTreeTrainable) tree)::toSlimVersion);
-      }
-      m_Classifiers = threadPool.invokeAll(tasks).stream().map(
-          f -> {
-            try {
-              return f.get();
-            } catch (Exception e) {
-              throw new RuntimeException(e);
-            }
-          }
-      ).toArray(FasterTree[]::new);
 
       threadPool.shutdown();
     } finally {

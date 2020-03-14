@@ -21,6 +21,7 @@
 
 package cz.siret.prank.fforest2;
 
+import cz.siret.prank.fforest.FasterTree;
 import weka.classifiers.Classifier;
 import weka.core.Utils;
 
@@ -72,15 +73,15 @@ public class VotesCollectorDataCache implements Callable<Double>{
       }
 
       numVotes++;
-      
-      FasterForest2Tree aTree;
-      if ( m_Classifiers[treeIdx] instanceof FasterForest2Tree)
-        aTree = (FasterForest2Tree) m_Classifiers[treeIdx];
+
+      FasterTree aTree;
+      if ( m_Classifiers[treeIdx] instanceof FasterTree)
+        aTree = (FasterTree) m_Classifiers[treeIdx];
       else
-        throw new IllegalArgumentException("Only FastRandomTrees accepted in the VotesCollector.");
+        throw new IllegalArgumentException("Only FasterTree accepted in the VotesCollector.");
 
       double[] curDist;
-      curDist = aTree.distributionForInstanceInDataCache(data, instanceIdx);
+      curDist = aTree.distributionForInstanceInDataCache(data.vals, instanceIdx);
 
       for(int classIdx = 0; classIdx < curDist.length; classIdx++) {
         classProbs[classIdx] += curDist[classIdx];

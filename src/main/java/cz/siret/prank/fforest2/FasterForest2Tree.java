@@ -87,6 +87,12 @@ class FasterForest2Tree
 
   /** The dataset used for training. */
   protected transient DataCache data = null;
+
+  /**
+   * created in run(), one for each root tree
+   */
+  private int[] tempIndices = null;
+
   
   /**
    * Since 0.99: holds references to temporary arrays re-used by all nodes
@@ -128,47 +134,17 @@ class FasterForest2Tree
    * @param data
    */
   public FasterForest2Tree(FasterForest2 motherForest, DataCache data, int seed) {
-    //int numClasses = data.numClasses;
     this.m_seed = seed;
     this.data = data;
     // all parameters for training will be looked up in the motherForest (maxDepth, k_Value)
     this.m_MotherForest = motherForest;
-    // 0.99: reference to these arrays will get passed down all nodes so the array can be re-used 
-    // 0.99: this array is of size two as now all splits are binary - even categorical ones
-    //this.tempProps = new float[2];
-
-    //this.tempDistsL = new float[numClasses];
-    //this.tempDistsR = new float[numClasses];
-    //this.tempDistsOtherL = new float[numClasses];
-    //this.tempDistsOtherR = new float[numClasses];
-
-    //this.tempDists = new double[2][];
-    //this.tempDists[0] = new double[numClasses];
-    //this.tempDists[1] = new double[numClasses];
-    //this.tempDistsOther = new double[2][];
-    //this.tempDistsOther[0] = new double[numClasses];
-    //this.tempDistsOther[1] = new double[numClasses];
   }
 
-  /**
-   * Constructor for all the nodes except the root
-   * @param motherForest
-   * @param data
-   */
-  public FasterForest2Tree(FasterForest2 motherForest, DataCache data /*, float[] tempDistsL, float[] tempDistsR,
-                           float[] tempDistsOtherL, float[] tempDistsOtherR, float[] tempProps*/) {
-    this.m_MotherForest = motherForest;
-    this.data = data;
-    // new in 0.99 - used in distributionSequentialAtt()
-    //this.tempDists = tempDists;
-    //this.tempDistsOther = tempDistsOther;
-
-    //this.tempDistsL = tempDistsL;
-    //this.tempDistsR = tempDistsR;
-    //this.tempDistsOtherL = tempDistsOtherL;
-    //this.tempDistsOtherR = tempDistsOtherR;
-
-    //this.tempProps = tempProps;
+  public FasterForest2Tree(FasterForest2Tree from) {
+    this.m_MotherForest = from.m_MotherForest;
+    this.data = from.data;
+    this.m_seed = from.m_seed;
+    this.tempIndices = from.tempIndices;
   }
 
   /**
@@ -258,9 +234,11 @@ class FasterForest2Tree
     // we need to save the inBag[] array in order to have access to it after this.data is destroyed
     myInBag = data.inBag;
 
+    int n = data.numInstances;
+
     // compute initial class counts
     float[] classProbs = new float[data.numClasses];
-    for (int i = 0; i < data.numInstances; i++) {
+    for (int i = 0; i < n; i++) {
       classProbs[data.instClassValues[i]] += data.instWeights[i];
     }
 
@@ -272,6 +250,9 @@ class FasterForest2Tree
     int[] attIndicesWindow = data.selectedAttributes;
     // create the sorted indices matrix
     data.createInBagSortedIndicesNew();
+
+    tempIndices = new int[n];
+    
     // first recursive call
     buildTree(data.sortedIndices, 0, data.numInBag - 1,
             classProbs, attIndicesWindow, 0);
@@ -514,7 +495,8 @@ class FasterForest2Tree
   protected void buildTree(int[][] sortedIndices, int startAt, int endAt,
           float[] classProbs,
           int[] attIndicesWindow,
-          int depth)  {
+          int depth
+                           )  {
 
     int sortedIndicesLength = endAt - startAt + 1;
 
@@ -615,7 +597,7 @@ class FasterForest2Tree
 
       m_Successors = new FasterForest2Tree[2];  // dist.length now always == 2
       for (int i = 0; i < 2; i++) {
-        FasterForest2Tree auxTree = new FasterForest2Tree(m_MotherForest, data /*, tempDistsL, tempDistsR, tempDistsOtherL, tempDistsOtherR, tempProps*/);
+        FasterForest2Tree auxTree = new FasterForest2Tree(this);
 
         // check if we're about to make an empty branch - this can happen with
         // nominal attributes with more than two categories (as of ver. 0.98)
@@ -701,13 +683,15 @@ class FasterForest2Tree
    */
   protected int splitDataNew(
           int att, float splitPoint,
-          int[][] sortedIndices, int startAt, int endAt, float[][] dist ) {
+          int[][] sortedIndices, int startAt, int endAt, float[][] dist) {
 
     int j;
     // 0.99: we have binary splits also for nominal data
     int[] num = new int[2]; // how many instances go to each branch
     // we might possibly want to recycle this array for the whole tree
-    int[] tempArr = new int[ endAt-startAt+1 ];
+
+    int[] tempArr = tempIndices; // = new int[ endAt-startAt+1 ];
+
     Arrays.fill(dist[0], 0); Arrays.fill(dist[1], 0);
 
 
@@ -736,10 +720,10 @@ class FasterForest2Tree
         int branch = data.whatGoesWhere[ inst ];  // can be only 0 or 1
 
         if ( branch==0 ) {
-          sortedIndicesA[startAbove] = sortedIndicesA[j];
+          sortedIndicesA[startAbove] = inst;
           startAbove++;
         } else {
-          tempArr[startBelow] = sortedIndicesA[j];
+          tempArr[startBelow] = inst;
           startBelow++;
         }
       }

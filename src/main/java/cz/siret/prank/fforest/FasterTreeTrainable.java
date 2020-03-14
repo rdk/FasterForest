@@ -62,6 +62,17 @@ public class FasterTreeTrainable extends FasterTree implements Runnable {
         return m_MotherForest.m_MaxDepth;
     }
 
+    public FasterTreeTrainable() {
+    }
+
+    public FasterTreeTrainable(FasterTreeTrainable from) {
+        this.m_MotherForest = from.m_MotherForest;
+        this.data = from.data;
+        this.tempDists = from.tempDists;
+        this.tempDistsOther = from.tempDistsOther;
+        this.tempProps = from.tempProps;
+        this.tempIndices = from.tempIndices;
+    }
 
     /**
      * Recursively generates a tree. A derivative of the buildTree function from
@@ -224,19 +235,14 @@ public class FasterTreeTrainable extends FasterTree implements Runnable {
 
 
             //m_Successors = new FasterTree[dist.length];  // dist.length now always == 2
-            sucessorLeft = new FasterTreeTrainable();
-            sucessorRight = new FasterTreeTrainable();
+            sucessorLeft = new FasterTreeTrainable(this);
+            sucessorRight = new FasterTreeTrainable(this);
             FasterTreeTrainable tree = (FasterTreeTrainable) sucessorLeft;
             for (int i = 0; i < dist.length; i++) {    // 0..1
                 if (i==1)
                     tree = (FasterTreeTrainable) sucessorRight;
 
-                tree.m_MotherForest = this.m_MotherForest;
-                tree.data = this.data;
-                // new in 0.99 - used in distributionSequentialAtt()
-                tree.tempDists = this.tempDists;
-                tree.tempDistsOther = this.tempDistsOther;
-                tree.tempProps = this.tempProps;
+
 
                 // check if we're about to make an empty branch - this can happen with
                 // nominal attributes with more than two categories (as of ver. 0.98)

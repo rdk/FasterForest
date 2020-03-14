@@ -691,10 +691,9 @@ class FasterForest2Tree
    * @return the first index of the "below the split" instances
    */
   protected int splitDataNew(
-          int att, double splitPoint,
+          int att, float splitPoint,
           int[][] sortedIndices, int startAt, int endAt, float[][] dist ) {
 
-    Random random = data.reusableRandomGenerator;
     int j;
     // 0.99: we have binary splits also for nominal data
     int[] num = new int[2]; // how many instances go to each branch
@@ -702,63 +701,44 @@ class FasterForest2Tree
     int[] tempArr = new int[ endAt-startAt+1 ];
     Arrays.fill(dist[0], 0); Arrays.fill(dist[1], 0);
 
-//    if ( data.isAttrNominal(att) ) { // ============================ if nominal
-//      int auxAtt = data.attInSortedIndices[0];
-//      for (j = startAt; j <= endAt; j++) {
-//        int inst = sortedIndices[auxAtt][j];
-//        int branch;
-//        if ( data.isValueMissing(att, inst) ) { // ---------- has missing value
-//          // decide where to put this instance randomly, with bigger branches getting a higher chance
-//          branch = ( random.nextDouble() > m_Prop[0] ) ? 1 : 0;
-//        } else { // ----------------------------- does not have missing value
-//          // if it matches the category to "split out", put above split all other categories go below split
-//          branch = ( data.vals[att][inst] == splitPoint ) ? 0 : 1;
-//        } // --------------------------------------- end if has missing value
-//        data.whatGoesWhere[ inst ] = branch;
-//        // compute the correct value for dist when we know where the instances with missing values go
-//        // the value calculated in distrib...Att() is not exact, so we have to calculate the correct one
-//        dist[branch][data.instClassValues[inst]] += data.instWeights[inst];
-//        num[branch] += 1;
-//      }
-//    } else { // =================================================== if numeric
-      for (j = startAt; j <= endAt ; j++) {
-        int inst = sortedIndices[att][j];
-        int branch;
-        //if ( data.isValueMissing(att, inst) ) { // ---------- has missing value
-        //  // decide where to put this instance randomly, with bigger branches getting a higher chance
-        //  double rn = random.nextDouble();
-        //  branch = ( rn > m_Prop[0] ) ? 1 : 0;
-        //} else { // ----------------------------- does not have missing value
-          branch = ( data.vals[att][inst] < splitPoint ) ? 0 : 1;
-        //} // --------------------------------------- end if has missing value
-        data.whatGoesWhere[ inst ] = branch;
-        dist[branch][data.instClassValues[inst]] += data.instWeights[inst];
-        num[branch] += 1;
-      } // end for instance by instance
-//    }  // ============================================ end if nominal / numeric
+
+    int[] sortedIndicesAtt = sortedIndices[att];
+    float[] dataValsA = data.vals[att];
+
+    for (j = startAt; j <= endAt ; j++) {
+      int inst = sortedIndicesAtt[j];
+      int branch = ( dataValsA[inst] < splitPoint ) ? 0 : 1;
+      data.whatGoesWhere[ inst ] = branch;
+      dist[branch][data.instClassValues[inst]] += data.instWeights[inst];
+      num[branch] += 1;
+    } // end for instance by instance
 
     for (int a : data.attInSortedIndices) { // xxxxxxxxxx attr by attr
 
       // the first index of the sortedIndices in the above branch, and the first index in the below
       int startAbove = startAt, startBelow = 0; // always only 2 sub-branches, remember where second starts
 
+      int[] sortedIndicesA = sortedIndices[a];
+
       // fill them with stuff by looking at goesWhere array
       for (j = startAt; j <= endAt; j++) {
 
-        int inst = sortedIndices[ a ][j];
+        int inst = sortedIndicesA[j];
         int branch = data.whatGoesWhere[ inst ];  // can be only 0 or 1
 
         if ( branch==0 ) {
-          sortedIndices[a][startAbove] = sortedIndices[a][j];
+          sortedIndicesA[startAbove] = sortedIndicesA[j];
           startAbove++;
         } else {
-          tempArr[startBelow] = sortedIndices[a][j];
+          tempArr[startBelow] = sortedIndicesA[j];
           startBelow++;
         }
       }
 
       // now copy the tempArr into the sortedIndices, thus overwriting it
-      System.arraycopy( tempArr, 0, sortedIndices[a], startAt+num[0], num[1] );
+      System.arraycopy( tempArr, 0, sortedIndicesA, startAt+num[0], num[1] );
+
+
 
     } // xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx end for attr by attr
 

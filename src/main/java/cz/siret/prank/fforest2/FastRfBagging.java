@@ -127,14 +127,14 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
     inBag = new boolean[m_Classifiers.length][];
 
     // thread management
-    threadPool = Executors.newFixedThreadPool(
-      numThreads > 0 ? numThreads : Runtime.getRuntime().availableProcessors());
+    threadPool = Executors.newFixedThreadPool(numThreads > 0 ? numThreads : Runtime.getRuntime().availableProcessors());
     List<Future<?>> futures = new ArrayList<Future<?>>(m_Classifiers.length);
 
     try {
       for (int treeIdx = 0; treeIdx < m_Classifiers.length; treeIdx++) {
 
-        FasterForest2Tree curTree = new FasterForest2Tree(motherForest, myData, random.nextInt());
+        int seed = random.nextInt();
+        FasterForest2Tree curTree = new FasterForest2Tree(motherForest, myData, seed);
         m_Classifiers[treeIdx] = curTree;
 
         Future<?> future = threadPool.submit(curTree);

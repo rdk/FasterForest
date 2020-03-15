@@ -25,6 +25,7 @@ import weka.core.Instances;
 
 import java.util.Arrays;
 import java.util.Random;
+import java.util.concurrent.ForkJoinPool;
 
 /**
  * Stores a dataset that in FastRandomTrees use for training. The data points
@@ -100,9 +101,8 @@ public class DataCache {
    * Creates a DataCache by copying data from a weka.core.Instances object.
    *
    * @param origData
-   * @param parallel use parallel processing in cache construction
    */
-  public DataCache(Instances origData, boolean parallel) throws Exception {
+  public DataCache(Instances origData, int parallelism) throws Exception {
 
     classIndex = origData.classIndex();
     numAttributes = origData.numAttributes();
@@ -141,6 +141,8 @@ public class DataCache {
     
     sortedIndices = new int[numAttributes][];
 
+    ForkJoinPool pool = new ForkJoinPool(parallelism);
+
     for (int a = 0; a < numAttributes; a++) { // ================= attr by attr
 
       if (a == classIndex) 
@@ -151,13 +153,13 @@ public class DataCache {
         // Handling nominal attributes: as of FastRF 0.99, they're sorted as well
         // missing values are coded as Float.MAX_VALUE and go to the end
 
-        sortedIndices[a] = FastRfUtils.sortIndices(vals[a], parallel);
+        sortedIndices[a] = FastRfUtils.sortIndicesParallel(vals[a], parallelism, pool);
 
       } else { // ----------------------------------------------------- numeric
 
         // Sorted indices are computed for numeric attributes
         // missing values are coded as Float.MAX_VALUE and go to the end
-        sortedIndices[a] = FastRfUtils.sortIndices(vals[a], parallel);
+        sortedIndices[a] = FastRfUtils.sortIndicesParallel(vals[a], parallelism, pool);
 
       } // ---------------------------------------------------------- attr kind
 

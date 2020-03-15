@@ -55,17 +55,22 @@ public class IndexParallelSorter {
      *
      * @since 1.8
      */
-    public static void parallelSortIndices(int[] a, IntComparator cmp) {
-        int n = a.length, p, g;
-        if (n <= MIN_ARRAY_SORT_GRAN ||
-            (p = ForkJoinPool.getCommonPoolParallelism()) == 1)
+    public static void parallelSortIndices(int[] a, int parallelism, ForkJoinPool pool, IntComparator cmp) {
+        int n = a.length;
+        int p = parallelism;
+
+        if (n <= MIN_ARRAY_SORT_GRAN || p == 1) {
+
             IndexTimSort.sort(a, 0, n, cmp, null, 0, 0);
-        else {
+        } else {
+
+            int g = n / (p << 2);
+            g = Math.max(g, MIN_ARRAY_SORT_GRAN);
+
             int[] w = new int[n];
-            new IntSort.Sorter
-                (null, a, w,
-                0, n, 0, ((g = n / (p << 2)) <= MIN_ARRAY_SORT_GRAN) ?
-                MIN_ARRAY_SORT_GRAN : g, cmp).invoke();
+
+            pool.invoke(new IntSort.Sorter(null, a, w,0, n, 0, g, cmp));
+            //new IntSort.Sorter(null, a, w,0, n, 0, g, cmp).invoke();
         }
 
     }
@@ -100,11 +105,14 @@ public class IndexParallelSorter {
 
     /** index + Comparator support class */
     static final class IntSort {
+
         static final class Sorter extends CountedCompleter<Void> {
+
             static final long serialVersionUID = 2446542900576103244L;
             final int[] a, w;
             final int base, size, wbase, gran;
             IntComparator comparator;
+
             Sorter(CountedCompleter<?> par, int[] a, int[] w, int base, int size,
                    int wbase, int gran,
                    IntComparator comparator) {
@@ -113,6 +121,7 @@ public class IndexParallelSorter {
                 this.wbase = wbase; this.gran = gran;
                 this.comparator = comparator;
             }
+
             public final void compute() {
                 CountedCompleter<?> s = this;
                 IntComparator c = this.comparator;
@@ -142,6 +151,7 @@ public class IndexParallelSorter {
             final int[] a, w; // main and workspace arrays
             final int lbase, lsize, rbase, rsize, wbase, gran;
             IntComparator comparator;
+
             Merger(CountedCompleter<?> par, int[] a, int[] w,
                    int lbase, int lsize, int rbase,
                    int rsize, int wbase, int gran,

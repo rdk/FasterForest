@@ -116,17 +116,17 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
      * normally does. */
     m_Classifiers = new Classifier[m_NumIterations];
 
-    boolean parallel = motherForest.m_NumThreads != 1;
+    int threads = numThreads > 0 ? numThreads : Runtime.getRuntime().availableProcessors();
 
     // sorting is performed inside this constructor
-    myData = new DataCache2(data, parallel);
+    myData = new DataCache2(data, threads);
+
     int bagSize = data.numInstances() * m_BagSizePercent / 100;
     myData.bagSize = bagSize; // no m'acaba d'agradar aquesta assignacio
     random = new Random(m_Seed);
     inBag = new boolean[m_Classifiers.length][];
 
     // thread management
-    int threads = numThreads > 0 ? numThreads : Runtime.getRuntime().availableProcessors();
     threadPool = Executors.newFixedThreadPool(threads);
     List<Future<FasterTree>> futures = new ArrayList<>(m_Classifiers.length);
 

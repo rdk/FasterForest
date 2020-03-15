@@ -123,10 +123,10 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
         "out-of-bag error is to be calculated!");
     }
 
-    boolean parallel = motherForest.m_NumThreads != 1;
+    int threads = numThreads > 0 ? numThreads : Runtime.getRuntime().availableProcessors();
 
     // sorting is performed inside this constructor
-    DataCache myData = new DataCache(data, parallel);
+    DataCache myData = new DataCache(data, threads);
 
     int bagSize = data.numInstances() * m_BagSizePercent / 100;
     Random random = new Random(m_Seed);
@@ -134,7 +134,6 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
     boolean[][] inBag = new boolean[m_Classifiers.length][];
 
     // thread management
-    int threads = numThreads > 0 ? numThreads : Runtime.getRuntime().availableProcessors();
     ExecutorService threadPool = Executors.newFixedThreadPool(threads);
     List<Future<FasterTree>> futures =  new ArrayList<>(m_Classifiers.length);
 

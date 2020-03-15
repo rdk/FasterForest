@@ -30,6 +30,7 @@ import weka.core.Instances;
 
 import java.util.Arrays;
 import java.util.Random;
+import java.util.concurrent.ForkJoinPool;
 
 /**
  * Utility functions for sorting float (single-precision) arrays, and for
@@ -54,13 +55,13 @@ public class FastRfUtils {
   private static final int MIN_ARRAY_SORT_GRAN = 1 << 13; // 8192
 
 
-  public static int[] sortIndices(float[] array, boolean parallel) {
-    if (parallel && array.length > MIN_ARRAY_SORT_GRAN) {
-      return sortIndicesParallel(array);
-    } else {
-      return sort(array);
-    }
-  }
+  //public static int[] sortIndices(float[] array, boolean parallel) {
+  //  if (parallel && array.length > MIN_ARRAY_SORT_GRAN) {
+  //    return sortIndicesParallel(array);
+  //  } else {
+  //    return sort(array);
+  //  }
+  //}
 
 
   private static int[] newIndices(int n) {
@@ -70,14 +71,14 @@ public class FastRfUtils {
     return index;
   }
 
-  private static int[] sortIndicesParallel(float[] array) {
-    return sortIndicesParallel_ours(array);
+  public static int[] sortIndicesParallel(float[] array, int parallelism, ForkJoinPool pool) {
+    return sortIndicesParallel_ours(array, parallelism, pool);
     //return sortIndicesParallel_jre();
   }
 
-  private static int[] sortIndicesParallel_ours(float[] array) {
+  private static int[] sortIndicesParallel_ours(float[] array, int parallelism, ForkJoinPool pool) {
     int[] index = newIndices(array.length);
-    IndexParallelSorter.parallelSortIndices(index, (i1, i2) -> Float.compare(array[i1], array[i2]));
+    IndexParallelSorter.parallelSortIndices(index, parallelism, pool, (i1, i2) -> Float.compare(array[i1], array[i2]));
     return index;
   }
 

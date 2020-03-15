@@ -21,6 +21,7 @@
 
 package cz.siret.prank.fforest2;
 
+import cz.siret.prank.ffutils.ATimer;
 import jdk.nashorn.internal.runtime.regexp.joni.exception.ValueException;
 import weka.core.Instances;
 
@@ -163,11 +164,14 @@ public class DataCache2 {
 
     ForkJoinPool pool = new ForkJoinPool(parallelism);
 
-    for (int a = 0; a < numAttributes; a++) { // ================= attr by attr
+    ATimer timer = ATimer.startTimer();
+    for (int a = 0; a < numAttributes; a++) {
       if (a != classIndex) {
         sortedIndices[a] = cz.siret.prank.fforest.FastRfUtils.sortIndicesParallel(vals[a], parallelism, pool);
       }
-    } // ========================================================= attr by attr
+    }
+    System.out.println("time spent sorting: " + timer.getFormatted());
+
   }
 
   

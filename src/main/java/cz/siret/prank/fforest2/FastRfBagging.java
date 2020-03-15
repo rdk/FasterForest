@@ -24,6 +24,7 @@
 package cz.siret.prank.fforest2;
 
 import cz.siret.prank.fforest.FasterTree;
+import cz.siret.prank.ffutils.ATimer;
 import weka.classifiers.Classifier;
 import weka.classifiers.RandomizableIteratedSingleClassifierEnhancer;
 import weka.core.*;
@@ -136,6 +137,7 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
         seeds[i] = random.nextInt();
       }
 
+      ATimer timer = ATimer.startTimer();
       for (int i = 0; i < m_Classifiers.length; i++) {
         final int treeIdx = i;
 
@@ -161,6 +163,7 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
       for (int treeIdx = 0; treeIdx < m_Classifiers.length; treeIdx++) {
         m_Classifiers[treeIdx] = futures.get(treeIdx).get();
       }
+      System.out.println("time spent building trees: " + timer.getFormatted());
 
       if (getCalcOutOfBag() || getComputeImportances()) {
         m_OutOfBagError = computeOOBError(myData, inBag, threadPool, m_Classifiers);

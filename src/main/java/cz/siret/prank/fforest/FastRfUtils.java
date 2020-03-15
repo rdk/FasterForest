@@ -23,8 +23,7 @@
 
 package cz.siret.prank.fforest;
 
-import cz.siret.prank.utils.sort.IndexParallelSorter;
-import cz.siret.prank.utils.sort.IntComparator;
+import cz.siret.prank.ffutils.sort.IndexParallelSorter;
 import weka.core.Instance;
 import weka.core.Instances;
 

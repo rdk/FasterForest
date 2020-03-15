@@ -1,4 +1,4 @@
-package cz.siret.prank.utils.sort;
+package cz.siret.prank.ffutils.sort;
 
 import java.util.Arrays;
 import java.util.concurrent.CountedCompleter;

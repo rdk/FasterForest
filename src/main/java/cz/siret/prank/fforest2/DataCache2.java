@@ -332,8 +332,11 @@ public class DataCache2 {
   public Random getRandomNumberGenerator(long seed) {
 
     Random r = new Random(seed);
-    long dataSignature = Arrays.hashCode( sortedIndices[ r.nextInt( numAttributes ) ] );
-    r.setSeed( dataSignature + seed );
+
+    // ignore data signature since sortedIndices are not sorted in a stable way
+    //long dataSignature = Arrays.hashCode( sortedIndices[ r.nextInt( numAttributes ) ] );
+    //r.setSeed( dataSignature + seed );
+
     return r;
 
   }

@@ -21,10 +21,16 @@ jar {
     manifest {
         attributes 'Main-Class': 'cz.siret.prank.ffutils.Main'
     }
+
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
 }
 
 dependencies {
-    compile 'nz.ac.waikato.cms.weka:weka-dev:3.9.1'
+    implementation ('nz.ac.waikato.cms.weka:weka-dev:3.9.1') {
+        exclude group: 'com.github.fommil.netlib', module: 'all'
+    }
 
     testCompile 'junit:junit:4.12'
 }

@@ -72,15 +72,15 @@ import java.util.concurrent.*;
 class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
   implements WeightedInstancesHandler, AdditionalMeasureProducer {
 
-  protected DataCache2 myData;
-  protected boolean[][] inBag;
-  protected Random random;
-  protected ExecutorService threadPool;
-
   /**
    * for serialization
    */
-  static final long serialVersionUID = -505879962237199702L;
+  static final long serialVersionUID = 1L;
+
+  protected transient DataCache2 myData;
+  protected transient boolean[][] inBag;
+  protected transient Random random;
+  protected transient ExecutorService threadPool;
 
   /**
    * Bagging method. Produces DataCache objects with bootstrap samples of

@@ -5,15 +5,20 @@
 FasterForest
 ==============
 
-Streamlined version of Fran Supeks's FastRandomForest.
-Uses around 75% time and 50% memory.
+A streamlined version of Fran Supeks's FastRandomForest.
+Compared to FastRandomForest it uses around 75% time and 50% memory.
 
 Does not support nominal attributes and missing values.
+
+FasterForest 2.0.0
+--------------------
+
+Added FasterForest2 based on FastRandomForest 2.0 (https://github.com/GenomeDataScience/FastRandomForest).
 
 FasterForest 1.0.0
 --------------------
 
-Now in it's own repo with mavenized gradle build.
+Now in its own repo with mavenized gradle build.
 
 --rdk
 

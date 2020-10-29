@@ -21,7 +21,6 @@
 
 package cz.siret.prank.fforest2;
 
-import cz.siret.prank.fforest.FasterTree;
 import weka.classifiers.Classifier;
 import weka.core.Utils;
 

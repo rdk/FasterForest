@@ -167,7 +167,7 @@ public class DataCache2 {
     ATimer timer = ATimer.startTimer();
     for (int a = 0; a < numAttributes; a++) {
       if (a != classIndex) {
-        sortedIndices[a] = cz.siret.prank.fforest.FastRfUtils.sortIndicesParallel(vals[a], parallelism, pool);
+        sortedIndices[a] = cz.siret.prank.ffutils.FastRfUtils.sortIndicesParallel(vals[a], parallelism, pool);
       }
     }
     System.out.println("time spent sorting: " + timer.getFormatted());

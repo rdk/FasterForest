@@ -21,9 +21,8 @@
  *    Copyright (C) 2013 Fran Supek (adapted code)
  */
 
-package cz.siret.prank.fforest;
+package cz.siret.prank.fforest2;
 
-import cz.siret.prank.fforest2.DataCache2;
 import weka.classifiers.Classifier;
 import weka.core.*;
 import weka.core.Capabilities.Capability;

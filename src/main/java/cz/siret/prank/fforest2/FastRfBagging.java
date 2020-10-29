@@ -23,7 +23,6 @@
 
 package cz.siret.prank.fforest2;
 
-import cz.siret.prank.fforest.FasterTree;
 import cz.siret.prank.ffutils.ATimer;
 import weka.classifiers.Classifier;
 import weka.classifiers.RandomizableIteratedSingleClassifierEnhancer;

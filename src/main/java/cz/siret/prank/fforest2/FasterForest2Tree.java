@@ -23,10 +23,8 @@
 
 package cz.siret.prank.fforest2;
 
-import cz.siret.prank.fforest.FasterTree;
 import weka.classifiers.AbstractClassifier;
 import weka.core.*;
-import weka.core.Capabilities.Capability;
 
 import java.util.Arrays;
 import java.util.HashSet;

@@ -21,7 +21,7 @@
  *    Copyright (C) 2008 Fran Supek (adapted code)
  */
 
-package cz.siret.prank.fforest;
+package cz.siret.prank.ffutils;
 
 import cz.siret.prank.ffutils.sort.IndexParallelSorter;
 import weka.core.Instance;

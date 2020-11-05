@@ -911,15 +911,6 @@ public class FasterTreeTrainable extends FasterTree {
     }
 
 
-
-
-
-
-
-
-
-
-
     /**
      * Normalizes branch sizes so they contain frequencies (stored in "props")
      * instead of counts (stored in "dist"). Creates a new double[] which it

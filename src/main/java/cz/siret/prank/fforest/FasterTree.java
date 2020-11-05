@@ -223,7 +223,7 @@ public class FasterTree
       FasterTree node = this;
 
       while (true) {
-        if (instanceAttributes[m_Attribute] < node.m_SplitPoint) {
+        if (instanceAttributes[node.m_Attribute] < node.m_SplitPoint) {
           node = node.sucessorLeft;
         } else {
           node = node.sucessorRight;
@@ -265,7 +265,7 @@ public class FasterTree
       FasterTree node = this;
 
       while (true) {
-        if (dataValues[m_Attribute][instIdx] < node.m_SplitPoint) {
+        if (dataValues[node.m_Attribute][instIdx] < node.m_SplitPoint) {
           node = node.sucessorLeft;
         } else {
           node = node.sucessorRight;

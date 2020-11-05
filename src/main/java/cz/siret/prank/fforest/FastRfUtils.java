@@ -198,8 +198,8 @@ public class FastRfUtils {
   public static void normalize(double[] doubles) {
 
     double sum = 0;
-    for (int i = 0; i < doubles.length; i++) {
-      sum += doubles[i];
+    for (double aDouble : doubles) {
+      sum += aDouble;
     }
     normalize(doubles, sum);
   }

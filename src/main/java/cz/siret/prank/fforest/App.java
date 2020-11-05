@@ -1,4 +1,4 @@
-package cz.siret.rdk.fforest;
+package cz.siret.prank.fforest;
 
 /**
  * Hello world!

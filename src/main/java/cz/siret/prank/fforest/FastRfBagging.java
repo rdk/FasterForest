@@ -690,8 +690,7 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
     }
     StringBuffer text = new StringBuffer();
     text.append("All the base classifiers: \n\n");
-    for (int i = 0; i < m_Classifiers.length; i++)
-      text.append(m_Classifiers[i].toString() + "\n\n");
+    for (Classifier classifier : m_Classifiers) text.append(classifier.toString() + "\n\n");
 
     if (m_CalcOutOfBag) {
       text.append("Out of bag error: "

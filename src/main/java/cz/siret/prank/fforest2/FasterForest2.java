@@ -764,9 +764,7 @@ public class FasterForest2
         double[] importances = new double[0];
         try {
           importances = m_bagger.getFeatureImportances();
-        } catch (ExecutionException e) {
-          e.printStackTrace();
-        } catch (InterruptedException e) {
+        } catch (ExecutionException | InterruptedException e) {
           e.printStackTrace();
         }
         for ( int i = 0; i < importances.length; i++ ) {

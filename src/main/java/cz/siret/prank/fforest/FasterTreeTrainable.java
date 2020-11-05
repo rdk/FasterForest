@@ -924,9 +924,7 @@ public class FasterTreeTrainable extends FasterTree {
             props[k] = Utils.sum(dist[k]);
         }
         if (Utils.eq(Utils.sum(props), 0)) {
-            for (int k = 0; k < props.length; k++) {
-                props[k] = 1.0 / (double) props.length;
-            }
+            Arrays.fill(props, 1.0 / (double) props.length);
         } else {
             FastRfUtils.normalize(props);
         }

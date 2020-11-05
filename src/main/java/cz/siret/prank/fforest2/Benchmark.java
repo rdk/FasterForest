@@ -144,7 +144,7 @@ public class Benchmark {
 
           Evaluation eval = new Evaluation(data);
 
-          Long millis = System.currentTimeMillis();
+          long millis = System.currentTimeMillis();
           eval.crossValidateModel(aClassifier, data, numFolds, new Random(curRun));
           long elapsedTime = System.currentTimeMillis() - millis;
 

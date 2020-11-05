@@ -140,7 +140,7 @@ public class Benchmark {
 
           Evaluation eval = new Evaluation(data);
 
-          Long millis = System.currentTimeMillis();
+          long millis = System.currentTimeMillis();
           eval.crossValidateModel(aClassifier, data, numFolds, new Random(curRun));
           long elapsedTime = System.currentTimeMillis() - millis;
 
@@ -234,9 +234,9 @@ public class Benchmark {
 
       File[] trainFiles;
       trainFiles = new File(fileOrDir).listFiles();
-      for (int i = 0; i < trainFiles.length; i++)
-        if (trainFiles[i].getName().endsWith(myExt))
-          result.add(trainFiles[i]);
+      for (File file : trainFiles)
+        if (file.getName().endsWith(myExt))
+          result.add(file);
 
     } else if (myFile.getName().endsWith(myExt)) {
 

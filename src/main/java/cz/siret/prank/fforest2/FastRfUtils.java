@@ -202,8 +202,8 @@ public class FastRfUtils {
   public static void normalize(float[] doubles) {
 
     float sum = 0;
-    for (int i = 0; i < doubles.length; i++) {
-      sum += doubles[i];
+    for (float aDouble : doubles) {
+      sum += aDouble;
     }
     normalize(doubles, sum);
   }

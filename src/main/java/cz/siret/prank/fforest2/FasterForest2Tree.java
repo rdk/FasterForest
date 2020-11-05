@@ -308,10 +308,10 @@ class FasterForest2Tree
   private int countNodes() {
     if (m_Attribute != -1) {
       int result = 1;
-      if (m_Successors[0] instanceof FasterForest2Tree)  {
+      if (m_Successors[0] != null)  {
         result += ((FasterForest2Tree) m_Successors[0]).countNodes();
       }
-      if (m_Successors[1] instanceof FasterForest2Tree)  {
+      if (m_Successors[1] != null)  {
         result += ((FasterForest2Tree) m_Successors[1]).countNodes();
       }
       return result;
@@ -541,8 +541,8 @@ class FasterForest2Tree
       return 1;
     } else {
       int size = 1;
-      for (int i = 0; i < m_Successors.length; i++) {
-        size += m_Successors[i].numNodes();
+      for (FasterForest2Tree successor : m_Successors) {
+        size += successor.numNodes();
       }
       return size;
     }

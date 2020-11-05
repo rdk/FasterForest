@@ -74,6 +74,10 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
    */
   static final long serialVersionUID = -505879962237199702L;
 
+  public boolean isVersion2() {
+    return m_Classifiers[0] instanceof FasterForest;
+  }
+
   /**
    * Bagging method. Produces DataCache objects with bootstrap samples of
    * the original data, and feeds them to the base classifier (which can only
@@ -655,19 +659,13 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
     FasterTree[] classifiers = (FasterTree[]) m_Classifiers;
 
     for (int i = 0; i < m_NumIterations; i++) {
-//      if (instance.classAttribute().isNumeric()) {
-//        sums[0] += m_Classifiers[i].classifyInstance(instance);
-//      } else {
+
         newProbs = classifiers[i].distributionForAttributes(instanceAttributes);
         for (int j = 0; j < numClasses; j++)
           sums[j] += newProbs[j];
-//      }
+
     }
 
-//    if (instance.classAttribute().isNumeric()) {
-//      sums[0] /= (double) m_NumIterations;
-//      return sums;
-//    } else
     if (Utils.eq(Utils.sum(sums), 0)) {
       return sums;
     } else {

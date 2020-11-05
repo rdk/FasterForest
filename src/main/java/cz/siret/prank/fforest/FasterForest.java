@@ -140,6 +140,14 @@ public class FasterForest
   /** a ZeroR model in case no model can be built from the data */
   protected AbstractClassifier m_ZeroR;
 
+
+  /**
+   * since version 2 there is distributionForAttributes() method available
+   */
+  public boolean isVersion2() {
+    return m_bagger.isVersion2();
+  }
+
   /**
    * Returns a string describing classifier
    *

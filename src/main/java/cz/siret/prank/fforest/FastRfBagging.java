@@ -75,7 +75,7 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
   static final long serialVersionUID = -505879962237199702L;
 
   public boolean isVersion2() {
-    return m_Classifiers[0] instanceof FasterForest;
+    return m_Classifiers[0] instanceof FasterTree; // is using lean version of tree
   }
 
   /**
@@ -652,18 +652,13 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
   }
 
   public final double[] distributionForAttributes(double[] instanceAttributes, int numClasses) {
-
     double[] sums = new double[numClasses];
     double[] newProbs;
 
-    FasterTree[] classifiers = (FasterTree[]) m_Classifiers;
-
     for (int i = 0; i < m_NumIterations; i++) {
-
-        newProbs = classifiers[i].distributionForAttributes(instanceAttributes);
+        newProbs = ((FasterTree)m_Classifiers[i]).distributionForAttributes(instanceAttributes);
         for (int j = 0; j < numClasses; j++)
           sums[j] += newProbs[j];
-
     }
 
     if (Utils.eq(Utils.sum(sums), 0)) {
@@ -672,7 +667,6 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
       Utils.normalize(sums);
       return sums;
     }
-
   }
 
   /**

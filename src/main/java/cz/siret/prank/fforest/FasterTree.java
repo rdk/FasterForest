@@ -35,20 +35,19 @@ import java.io.Serializable;
  * Based on the "weka.classifiers.trees.RandomTree" class, revision 1.19,
  * by Eibe Frank and Richard Kirkby, with major modifications made to improve
  * the speed of classifier training.
- * 
+ *
  * Please refer to the Javadoc of buildTree, splitData and distribution
- * function, as well as the changelog.txt, for the details of changes to 
+ * function, as well as the changelog.txt, for the details of changes to
  * FasterTreeTrainable.
- * 
+ *
  * This class should be used only from within the FasterForest classifier.
- * 
+ *
  * @author Eibe Frank (eibe@cs.waikato.ac.nz) - original code
  * @author Richard Kirkby (rkirkby@cs.waikato.ac.nz) - original code
  * @author Fran Supek (fran.supek[AT]irb.hr) - adapted code
  * @version $Revision: 0.99$
  */
 public class FasterTree
-        // extends AbstractClassifier
         implements Classifier, Serializable, Cloneable, CapabilitiesHandler, WeightedInstancesHandler {
 
   /** for serialization */
@@ -67,7 +66,7 @@ public class FasterTree
 
   /** The split point. */
   protected double m_SplitPoint = Double.NaN;
-  
+
   /** The proportions of training instances going down each branch. */
   // was here just for nominal attributes and missing values
   //protected double[] m_Prop = null;
@@ -159,82 +158,37 @@ public class FasterTree
   @Override
   public final double[] distributionForInstance(Instance instance) {
 
-    if (m_Attribute == -1) {  // ============================ node is a leaf
-
-      return m_ClassProbs;
-
-    } else { // =============================================== node is not a leaf
-
-      //if (instance.isMissing(m_Attribute)) {  // ---------------- missing value
-
-      //  returnedDist = new double[m_MotherForest.m_Info.numClasses()];
-      //  // split instance up
-      //  for (int i = 0; i < m_Successors.length; i++) {
-      //    double[] help = m_Successors[i].distributionForInstance(instance);
-      //    if (help != null) {
-      //      for (int j = 0; j < help.length; j++) {
-      //        returnedDist[j] += m_Prop[i] * help[j];
-      //      }
-      //    }
-      //  }
-
-      //} else if (m_MotherForest.m_Info
-      //        .attribute(m_Attribute).isNominal()) { // ------ nominal
-
-      //  //returnedDist = m_Successors[(int) instance.value(m_Attribute)]
-      //  //        .distributionForInstance(instance);
-
-      //  // 0.99: new - binary splits (also) for nominal attributes
-      //  if ( instance.value(m_Attribute) == m_SplitPoint ) {
-      //    returnedDist = m_Successors[0].distributionForInstance(instance);
-      //  } else {
-      //    returnedDist = m_Successors[1].distributionForInstance(instance);
-      //  }
-
-      //} else { // ------------------------------------------ numeric attributes
-
       FasterTree node = this;
 
       while (true) {
+        if (node.m_Attribute == -1) {  // node is a leaf
+          return node.m_ClassProbs;
+        }
+
         if (instance.value(node.m_Attribute) < node.m_SplitPoint) {
           node = node.sucessorLeft;
         } else {
           node = node.sucessorRight;
         }
-
-        if (node.m_Attribute == -1) {  // node is a leaf
-          return node.m_ClassProbs;
-        }
       }
-
-    }
 
   }
 
   public final double[] distributionForAttributes(double[] instanceAttributes) {
 
-
-    if (m_Attribute == -1) {  // ============================ node is a leaf
-
-      return m_ClassProbs;
-
-    } else { // =============================================== node is not a leaf
-
       FasterTree node = this;
 
       while (true) {
+        if (node.m_Attribute == -1) {  // node is a leaf
+          return node.m_ClassProbs;
+        }
+
         if (instanceAttributes[node.m_Attribute] < node.m_SplitPoint) {
           node = node.sucessorLeft;
         } else {
           node = node.sucessorRight;
         }
-
-        if (node.m_Attribute == -1) {  // node is a leaf
-          return node.m_ClassProbs;
-        }
       }
-
-    }
 
   }
 
@@ -256,31 +210,21 @@ public class FasterTree
    */
   public final double[] distributionForInstanceInDataCache(float[][] dataValues, int instIdx) {
 
-    if (m_Attribute == -1) {  // ============================ node is a leaf
-
-      return m_ClassProbs;
-
-    } else { // =============================================== node is not a leaf
-
       FasterTree node = this;
 
       while (true) {
+          if (node.m_Attribute == -1) {  // node is a leaf
+              return node.m_ClassProbs;
+          }
+
         if (dataValues[node.m_Attribute][instIdx] < node.m_SplitPoint) {
           node = node.sucessorLeft;
         } else {
           node = node.sucessorRight;
         }
-
-        if (node.m_Attribute == -1) {  // node is a leaf
-          return node.m_ClassProbs;
-        }
       }
 
-    }
-
   }
-
-
 
   /**
    * Computes size of the tree.
@@ -293,9 +237,6 @@ public class FasterTree
       return 1;
     } else {
       int size = 1;
-      //for (int i = 0; i < m_Successors.length; i++) {
-      //  size += m_Successors[i].numNodes();
-      //}
 
       size += sucessorLeft.numNodes();
       size += sucessorRight.numNodes();
@@ -303,16 +244,6 @@ public class FasterTree
       return size;
     }
   }
-  
-
-
-//  @Override
-//  public String getRevision() {
-//    return RevisionUtils.extract("$Revision: 0.99.1$");
-//  }
-//
-
-
 
   /**
    * destroys this tree in the process to free up memory
@@ -327,7 +258,6 @@ public class FasterTree
 
     return res;
   }
-
 
 
   /**

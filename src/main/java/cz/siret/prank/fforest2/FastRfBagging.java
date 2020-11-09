@@ -845,6 +845,24 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
 
   }
 
+  public final double[] distributionForAttributes(double[] instanceAttributes, int numClasses) {
+    double[] sums = new double[numClasses];
+    double[] newProbs;
+
+    for (int i = 0; i < m_NumIterations; i++) {
+      newProbs = ((FasterTree)m_Classifiers[i]).distributionForAttributes(instanceAttributes);
+      for (int j = 0; j < numClasses; j++)
+        sums[j] += newProbs[j];
+    }
+
+    if (Utils.eq(Utils.sum(sums), 0)) {
+      return sums;
+    } else {
+      Utils.normalize(sums);
+      return sums;
+    }
+  }
+
   /**
    * Returns description of the bagged classifier.
    *

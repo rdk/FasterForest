@@ -174,21 +174,35 @@ public class FasterTree
 
   }
 
+  public final double[] distributionForAttributesRecursion(double[] instanceAttributes) {
+
+    if (m_Attribute == -1) {  // node is a leaf
+      return m_ClassProbs;
+    }
+
+    if (instanceAttributes[m_Attribute] < m_SplitPoint) {
+      return sucessorLeft.distributionForAttributesRecursion(instanceAttributes);
+    } else {
+      return sucessorRight.distributionForAttributesRecursion(instanceAttributes);
+    }
+
+  }
+
   public final double[] distributionForAttributes(double[] instanceAttributes) {
 
-      FasterTree node = this;
+    FasterTree node = this;
 
-      while (true) {
-        if (node.m_Attribute == -1) {  // node is a leaf
-          return node.m_ClassProbs;
-        }
-
-        if (instanceAttributes[node.m_Attribute] < node.m_SplitPoint) {
-          node = node.sucessorLeft;
-        } else {
-          node = node.sucessorRight;
-        }
+    while (true) {
+      if (node.m_Attribute == -1) {  // node is a leaf
+        return node.m_ClassProbs;
       }
+
+      if (instanceAttributes[node.m_Attribute] < node.m_SplitPoint) {
+        node = node.sucessorLeft;
+      } else {
+        node = node.sucessorRight;
+      }
+    }
 
   }
 

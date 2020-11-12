@@ -333,9 +333,9 @@ public class DataCache2 {
 
     Random r = new Random(seed);
 
-    // ignore data signature since sortedIndices are not sorted in a stable way
-    //long dataSignature = Arrays.hashCode( sortedIndices[ r.nextInt( numAttributes ) ] );
-    //r.setSeed( dataSignature + seed );
+    //  ignore data signature since sortedIndices are not sorted in a stable way
+    long dataSignature = Arrays.hashCode( sortedIndices[ r.nextInt( numAttributes ) ] );
+    r.setSeed( dataSignature + seed );
 
     return r;
 

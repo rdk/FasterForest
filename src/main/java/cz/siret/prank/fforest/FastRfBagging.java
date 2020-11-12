@@ -148,7 +148,7 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
       }
 
       for (int i = 0; i < m_Classifiers.length; i++) {
-        int treeIdx = i;
+        final int treeIdx = i;
 
         Future<FasterTree> future = threadPool.submit(() -> {
           // create the in-bag dataset (and be sure to remember what's in bag)

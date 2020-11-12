@@ -485,7 +485,7 @@ public class FasterTreeTrainable extends FasterTree {
 
         }
 
-        for (int a = 0; a != numAttributes; a++) { // xxxxxxxxxx attr by attr
+        for (int a = 0; a < numAttributes; a++) { // xxxxxxxxxx attr by attr
 
             if (a == classIndex)
                 continue;
@@ -562,17 +562,6 @@ public class FasterTreeTrainable extends FasterTree {
     }
 
 
-
-
-
-
-
-
-
-
-
-
-
     /**
      * Computes class distribution for an attribute. Not used anymore in 0.99.
      * Based on the splitData function from "weka.classifiers.trees.RandomTree",
@@ -624,11 +613,10 @@ public class FasterTreeTrainable extends FasterTree {
         dist = new double[2][data.numClasses];
 
         //begin with moving all instances into second subset
-        for (int j = 0; j < sortedIndices.length; j++) {
-            int inst = sortedIndices[j];
-            if ( data.isValueMissing(att, inst) )
+        for (int inst : sortedIndices) {
+            if (data.isValueMissing(att, inst))
                 break;
-            currDist[1][ data.instClassValues[inst] ] += data.instWeights[inst];
+            currDist[1][data.instClassValues[inst]] += data.instWeights[inst];
         }
         copyDists(currDist, dist);
         //for (int j = 0; j < currDist.length; j++)
@@ -720,13 +708,20 @@ public class FasterTreeTrainable extends FasterTree {
     }
 
 
-
-
     public static void fill0(double[] a, double[] b) {
         for (int i = 0, len = a.length; i != len; i++) {
             a[i] = 0d;
             b[i] = 0d;
          }
+    }
+
+    public static void fill0(double[] a, double[] b, double[] c, double[] d) {
+        for (int i = 0, len = a.length; i < len; i++) {
+            a[i] = 0d;
+            b[i] = 0d;
+            c[i] = 0d;
+            d[i] = 0d;
+        }
     }
 
     /**
@@ -765,17 +760,17 @@ public class FasterTreeTrainable extends FasterTree {
         double[][] dist = this.tempDists;
         double[] dist0 = dist[0];
         double[] dist1 = dist[1];
-        fill0(dist0, dist1);
 
         double[][] currDist = this.tempDistsOther;
         double[] currDist0 = currDist[0];
         double[] currDist1 = currDist[1];
-        fill0(currDist0, currDist1);
+
+        fill0(dist0, dist1, currDist0, currDist1);
 
         //double[][] dist = new double[2][data.numClasses];
         //double[][] currDist = new double[2][data.numClasses];
 
-        float[] dataValsAttToExamine = data.vals[attToExamine];
+        float[] attributeValues = data.vals[attToExamine];
         int[] instClassValues = data.instClassValues;
         double[] instWeights = data.instWeights;
 
@@ -817,14 +812,14 @@ public class FasterTreeTrainable extends FasterTree {
             int inst = sortedIndicesOfAtt[i];
             int prevInst = sortedIndicesOfAtt[i - 1];
 
-            int classValuesPI = instClassValues[inst];
-            double weightsPI = instWeights[inst];
+            int classValuePI = instClassValues[prevInst];
+            double weightPI = instWeights[prevInst];
 
-            currDist0[classValuesPI] += weightsPI;
-            currDist1[classValuesPI] -= weightsPI;
+            currDist0[classValuePI] += weightPI;
+            currDist1[classValuePI] -= weightPI;
 
             // do not allow splitting between two instances with the same value
-            if (dataValsAttToExamine[inst] > dataValsAttToExamine[prevInst]) {
+            if (attributeValues[inst] > attributeValues[prevInst]) {
 
                 // we want the lowest impurity after split; at this point, we don't
                 // really care what we've had before spliting
@@ -851,7 +846,7 @@ public class FasterTreeTrainable extends FasterTree {
 
             int instJustBeforeSplit = sortedIndicesOfAtt[bestI - 1];
             int instJustAfterSplit = sortedIndicesOfAtt[bestI];
-            splitPoint = (dataValsAttToExamine[instJustAfterSplit] + dataValsAttToExamine[instJustBeforeSplit]) / 2.0;
+            splitPoint = (attributeValues[instJustAfterSplit] + attributeValues[instJustBeforeSplit]) / 2.0;
 
             // now make the correct dist[] (for the best split point) from the
             // default dist[] (all instances in the second branch, by iterating
@@ -859,11 +854,11 @@ public class FasterTreeTrainable extends FasterTree {
             for (int ii = startAt; ii < bestI; ii++) {
                 int inst = sortedIndicesOfAtt[ii];
 
-                int classValuesI = instClassValues[inst];
-                double weightsI = instWeights[inst];
+                int classValueI = instClassValues[inst];
+                double weightI = instWeights[inst];
 
-                dist0[classValuesI] += weightsI;
-                dist1[classValuesI] -= weightsI;
+                dist0[classValueI] += weightI;
+                dist1[classValueI] -= weightI;
             }
 
         }
@@ -876,21 +871,20 @@ public class FasterTreeTrainable extends FasterTree {
         double[] props = this.tempProps;
         countsToFreqs(dist, props);  // props gets overwritten, previous contents don't matters
 
-        double props0 = props[0];
-        double props1 = props[1];
-
+        //double props0 = props[0];
+        //double props1 = props[1];
         // distribute *counts* of instances with missing values using the "props"
-        i = lastNonmissingValIdx + 1; /// start 1 after the non-missing val (if there is anything)
-        while (i <= endAt) {
-            int inst = sortedIndicesOfAtt[i];
-
-            int classValuesI = instClassValues[inst];
-            double weightsI = instWeights[inst];
-
-            dist0[classValuesI] += props0 * weightsI;
-            dist1[classValuesI] += props1 * weightsI;
-            i++;
-        }
+        //i = lastNonmissingValIdx + 1; /// start 1 after the non-missing val (if there is anything)
+        //while (i <= endAt) {
+        //    int inst = sortedIndicesOfAtt[i];
+        //
+        //    int classValuesI = instClassValues[inst];
+        //    double weightsI = instWeights[inst];
+        //
+        //    dist0[classValuesI] += props0 * weightsI;
+        //    dist1[classValuesI] += props1 * weightsI;
+        //    i++;
+        //}
 
         // update the distribution after split and best split point
         // but ONLY if better than the previous one -- we need to recalculate the
@@ -945,9 +939,7 @@ public class FasterTreeTrainable extends FasterTree {
             props[k] = Utils.sum(dist[k]);
         }
         if (Utils.eq(Utils.sum(props), 0)) {
-            for (int k = 0; k < props.length; k++) {
-                props[k] = 1.0 / (double) props.length;
-            }
+            Arrays.fill(props, 1.0 / (double) props.length);
         } else {
             FastRfUtils.normalize(props);
         }
@@ -962,13 +954,20 @@ public class FasterTreeTrainable extends FasterTree {
      * @param distTo Gets overwritten.
      */
     protected static void copyDists( double[][] distFrom, double[][] distTo ) {
-        for ( int i = 0; i < distFrom[0].length; i++ ) {
+        for ( int i = 0, len = distFrom[0].length; i < len; i++ ) {
             distTo[0][i] = distFrom[0][i];
-        }
-        for ( int i = 0; i < distFrom[1].length; i++ ) {
             distTo[1][i] = distFrom[1][i];
         }
     }
+
+//    protected static void copyDists( double[][] distFrom, double[][] distTo ) {
+//        for ( int i = 0; i < distFrom[0].length; i++ ) {
+//            distTo[0][i] = distFrom[0][i];
+//        }
+//        for ( int i = 0; i < distFrom[1].length; i++ ) {
+//            distTo[1][i] = distFrom[1][i];
+//        }
+//    }
 
 
     /**

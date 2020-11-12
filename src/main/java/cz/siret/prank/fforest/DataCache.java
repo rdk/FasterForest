@@ -214,24 +214,23 @@ public class DataCache {
    */
   public DataCache resample(int bagSize, Random random) {
 
-    DataCache result =
-            new DataCache(this); // makes shallow copy of vals matrix
+    DataCache result = new DataCache(this); // makes shallow copy of vals matrix
 
     double[] newWeights = new double[ numInstances ]; // all 0.0 by default
     
     for ( int r = 0; r < bagSize; r++ ) {
-      
-      int curIdx = random.nextInt( numInstances );
-      newWeights[curIdx] += instWeights[curIdx];
-      if ( !result.inBag[curIdx] ) {
+      int inst = random.nextInt( numInstances );
+
+      newWeights[inst] += instWeights[inst];
+
+      if ( !result.inBag[inst] ) {
         result.numInBag++;
-        result.inBag[curIdx] = true;
+        result.inBag[inst] = true;
       }
       
     }
 
     result.instWeights = newWeights;
-
     result.reusableRandomGenerator = result.getRandomNumberGenerator(random.nextInt());
 
     // we also need to fill sortedIndices by peeking into the inBag array, but
@@ -254,15 +253,18 @@ public class DataCache {
       if (a == classIndex)
         continue;      
       
+
       newSortedIndices[a] = new int[this.numInBag];
+      int[] newSortedIndicesA = newSortedIndices[a];
+      int[] sortedIndicesA = sortedIndices[a];
       
       int inBagIdx = 0;
-      for (int i = 0; i < sortedIndices[a].length; i++) {
-        int origIdx = sortedIndices[a][i];
-        if ( !this.inBag[origIdx] )
-          continue;
-        newSortedIndices[a][inBagIdx] = sortedIndices[a][i];
-        inBagIdx++;
+      for (int origIdx : sortedIndicesA) {
+
+        if (this.inBag[origIdx]) {
+          newSortedIndicesA[inBagIdx] = origIdx;
+          inBagIdx++;
+        }
 
       }
       
@@ -298,12 +300,12 @@ public class DataCache {
   public Random getRandomNumberGenerator(long seed) {
 
     Random r = new Random(seed);
-    long dataSignature
-            = Arrays.toString( sortedIndices[ r.nextInt( numAttributes ) ] )
-            .hashCode();
-    r.setSeed( dataSignature + seed );
-    return r;
 
+    //    long dataSignature = Arrays.toString( sortedIndices[ r.nextInt( numAttributes ) ] ).hashCode();
+    long dataSignature = Arrays.hashCode( sortedIndices[ r.nextInt( numAttributes ) ] );
+    r.setSeed( dataSignature + seed );
+
+    return r;
   }
 
 }

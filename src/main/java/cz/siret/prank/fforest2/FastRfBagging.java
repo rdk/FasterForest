@@ -192,7 +192,7 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
         computeInteractionsNew();
       }
 
-      m_Classifiers = convertToLightTrees((FasterForest2Tree[]) m_Classifiers);
+      m_Classifiers = convertToLightTrees(m_Classifiers);
 
       threadPool.shutdown();
 
@@ -202,15 +202,21 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
     }
   }
 
-  private FasterTree[] convertToLightTrees(FasterForest2Tree[] trees) throws Exception {
-    FasterTree[] lightTrees = new FasterTree[trees.length];
+  /**
+   * @param trees FasterForest2Tree[]
+   * @return FasterTree[]
+   * @throws Exception
+   */
+  private Classifier[] convertToLightTrees(Classifier[] trees) throws Exception {
+    Classifier[] lightTrees = new Classifier[trees.length];
 
     List<Future<FasterTree>> futures = new ArrayList<>(trees.length);
     for (int i = 0; i < trees.length; i++) {
       final int treeIdx = i;
       Future<FasterTree> future = threadPool.submit(() -> {
-        FasterForest2Tree curTree = trees[treeIdx];
-        return curTree.toLightVersion();
+        Classifier curTree = trees[treeIdx];
+        trees[treeIdx] = null; // allow GC
+        return ((FasterForest2Tree)curTree).toLightVersion();
       });
 
       futures.add(future);

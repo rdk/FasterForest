@@ -23,7 +23,6 @@
 
 package cz.siret.prank.fforest;
 
-import cz.siret.prank.fforest2.DataCache2;
 import weka.classifiers.Classifier;
 import weka.core.*;
 import weka.core.Capabilities.Capability;

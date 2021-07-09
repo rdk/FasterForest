@@ -692,9 +692,9 @@ public class FasterForest
     StringBuilder sb = new StringBuilder();
     
     if(m_bagger == null)
-      sb.append("FasterForest2 not built yet");
+      sb.append("FasterForest not built yet");
     else {
-      sb.append("FasterForest2 of " + m_numTrees
+      sb.append("FasterForest of " + m_numTrees
         + " trees, each constructed while considering "
         + m_KValue + " random feature" + (m_KValue == 1 ? "" : "s") + ".\n"
         + "Out of bag error: " + Utils.doubleToString(m_bagger.measureOutOfBagError()*100.0, 3) + "%\n"

@@ -132,7 +132,7 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
 
     // thread management
     threadPool = Executors.newFixedThreadPool(threads);
-    List<Future<FasterTree>> futures = new ArrayList<>(m_Classifiers.length);
+    List<Future<FasterForest2Tree>> futures = new ArrayList<>(m_Classifiers.length);
 
     try {
       final int[] seeds = new int[m_Classifiers.length];
@@ -146,8 +146,9 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
 
         final int seed = seeds[treeIdx];
 
-        Future<FasterTree> future = threadPool.submit(() -> {
-          // built tree and convert to lightweight version
+        Future<FasterForest2Tree> future = threadPool.submit(() -> {
+
+          // build tree
 
           FasterForest2Tree curTree = new FasterForest2Tree(motherForest, myData, seed);
           curTree.buildRootTree();
@@ -156,7 +157,7 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
             inBag[treeIdx] = curTree.myInBag; // large array, store only if we need it
           }
 
-          return curTree.toLightVersion();
+          return curTree;
         });
 
         futures.add(future);
@@ -191,12 +192,36 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
         computeInteractionsNew();
       }
 
+      m_Classifiers = convertToLightTrees((FasterForest2Tree[]) m_Classifiers);
+
       threadPool.shutdown();
 
     }
     finally {
       threadPool.shutdownNow();
     }
+  }
+
+  private FasterTree[] convertToLightTrees(FasterForest2Tree[] trees) throws Exception {
+    FasterTree[] lightTrees = new FasterTree[trees.length];
+
+    List<Future<FasterTree>> futures = new ArrayList<>(trees.length);
+    for (int i = 0; i < trees.length; i++) {
+      final int treeIdx = i;
+      Future<FasterTree> future = threadPool.submit(() -> {
+        FasterForest2Tree curTree = trees[treeIdx];
+        return curTree.toLightVersion();
+      });
+
+      futures.add(future);
+    }
+
+    // make sure all trees have been trained before proceeding
+    for (int treeIdx = 0; treeIdx < m_Classifiers.length; treeIdx++) {
+      lightTrees[treeIdx] = futures.get(treeIdx).get();
+    }
+
+    return lightTrees;
   }
 
 

@@ -74,14 +74,14 @@ public class VotesCollectorDataCache implements Callable<Double>{
 
       numVotes++;
 
-      FasterTree aTree;
-      if ( m_Classifiers[treeIdx] instanceof FasterTree)
-        aTree = (FasterTree) m_Classifiers[treeIdx];
+      FasterForest2Tree aTree;
+      if ( m_Classifiers[treeIdx] instanceof FasterForest2Tree)
+        aTree = (FasterForest2Tree) m_Classifiers[treeIdx];
       else
         throw new IllegalArgumentException("Only FasterTree accepted in the VotesCollector.");
 
       double[] curDist;
-      curDist = aTree.distributionForInstanceInDataCache(data.vals, instanceIdx);
+      curDist = aTree.distributionForInstanceInDataCache(data, instanceIdx);
 
       for(int classIdx = 0; classIdx < curDist.length; classIdx++) {
         classProbs[classIdx] += curDist[classIdx];

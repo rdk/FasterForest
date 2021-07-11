@@ -1,27 +1,28 @@
-[![Build Status](https://travis-ci.org/rdk/FasterForest.svg?branch=master)](https://travis-ci.org/rdk/FasterForest)
-[![HitCount](http://hits.dwyl.io/rdk/FasterForest.svg)](http://hits.dwyl.io/rdk/FasterForest)
+
+[![version 2.3](https://img.shields.io/badge/version-2.3.4-green.svg)](/build.gradle)
+[![Build Status](https://github.com/rdk/FasterForest/actions/workflows/main.yml/badge.svg)](https://github.com/rdk/FasterForest/actions/workflows/main.yml)
 [![License: GPL v2](https://img.shields.io/badge/License-GPL%20v2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)
 
-FasterForest
-==============
+FasterForest library
+====================
 
 A streamlined version of Fran Supeks's FastRandomForest.
 Compared to FastRandomForest it uses around 75% time and 50% memory.
 
 Does not support nominal attributes and missing values.
 
-FasterForest 2.0.0
---------------------
+FasterForest2
+-------------
 
 Added FasterForest2 based on FastRandomForest 2.0 (https://github.com/GenomeDataScience/FastRandomForest).
 
-FasterForest 1.0.0
---------------------
+FasterForest
+------------
 
 Now in its own repo with mavenized gradle build.
 
---rdk
 
+Old readme notes:
 
 FastRandomForest v0.9
 ---------------------

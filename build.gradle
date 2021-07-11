@@ -1,5 +1,4 @@
 apply plugin:'java'
-apply plugin: 'maven'
 
 
 group = 'cz.siret.prank'
@@ -11,7 +10,6 @@ targetCompatibility = 1.8
 
 repositories {
 
-    jcenter()
     mavenCentral()
     mavenLocal()
 
@@ -39,7 +37,7 @@ test {
 }
 
 dependencies {
-    compile 'nz.ac.waikato.cms.weka:weka-dev:3.9.5'
+    implementation 'nz.ac.waikato.cms.weka:weka-dev:3.9.5'
 
-    testCompile 'junit:junit:4.13.2'
+    testImplementation 'junit:junit:4.13.2'
 }

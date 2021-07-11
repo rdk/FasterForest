@@ -12,6 +12,8 @@ public class FasterForest2Test {
     @Test
     public void testCreate() {
         FasterForest2 ff = new FasterForest2();
+
+        assertTrue(ff != null);
     }
 
 }

@@ -41,5 +41,5 @@ test {
 dependencies {
     compile 'nz.ac.waikato.cms.weka:weka-dev:3.9.5'
 
-    testCompile 'junit:junit:4.13.1'
+    testCompile 'junit:junit:4.13.2'
 }

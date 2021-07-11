@@ -22,7 +22,6 @@
 package cz.siret.prank.fforest2;
 
 import cz.siret.prank.ffutils.ATimer;
-import jdk.nashorn.internal.runtime.regexp.joni.exception.ValueException;
 import weka.core.Instances;
 
 import java.util.Arrays;
@@ -223,7 +222,7 @@ public class DataCache2 {
    */
   public DataCache2 resample(Random random, int nAttrVirtual) {
     if (nAttrVirtual >= numAttributes) {
-      throw new ValueException("nAttr must be less than numAttributes");
+      throw new IllegalArgumentException("nAttr must be less than numAttributes");
     }
     // makes shallow copy of vals matrix
     // makes a deep copy of each instance, but with a shallow copy of its attributes

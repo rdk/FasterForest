@@ -84,6 +84,34 @@ public class FasterTree
 
   public FasterTree() {}
 
+//===============================================================================================//
+
+  public FasterTree getSucessorLeft() {
+    return sucessorLeft;
+  }
+
+  public FasterTree getSucessorRight() {
+    return sucessorRight;
+  }
+
+  public int getAttribute() {
+    return m_Attribute;
+  }
+
+  public double getSplitPoint() {
+    return m_SplitPoint;
+  }
+
+  public double[] getClassProbs() {
+    return m_ClassProbs;
+  }
+
+  public boolean isLeaf() {
+    return m_Attribute == -1;
+  }
+
+//===============================================================================================//
+
   /**
    * Get the value of MinNum.
    *
@@ -245,11 +273,36 @@ public class FasterTree
    * @return the number of nodes
    */
   public int numNodes() {
-
     if (m_Attribute == -1) {
       return 1;
     } else {
       int size = 1;
+
+      size += sucessorLeft.numNodes();
+      size += sucessorRight.numNodes();
+
+      return size;
+    }
+  }
+
+  public int numSplitNodes() {
+    if (m_Attribute == -1) {
+      return 0;
+    } else {
+      int size = 1;
+
+      size += sucessorLeft.numNodes();
+      size += sucessorRight.numNodes();
+
+      return size;
+    }
+  }
+
+  public int numLeaves() {
+    if (m_Attribute == -1) {
+      return 1;
+    } else {
+      int size = 0;
 
       size += sucessorLeft.numNodes();
       size += sucessorRight.numNodes();

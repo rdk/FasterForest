@@ -213,6 +213,20 @@ class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
     }
   }
 
+  public Classifier[] getClassifiers() {
+    return m_Classifiers;
+  }
+
+  public List<FasterTree> getClassifiersAsTrees() {
+    List<FasterTree> trees = new ArrayList<>(m_Classifiers.length);
+
+    for (Classifier classifier : m_Classifiers) {
+      trees.add((FasterTree) classifier);
+    }
+
+    return trees;
+  }
+
   /**
    * Compute the out-of-bag error for a set of instances.
    *

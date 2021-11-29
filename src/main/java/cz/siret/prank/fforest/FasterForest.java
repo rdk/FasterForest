@@ -23,6 +23,9 @@
 
 package cz.siret.prank.fforest;
 
+import cz.siret.prank.fforest.api.FlatBinaryForest;
+import cz.siret.prank.fforest.api.FlatBinaryForestBuilder;
+import cz.siret.prank.fforest.api.FlattableForest;
 import weka.classifiers.AbstractClassifier;
 import weka.core.*;
 import weka.core.TechnicalInformation.Field;
@@ -93,14 +96,18 @@ import java.util.Vector;
  * @version $Revision: 0.99$
  */
 public class FasterForest
-  extends AbstractClassifier
-  implements OptionHandler, Randomizable, WeightedInstancesHandler,
-             AdditionalMeasureProducer, TechnicalInformationHandler {
+    extends AbstractClassifier
+    implements OptionHandler, Randomizable, WeightedInstancesHandler,
+    AdditionalMeasureProducer, TechnicalInformationHandler, FlattableForest {
 
-  /** for serialization */
+  /**
+   * for serialization
+   */
   static final long serialVersionUID = 4216839470751428701L;
 
-  /** Number of trees in forest. */
+  /**
+   * Number of trees in forest.
+   */
   protected int m_numTrees = 100;
 
   /**
@@ -738,6 +745,11 @@ public class FasterForest
   ////////////////////////////
   // /Feature importances stuff
   ////////////////////////////
+
+
+  public FlatBinaryForest toFlatBinaryForest() {
+    return new FlatBinaryForestBuilder().buildFromFasterTrees(m_bagger.getClassifiersAsTrees());
+  }
 
 }
 

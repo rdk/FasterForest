@@ -1,12 +1,14 @@
 package cz.siret.prank.fforest;
 
+import cz.siret.prank.fforest.api.FlatBinaryForest;
 import cz.siret.prank.fforest2.FasterForest2;
 import org.junit.Before;
 import org.junit.Test;
 import weka.core.Instances;
 import weka.core.converters.ConverterUtils;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  *
@@ -75,6 +77,30 @@ public class FasterForestTest {
         ff.buildClassifier(dataset1);
         ff.getFeatureImportances();
         ff.toString();
+    }
+
+    @Test
+    public void flattenFF() throws Exception {
+        FasterForest ff = setupFF();
+
+        ff.buildClassifier(dataset1);
+
+        FlatBinaryForest fbf = ff.toFlatBinaryForest();
+
+        assertEquals(ff.getMaxDepth(), fbf.getMaxDepth());
+        assertEquals(ff.getNumTrees(), fbf.getNumTrees());
+    }
+
+    @Test
+    public void flattenFF2() throws Exception {
+        FasterForest2 ff = setupFF2();
+
+        ff.buildClassifier(dataset1);
+
+        FlatBinaryForest fbf = ff.toFlatBinaryForest();
+
+        assertEquals(ff.getMaxDepth(), fbf.getMaxDepth());
+        assertEquals(ff.getNumTrees(), fbf.getNumTrees());
     }
 
 //===============================================================================================//

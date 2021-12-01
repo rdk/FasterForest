@@ -493,6 +493,7 @@ public class FasterTreeTrainable extends FasterTree {
             // the first index of the sortedIndices in the above branch, and the first index in the below
             int startAbove = 0, startBelow = num0; // always only 2 sub-branches, remember where second starts
 
+            // TODO make faster custom fill
             Arrays.fill(tempArr, 0, endAt-startAt+1, 0);
 
             //for (int branch = 0; branch < num.length; branch++) {
@@ -1003,9 +1004,11 @@ public class FasterTreeTrainable extends FasterTree {
         // prepare the DataCache by:
         // ... creating an array for the whatGoesWhere field of the data
         // ... creating the sortedIndices
+        // TODO recycle this array
         data.whatGoesWhere = new int[ data.inBag.length ];
         data.createInBagSortedIndices();
 
+        // TODO recycle this array
         tempIndices = new int[n];
 
         buildTree(data.sortedIndices, 0, data.sortedIndices[0].length-1,

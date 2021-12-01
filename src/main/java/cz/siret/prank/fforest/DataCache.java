@@ -120,7 +120,7 @@ public class DataCache {
     }
 
     /* Array is indexed by attribute first, to speed access in RF splitting. */
-    vals = new float[numAttributes][numInstances];
+    vals = new float[numAttributes][numInstances];       // TODO reuse
     for (int a = 0; a < numAttributes; a++) {
       for (int i = 0; i < numInstances; i++) {
         if (origData.instance(i).isMissing(a))
@@ -130,8 +130,8 @@ public class DataCache {
       }
     }
 
-    instWeights = new double[numInstances];
-    instClassValues = new int[numInstances];
+    instWeights = new double[numInstances];            // TODO reuse
+    instClassValues = new int[numInstances];            // TODO reuse
     for (int i = 0; i < numInstances; i++) {
       instWeights[i] = origData.instance(i).weight();
       instClassValues[i] = (int) origData.instance(i).classValue();
@@ -189,6 +189,7 @@ public class DataCache {
 
     instWeights = origData.instWeights;     // shallow copied
 
+    // TODO recycle
     inBag = new boolean[numInstances];      // gets its own inBag array
     numInBag = 0;
     
@@ -216,6 +217,7 @@ public class DataCache {
 
     DataCache result = new DataCache(this); // makes shallow copy of vals matrix
 
+    // TODO recycle
     double[] newWeights = new double[ numInstances ]; // all 0.0 by default
     
     for ( int r = 0; r < bagSize; r++ ) {
@@ -246,6 +248,7 @@ public class DataCache {
   /** Invoked only when tree is trained. */
   protected void createInBagSortedIndices() {
 
+    // TODO recycle
     int[][] newSortedIndices = new int[ numAttributes ][ ];
     
     for (int a = 0; a < numAttributes; a++) {

@@ -29,15 +29,18 @@ public class FlatBinaryForestBuilder {
             leaves += tree.numLeaves();
         }
 
-        childRight = new int[splitNodes];
-        childLeft = new int[splitNodes];
-        attributeIndex = new int[splitNodes];
-        splitPoint = new double[splitNodes];
+        int numTrees = trees.size();
+        int m = Math.max(numTrees, splitNodes); // at least one node for tree
+
+        childRight = new int[m];
+        childLeft = new int[m];
+        attributeIndex = new int[m];
+        splitPoint = new double[m];
         score = new double[leaves+1];
 
-        posSplitNodes = trees.size(); // leave first n as root nodes for each tree
+        posSplitNodes = numTrees; // leave first n as root nodes for each tree
 
-        for (int i=0; i!=trees.size(); ++i) {
+        for (int i=0; i!=numTrees; ++i) {
             compileTree(i, trees.get(i));
         }
 

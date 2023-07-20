@@ -1,5 +1,5 @@
 
-[![version 2.3](https://img.shields.io/badge/version-2.3.4-green.svg)](/build.gradle)
+[![version 2.4.0](https://img.shields.io/badge/version-2.4.0-green.svg)](/build.gradle)
 [![Build Status](https://github.com/rdk/FasterForest/actions/workflows/main.yml/badge.svg)](https://github.com/rdk/FasterForest/actions/workflows/main.yml)
 [![License: GPL v2](https://img.shields.io/badge/License-GPL%20v2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)
 

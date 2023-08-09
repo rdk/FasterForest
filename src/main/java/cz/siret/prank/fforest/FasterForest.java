@@ -742,10 +742,10 @@ public class FasterForest
     return m_bagger.getFeatureImportances();
   }
 
-  ////////////////////////////
-  // /Feature importances stuff
-  ////////////////////////////
 
+  ////////////////////////////
+  // Conversions
+  ////////////////////////////
 
   public FlatBinaryForest toFlatBinaryForest() {
     return new FlatBinaryForestBuilder().buildFromFasterTrees(m_bagger.getClassifiersAsTrees());

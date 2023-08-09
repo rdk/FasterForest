@@ -12,18 +12,18 @@ import java.io.Serializable;
  */
 public class FlatBinaryForest implements BinaryForest, Classifier, Serializable {
 
-    static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-    private int numTrees;
+    private final int numTrees;
     private transient int maxDepth = -1; // lazy, -1 = not calculated yet
 
-    private transient double numTreesDouble;
+    private transient final double numTreesDouble;
 
-    private int[] childRight;
-    private int[] childLeft;
-    private int[] attributeIndex;
-    private double[] splitPoint;
-    private double[] score;
+    private final int[] childRight;
+    private final int[] childLeft;
+    private final int[] attributeIndex;
+    private final double[] splitPoint;
+    private final double[] score;
 
     @Override
     public int getNumClasses() {

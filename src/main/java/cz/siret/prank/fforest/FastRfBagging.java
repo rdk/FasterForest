@@ -69,7 +69,7 @@ import java.util.concurrent.Future;
  * @author Fran Supek (fran.supek[AT]irb.hr) - adapted code
  * @version $Revision: 0.99$
  */
-class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
+public class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
   implements WeightedInstancesHandler, AdditionalMeasureProducer {
 
   /**

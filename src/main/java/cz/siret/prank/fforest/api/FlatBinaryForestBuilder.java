@@ -9,6 +9,14 @@ import java.util.List;
  */
 public class FlatBinaryForestBuilder {
 
+    /**
+     * Use only positive class probability
+     */
+    boolean useOnlyPositive = false;
+
+
+//===============================================================================================//
+
     int[] childRight;
     int[] childLeft;
     int[] attributeIndex;
@@ -17,6 +25,17 @@ public class FlatBinaryForestBuilder {
 
     int posSplitNodes = 0;
     int posScore = 1;
+
+//===============================================================================================//
+
+    /**
+     * @param trees
+     * @param useOnlyPositiveClassProbability Use only positive class probability p_class[1] instead of ratio p_class[1] / (p_class[0] + p_class[1])
+     */
+    public FlatBinaryForest buildFromFasterTrees(List<FasterTree> trees, boolean useOnlyPositiveClassProbability) {
+        useOnlyPositive = useOnlyPositiveClassProbability;
+        return buildFromFasterTrees(trees);
+    }
 
 
     public FlatBinaryForest buildFromFasterTrees(List<FasterTree> trees) {
@@ -51,7 +70,7 @@ public class FlatBinaryForestBuilder {
         if (tree.isLeaf()) {
             childLeft[treeIdx] = -posScore;
             childRight[treeIdx] = -posScore;
-            score[posScore] = getScoreFromProbs(tree);
+            score[posScore] = getScoreFromProbs(tree.getClassProbs());
             posScore++;
         } else {
             compileSplitNode(treeIdx, tree);
@@ -70,7 +89,7 @@ public class FlatBinaryForestBuilder {
 
         if (left.isLeaf()) {
             childLeft[treeIdx] = -posScore;
-            score[posScore] = getScoreFromProbs(left);
+            score[posScore] = getScoreFromProbs(left.getClassProbs());
             posScore++;
         } else {
             leftIdx = posSplitNodes++;
@@ -79,7 +98,7 @@ public class FlatBinaryForestBuilder {
 
         if (right.isLeaf()) {
             childRight[treeIdx] = -posScore;
-            score[posScore] = getScoreFromProbs(right);
+            score[posScore] = getScoreFromProbs(right.getClassProbs());
             posScore++;
         } else {
             rightIdx = posSplitNodes++;
@@ -94,9 +113,14 @@ public class FlatBinaryForestBuilder {
         }
     }
 
-    private double getScoreFromProbs(FasterTree tree) {
-        double[] hist = tree.getClassProbs();
-        return hist[1] / (hist[0] + hist[1]);
+    private double getScoreFromProbs(double[] classProbs) {
+        double p1 = classProbs[1];
+
+        if (useOnlyPositive) {
+            return p1;
+        } else {
+            return p1 / (classProbs[0] + p1);
+        }
     }
 
 }

@@ -114,6 +114,10 @@ public class FlatBinaryForestBuilder {
     }
 
     private double getScoreFromProbs(double[] classProbs) {
+        if (classProbs == null) {
+            throw new RuntimeException("classProbsis null");
+        }
+
         double p1 = classProbs[1];
 
         if (useOnlyPositive) {

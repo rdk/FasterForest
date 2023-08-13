@@ -91,14 +91,15 @@ public class FlatBinaryForestBuilder {
             compileTree(i, trees.get(i));
         }
 
+        // check nulls
         int nulls = 0;
         for (int i=1; i!=classProbs.length; ++i) {   // at i=0 classProbs is null by design
             if (classProbs[i] == null) {
                 nulls++;
             }
-            if (nulls > 0) {
-                throw new RuntimeException(String.format("Found %d null class probs out of %d leaves", nulls, classProbs.length-1));
-            }
+        }
+        if (nulls > 0) {
+            throw new RuntimeException(String.format("Found %d null class probs out of %d leaves", nulls, classProbs.length-1));
         }
 
         if (legacyClassProbs) {

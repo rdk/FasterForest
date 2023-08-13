@@ -304,8 +304,8 @@ public class FasterTree
     } else {
       int size = 1;
 
-      size += sucessorLeft.numNodes();
-      size += sucessorRight.numNodes();
+      size += sucessorLeft.numSplitNodes();
+      size += sucessorRight.numSplitNodes();
 
       return size;
     }
@@ -317,8 +317,8 @@ public class FasterTree
     } else {
       int size = 0;
 
-      size += sucessorLeft.numNodes();
-      size += sucessorRight.numNodes();
+      size += sucessorLeft.numLeaves();
+      size += sucessorRight.numLeaves();
 
       return size;
     }

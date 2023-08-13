@@ -6,6 +6,7 @@ import weka.core.Instance;
 import weka.core.Instances;
 
 import java.io.Serializable;
+import java.util.Arrays;
 
 /**
  *
@@ -14,20 +15,35 @@ public class FlatBinaryForest implements BinaryForest, Classifier, Serializable 
 
     private static final long serialVersionUID = 1L;
 
-    private final int numTrees;
-    private transient int maxDepth = -1; // lazy, -1 = not calculated yet
+    protected final int numTrees;
+    protected final int numAttributes;
+    protected final int[] childRight;
+    protected final int[] childLeft;
+    protected final int[] attributeIndex;
+    protected final double[] splitPoint;
+    protected final double[] score;
 
-    private transient final double numTreesDouble;
 
-    private final int[] childRight;
-    private final int[] childLeft;
-    private final int[] attributeIndex;
-    private final double[] splitPoint;
-    private final double[] score;
+
+    protected transient final double numTreesAsDouble;  // cache to avoid repeated type conversion
+    protected transient int maxDepth = -1; // lazy, -1 = not calculated yet
+
+    protected transient int[] treeDepths;
+
+//===============================================================================================//
+
+    protected boolean aggregateByVoting = false;
+
+//===============================================================================================//
 
     @Override
     public int getNumClasses() {
         return 2;
+    }
+
+    @Override
+    public int getNumAttributes() {
+        return numAttributes;
     }
 
     @Override
@@ -38,9 +54,31 @@ public class FlatBinaryForest implements BinaryForest, Classifier, Serializable 
     @Override
     public int getMaxDepth() {
         if (maxDepth < 0) {
-            maxDepth = calculateMaxDepth();
+            calculateDepths();
         }
         return maxDepth;
+    }
+
+    public int[] getTreeDepths() {
+        if (treeDepths == null) {
+            calculateDepths();
+        }
+        return treeDepths;
+    }
+
+//===============================================================================================//
+
+    private void calculateDepths() {
+        treeDepths = calculateTreeDepths();
+        maxDepth = Arrays.stream(treeDepths).max().getAsInt();
+    }
+
+    private int[] calculateTreeDepths() {
+        int[] depths = new int[numTrees];
+        for (int i=0; i!=numTrees; ++i) {
+            depths[i] = calculateTreeDepth(i);
+        }
+        return depths;
     }
 
     private int calculateMaxDepth() {
@@ -53,6 +91,8 @@ public class FlatBinaryForest implements BinaryForest, Classifier, Serializable 
         return max;
     }
 
+//===============================================================================================//
+
     @Override
     public double predict(double[] instanceAttributes) {
         double sum = 0d;
@@ -61,12 +101,36 @@ public class FlatBinaryForest implements BinaryForest, Classifier, Serializable 
             sum += predictTree(i, instanceAttributes);
         }
 
-        return sum / numTreesDouble;
+        return sum / numTreesAsDouble;
+    }
+
+    public double predictByAverage(double[] instanceAttributes) {
+        double sum = 0d;
+
+        for (int i=0; i!=numTrees; ++i) {
+            sum += predictTree(i, instanceAttributes);
+        }
+
+        return sum / numTreesAsDouble;
+    }
+
+    /**
+     * For backwards compatibility of old models.
+     * This is how FastRandomForest does it.
+     */
+    public double predictByVoting(double[] instanceAttributes) {
+        double sum = 0d;
+
+        for (int i=0; i!=numTrees; ++i) {
+            sum += predictTree(i, instanceAttributes);
+        }
+
+        return sum / numTreesAsDouble;
     }
 
 //===============================================================================================//
 
-    private double predictTree(int tree, double[] instanceAttributes) {
+    protected double predictTree(int tree, double[] instanceAttributes) {
         int currentNode = tree;
         int attr;
 
@@ -86,9 +150,20 @@ public class FlatBinaryForest implements BinaryForest, Classifier, Serializable 
         
     }
 
+    public double[] evalTrees(double[] instanceAttributes) {
+        double[] res = new double[numTrees];
+        for (int i=0; i!=numTrees; ++i) {
+            res[i] = predictTree(i, instanceAttributes);
+        }
+        return res;
+    }
+
+    /**
+     * @return max tree depth
+     */
     private int calculateTreeDepth(int tree) {
         if (tree < 0) {
-            return 0;
+            return 1;
         }
 
         int left = calculateTreeDepth(childLeft[tree]);
@@ -100,15 +175,16 @@ public class FlatBinaryForest implements BinaryForest, Classifier, Serializable 
 //===============================================================================================//
 
 
-    public FlatBinaryForest(int numTrees, int[] childRight, int[] childLeft, int[] attributeIndex, double[] splitPoint, double[] score) {
+    public FlatBinaryForest(int numTrees, int numAttributes, int[] childRight, int[] childLeft, int[] attributeIndex, double[] splitPoint, double[] score) {
         this.numTrees = numTrees;
+        this.numAttributes = numAttributes;
         this.childRight = childRight;
         this.childLeft = childLeft;
         this.attributeIndex = attributeIndex;
         this.splitPoint = splitPoint;
         this.score = score;
 
-        this.numTreesDouble = numTrees;
+        this.numTreesAsDouble = numTrees;
     }
 
 //===============================================================================================//
@@ -125,12 +201,21 @@ public class FlatBinaryForest implements BinaryForest, Classifier, Serializable 
 
     @Override
     public double[] distributionForInstance(Instance instance) throws Exception {
-        return new double[0];
+        double p = predict(instance.toDoubleArray());
+        return new double[] {1d - p, p};
     }
 
     @Override
     public Capabilities getCapabilities() {
         return null;
+    }
+
+    public boolean isAggregateByVoting() {
+        return aggregateByVoting;
+    }
+
+    public void setAggregateByVoting(boolean aggregateByVoting) {
+        this.aggregateByVoting = aggregateByVoting;
     }
     
 }

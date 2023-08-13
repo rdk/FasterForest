@@ -649,7 +649,7 @@ public class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
     for (int i = 0; i < m_NumIterations; i++) {
       if (instance.classAttribute().isNumeric()) {
         sums[0] += m_Classifiers[i].classifyInstance(instance);
-      } else {
+      } else { // nominal
         newProbs = m_Classifiers[i].distributionForInstance(instance);
         for (int j = 0; j < newProbs.length; j++)
           sums[j] += newProbs[j];

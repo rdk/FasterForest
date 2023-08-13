@@ -11,6 +11,14 @@ public interface BinaryForest {
 
     int getNumClasses();
 
+    /**
+     * Input vector length.
+     */
+    int getNumAttributes();
+
+    /**
+     * @param instanceAttributes length must be equal to getNumAttributes()
+     */
     double predict(double[] instanceAttributes);
 
 }

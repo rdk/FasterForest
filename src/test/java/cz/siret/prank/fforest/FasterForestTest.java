@@ -4,11 +4,14 @@ import cz.siret.prank.fforest.api.FlatBinaryForest;
 import cz.siret.prank.fforest2.FasterForest2;
 import org.junit.Before;
 import org.junit.Test;
+import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.converters.ConverterUtils;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import java.util.Arrays;
+import java.util.concurrent.ThreadLocalRandom;
+
+import static org.junit.Assert.*;
 
 /**
  *
@@ -37,10 +40,10 @@ public class FasterForestTest {
     private FasterForest setupFF() {
         FasterForest ff = new FasterForest();
 
-        ff.setNumTrees(8);
+        ff.setNumTrees(64);
         ff.setSeed(42);
         ff.setNumFeatures(5);
-        ff.setMaxDepth(4);
+        ff.setMaxDepth(0);
         ff.setBagSizePercent(55);
 
         ff.setCalcOutOfBag(false);
@@ -48,6 +51,9 @@ public class FasterForestTest {
 
         return ff;
     }
+
+
+//===============================================================================================//
 
     @Test
     public void createFF() {
@@ -79,16 +85,55 @@ public class FasterForestTest {
         ff.toString();
     }
 
+
     @Test
     public void flattenFF() throws Exception {
+        FasterForest ff = setupFF();
+        ff.buildClassifier(dataset1);
+
+        FlatBinaryForest fbf = ff.toFlatBinaryForest(false);
+
+        assertEquals(ff.calculateMaxTreeDepth(), fbf.getMaxDepth());
+        assertEquals(ff.getNumTrees(), fbf.getNumTrees());
+        assertEquals(ff.getFeatureVectorLength(), fbf.getNumAttributes());
+
+        for (Instance inst : dataset1) {
+            double[] classProbs_ff = ff.distributionForInstance(inst);
+            double[] classProbs_fbf = fbf.distributionForInstance(inst);
+            assertArrayEquals(classProbs_ff, classProbs_fbf, 0.000000000000001d);
+        }
+
+    }
+
+    @Test
+    public void flattenFFLegacy() throws Exception {
         FasterForest ff = setupFF();
 
         ff.buildClassifier(dataset1);
 
         FlatBinaryForest fbf = ff.toFlatBinaryForest();
 
-        assertEquals(ff.getMaxDepth(), fbf.getMaxDepth());
+        assertEquals(ff.calculateMaxTreeDepth(), fbf.getMaxDepth());
         assertEquals(ff.getNumTrees(), fbf.getNumTrees());
+        assertEquals(ff.getFeatureVectorLength(), fbf.getNumAttributes());
+
+        System.out.println("Orig tree depths:" + Arrays.toString(ff.calculateTreeDepths()));
+        System.out.println("Flat tree depths:" + Arrays.toString(fbf.getTreeDepths()));
+
+        for (Instance inst : dataset1) {
+            double[] classProbs_ff = ff.distributionForInstance(inst);
+            double[] classProbs_fbf = fbf.distributionForInstance(inst);
+
+            assertArrayEquals(classProbs_ff, classProbs_fbf, 0.000000000000001d);
+
+            //double[][] eval_ff = ff.evalTrees(inst.toDoubleArray());
+            //double[] eval_fbf = fbf.evalTrees(inst.toDoubleArray());
+            //for (int i=0; i!=ff.getNumTrees(); ++i) {
+            //    System.out.printf(" Tree %d: FF:%s FBF:%f%n", i, Arrays.toString(eval_ff[i]), eval_fbf[i]);
+            //}
+            //System.out.println("Class probs FF:" + Arrays.toString(classProbs_ff) + ", FBF:" + Arrays.toString(classProbs_fbf));
+        }
+
     }
 
     @Test
@@ -97,10 +142,40 @@ public class FasterForestTest {
 
         ff.buildClassifier(dataset1);
 
+        FlatBinaryForest fbf = ff.toFlatBinaryForest(false);
+
+        assertEquals(ff.calculateMaxTreeDepth(), fbf.getMaxDepth());
+        assertEquals(ff.getNumTrees(), fbf.getNumTrees());
+        assertEquals(ff.getFeatureVectorLength(), fbf.getNumAttributes());
+
+        for (Instance inst : dataset1) {
+            double[] classProbs_ff = ff.distributionForInstance(inst);
+            double[] classProbs_fbf = fbf.distributionForInstance(inst);
+
+            assertArrayEquals(classProbs_ff, classProbs_fbf, 0.000000000000001d);
+        }
+        
+    }
+
+    @Test
+    public void flattenFF2Legacy() throws Exception {
+        FasterForest2 ff = setupFF2();
+
+        ff.buildClassifier(dataset1);
+
         FlatBinaryForest fbf = ff.toFlatBinaryForest();
 
-        assertEquals(ff.getMaxDepth(), fbf.getMaxDepth());
+        assertEquals(ff.calculateMaxTreeDepth(), fbf.getMaxDepth());
         assertEquals(ff.getNumTrees(), fbf.getNumTrees());
+        assertEquals(ff.getFeatureVectorLength(), fbf.getNumAttributes());
+
+        for (Instance inst : dataset1) {
+            double[] classProbs_ff = ff.distributionForInstance(inst);
+            double[] classProbs_fbf = fbf.distributionForInstance(inst);
+
+            assertArrayEquals(classProbs_ff, classProbs_fbf, 0.000000000000001d);
+        }
+
     }
 
 //===============================================================================================//
@@ -122,6 +197,8 @@ public class FasterForestTest {
 
         return ff;
     }
+
+//===============================================================================================//
 
     @Test
     public void createFF2() {

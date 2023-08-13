@@ -31,7 +31,9 @@ import weka.core.*;
 import weka.core.TechnicalInformation.Field;
 import weka.core.TechnicalInformation.Type;
 
+import java.util.Arrays;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.Vector;
 
 /**
@@ -109,6 +111,12 @@ public class FasterForest
    * Number of trees in forest.
    */
   protected int m_numTrees = 100;
+
+
+  /**
+   * Length of input feature vector.
+   */
+  protected int featureVectorLength = 0;
 
   /**
    * Number of features to consider in random feature selection.
@@ -229,6 +237,13 @@ public class FasterForest
    */
   public String numFeaturesTipText(){
     return "The number of attributes to be used in random selection (see RandomTree2).";
+  }
+
+  /**
+   * Input vector length.
+   */
+  public int getFeatureVectorLength() {
+    return m_Info.numAttributes();
   }
 
   /**
@@ -641,6 +656,7 @@ public class FasterForest
     /* Save header with attribute info. Can be accessed later by FastRfTrees
      * through their m_MotherForest field. */
     m_Info = new Instances(data, 0);
+    featureVectorLength = m_Info.numAttributes();
 
     m_bagger = new FastRfBagging();
 
@@ -748,8 +764,43 @@ public class FasterForest
   ////////////////////////////
 
   public FlatBinaryForest toFlatBinaryForest() {
-    return new FlatBinaryForestBuilder().buildFromFasterTrees(m_bagger.getClassifiersAsTrees());
+    return new FlatBinaryForestBuilder().buildFromFasterTreesLegacy(getFeatureVectorLength(), m_bagger.getClassifiersAsTrees());
   }
+
+  public FlatBinaryForest toFlatBinaryForest(boolean legacyClassProbs) {
+    return new FlatBinaryForestBuilder().buildFromFasterTrees(getFeatureVectorLength(), m_bagger.getClassifiersAsTrees(), legacyClassProbs);
+  }
+
+//===============================================================================================//
+
+  FasterTree getTree(int i) {
+    return (FasterTree)m_bagger.getClassifiers()[i];
+  }
+
+  List<FasterTree> getTrees() {
+    return m_bagger.getClassifiersAsTrees();
+  }
+
+  public int calculateMaxTreeDepth() {
+    return Arrays.stream(calculateTreeDepths()).max().getAsInt();
+  }
+
+  public int[] calculateTreeDepths() {
+    int[] depths = new int[m_numTrees];
+    for (int i=0; i!=m_numTrees; ++i) {
+      depths[i] = getTree(i).getDepth();
+    }
+    return depths;
+  }
+
+  public double[][] evalTrees(double[] attributes) {
+    double[][] res = new double[m_numTrees][];
+    for (int i=0; i!=m_numTrees; ++i) {
+      res[i] = getTree(i).distributionForAttributes(attributes);
+    }
+    return res;
+  }
+
 
 }
 

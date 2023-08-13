@@ -113,6 +113,19 @@ public class FasterTree
 //===============================================================================================//
 
   /**
+   * @return max tree depth
+   */
+  public int getDepth() {
+    if (isLeaf()) {
+      return 1;
+    } else {
+      return 1 + Math.max(sucessorLeft.getDepth(), sucessorRight.getDepth());
+    }
+  }
+
+//===============================================================================================//
+
+  /**
    * Get the value of MinNum.
    *
    * @return Value of MinNum.

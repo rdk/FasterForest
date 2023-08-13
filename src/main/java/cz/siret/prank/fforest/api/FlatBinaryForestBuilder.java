@@ -105,7 +105,6 @@ public class FlatBinaryForestBuilder {
         if (legacyClassProbs) {
             return new LegacyFlatBinaryForest(trees.size(), numAttributes, childRight, childLeft, attributeIndex, splitPoint, classProbs);
         } else {
-            System.out.println("classProbs:" + Arrays.toString(classProbs));
             double[] scores = calculateScoresFromProbs(classProbs);
             return new FlatBinaryForest(trees.size(), numAttributes, childRight, childLeft, attributeIndex, splitPoint, scores);
         }

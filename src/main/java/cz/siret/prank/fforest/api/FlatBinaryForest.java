@@ -30,16 +30,22 @@ public class FlatBinaryForest implements BinaryForest, Classifier, Serializable 
 
     protected transient int[] treeDepths;
 
-//===============================================================================================//
-
-    protected boolean aggregateByVoting = false;
 
 //===============================================================================================//
 
-    @Override
-    public int getNumClasses() {
-        return 2;
+    public FlatBinaryForest(int numTrees, int numAttributes, int[] childLeft, int[] childRight, int[] attributeIndex, double[] splitPoint, double[] score) {
+        this.numTrees = numTrees;
+        this.numAttributes = numAttributes;
+        this.childLeft = childLeft;
+        this.childRight = childRight;
+        this.attributeIndex = attributeIndex;
+        this.splitPoint = splitPoint;
+        this.score = score;
+
+        this.numTreesAsDouble = numTrees;
     }
+
+//===============================================================================================//
 
     @Override
     public int getNumAttributes() {
@@ -91,34 +97,26 @@ public class FlatBinaryForest implements BinaryForest, Classifier, Serializable 
         return max;
     }
 
+
+    /**
+     * @return max tree depth
+     */
+    private int calculateTreeDepth(int tree) {
+        if (tree < 0) {
+            return 1;
+        }
+
+        int left = calculateTreeDepth(childLeft[tree]);
+        int right = calculateTreeDepth(childRight[tree]);
+
+        return Math.max(left, right) + 1;
+    }
+
+
 //===============================================================================================//
 
     @Override
     public double predict(double[] instanceAttributes) {
-        double sum = 0d;
-
-        for (int i=0; i!=numTrees; ++i) {
-            sum += predictTree(i, instanceAttributes);
-        }
-
-        return sum / numTreesAsDouble;
-    }
-
-    public double predictByAverage(double[] instanceAttributes) {
-        double sum = 0d;
-
-        for (int i=0; i!=numTrees; ++i) {
-            sum += predictTree(i, instanceAttributes);
-        }
-
-        return sum / numTreesAsDouble;
-    }
-
-    /**
-     * For backwards compatibility of old models.
-     * This is how FastRandomForest does it.
-     */
-    public double predictByVoting(double[] instanceAttributes) {
         double sum = 0d;
 
         for (int i=0; i!=numTrees; ++i) {
@@ -134,6 +132,7 @@ public class FlatBinaryForest implements BinaryForest, Classifier, Serializable 
         int currentNode = tree;
         int attr;
 
+        // assumes that tree is not a leaf
         while (true) {
             attr = attributeIndex[currentNode];
 
@@ -158,34 +157,6 @@ public class FlatBinaryForest implements BinaryForest, Classifier, Serializable 
         return res;
     }
 
-    /**
-     * @return max tree depth
-     */
-    private int calculateTreeDepth(int tree) {
-        if (tree < 0) {
-            return 1;
-        }
-
-        int left = calculateTreeDepth(childLeft[tree]);
-        int right = calculateTreeDepth(childRight[tree]);
-
-        return Math.max(left, right) + 1;
-    }
-
-//===============================================================================================//
-
-
-    public FlatBinaryForest(int numTrees, int numAttributes, int[] childRight, int[] childLeft, int[] attributeIndex, double[] splitPoint, double[] score) {
-        this.numTrees = numTrees;
-        this.numAttributes = numAttributes;
-        this.childRight = childRight;
-        this.childLeft = childLeft;
-        this.attributeIndex = attributeIndex;
-        this.splitPoint = splitPoint;
-        this.score = score;
-
-        this.numTreesAsDouble = numTrees;
-    }
 
 //===============================================================================================//
 
@@ -201,8 +172,7 @@ public class FlatBinaryForest implements BinaryForest, Classifier, Serializable 
 
     @Override
     public double[] distributionForInstance(Instance instance) throws Exception {
-        double p = predict(instance.toDoubleArray());
-        return new double[] {1d - p, p};
+        return distributionForInst(instance);
     }
 
     @Override
@@ -210,12 +180,4 @@ public class FlatBinaryForest implements BinaryForest, Classifier, Serializable 
         return null;
     }
 
-    public boolean isAggregateByVoting() {
-        return aggregateByVoting;
-    }
-
-    public void setAggregateByVoting(boolean aggregateByVoting) {
-        this.aggregateByVoting = aggregateByVoting;
-    }
-    
 }

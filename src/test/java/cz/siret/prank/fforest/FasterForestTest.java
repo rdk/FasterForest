@@ -1,7 +1,9 @@
 package cz.siret.prank.fforest;
 
-import cz.siret.prank.fforest.api.FlatBinaryForest;
+import cz.siret.prank.fforest.api.*;
 import cz.siret.prank.fforest2.FasterForest2;
+import cz.siret.prank.ffutils.ATimer;
+import cz.siret.prank.ffutils.StrUtils;
 import org.junit.Before;
 import org.junit.Test;
 import weka.core.Instance;
@@ -9,8 +11,8 @@ import weka.core.Instances;
 import weka.core.converters.ConverterUtils;
 
 import java.util.Arrays;
-import java.util.concurrent.ThreadLocalRandom;
 
+import static cz.siret.prank.fforest.api.OptimizingFlatBinaryForest.NodeOrderings.*;
 import static org.junit.Assert.*;
 
 /**
@@ -98,8 +100,8 @@ public class FasterForestTest {
         assertEquals(ff.getFeatureVectorLength(), fbf.getNumAttributes());
 
         for (Instance inst : dataset1) {
-            double[] classProbs_ff = ff.distributionForInstance(inst);
-            double[] classProbs_fbf = fbf.distributionForInstance(inst);
+            double[] classProbs_ff = ff.distributionForInst(inst);
+            double[] classProbs_fbf = fbf.distributionForInst(inst);
             // here they will not be equal
         }
 
@@ -121,8 +123,8 @@ public class FasterForestTest {
         System.out.println("Flat tree depths:" + Arrays.toString(fbf.getTreeDepths()));
 
         for (Instance inst : dataset1) {
-            double[] classProbs_ff = ff.distributionForInstance(inst);
-            double[] classProbs_fbf = fbf.distributionForInstance(inst);
+            double[] classProbs_ff = ff.distributionForInst(inst);
+            double[] classProbs_fbf = fbf.distributionForInst(inst);
 
             assertArrayEquals(classProbs_ff, classProbs_fbf, 0.000000000000001d);
 
@@ -135,6 +137,160 @@ public class FasterForestTest {
         }
 
     }
+
+
+    @Test
+    public void optimizingFlatForestLegacy() throws Exception {
+        FasterForest ff = setupFF();
+        ff.setNumTrees(512);
+        ff.setMaxDepth(0);
+
+        ff.buildClassifier(dataset1);
+        LegacyFlatBinaryForest fbf = ff.toFlatBinaryForest();
+
+        OptimizingFlatBinaryForest optimizingForest = new OptimizingFlatBinaryForest(fbf);
+
+        // rebuild without training
+        LegacyFlatBinaryForest optimizedForest = optimizingForest.buildOptimizedForest();
+        //System.out.println("Tree positions: " + optimizingForest.getTreePositions());
+        //System.out.println("Score positions: " + optimizingForest.getScorePositions());
+        //System.out.println(StrUtils.toStr(fbf));
+        //System.out.println(StrUtils.toStr(optimizedForest));
+
+        testEqualStructure(fbf, optimizedForest);
+        testEqualPredictions(dataset1, fbf, optimizedForest, 0.000000000000001d);
+
+        // train counts
+        for (Instance inst : dataset1) {
+            optimizingForest.predict(inst.toDoubleArray());
+        }
+
+        // rebuild with training
+        LegacyFlatBinaryForest optimizedForest2 = optimizingForest.buildOptimizedForest();
+        //System.out.println("Tree positions: " + optimizingForest.getTreePositions());
+        //System.out.println("Score positions: " + optimizingForest.getScorePositions());
+        //System.out.println("ORIG: " + StrUtils.toStr(fbf));
+        //System.out.println("OPTI: " + StrUtils.toStr(optimizedForest2));
+
+        testEqualStructure(fbf, optimizedForest2);
+        testEqualPredictions(dataset1, fbf, optimizedForest2, 0.000000000000001d);
+    }
+
+    @Test
+    public void optimizingFlatForestLegacyBenchmark() throws Exception {
+        FasterForest ff = setupFF();
+        ff.setNumTrees(100);
+        ff.setMaxDepth(0);
+
+        ff.buildClassifier(dataset1);
+        LegacyFlatBinaryForest fbf = ff.toFlatBinaryForest();
+
+        OptimizingFlatBinaryForest optimizingForest = new OptimizingFlatBinaryForest(fbf);
+        // train counts
+        for (Instance inst : dataset1) {
+            optimizingForest.predict(inst.toDoubleArray());
+        }
+        LegacyFlatBinaryForest optimizedForest = optimizingForest.buildOptimizedForest();
+        //System.out.println("Tree positions: " + optimizingForest.getTreePositions());
+        //System.out.println("Score positions: " + optimizingForest.getScorePositions());
+        //System.out.println(StrUtils.toStr(fbf));
+        //System.out.println(StrUtils.toStr(optimizedForest));
+
+        testEqualStructure(fbf, optimizedForest);
+        testEqualPredictions(dataset1, fbf, optimizedForest, 0.000000000000001d);
+
+        ShortLegacyFlatBinaryForest shortForest = ShortLegacyFlatBinaryForest.from(fbf);
+
+        testEqualStructure(fbf, shortForest);
+        testEqualPredictions(dataset1, fbf, shortForest, 0.0000001d);
+
+        int n = 200;
+        int m = 5;
+        for (int i=0; i!=m; ++i) {
+            System.out.printf("Original: %d ms\n", benchPredictions(n, dataset1, ff));
+            System.out.printf("Flat: %d ms\n", benchPredictions(n, dataset1, fbf));
+            System.out.printf("Optimized: %d ms\n", benchPredictions(n, dataset1, optimizedForest));
+            System.out.printf("Short: %d ms\n", benchPredictions(n, dataset1, shortForest));
+            System.out.println("------");
+        }
+    }
+
+    @Test
+    public void optimizingFlatForestLegacyBenchmark2() throws Exception {
+        FasterForest ff = setupFF();
+        ff.setNumTrees(100);
+        ff.setMaxDepth(0);
+
+        ff.buildClassifier(dataset1);
+        LegacyFlatBinaryForest fbf = ff.toFlatBinaryForest();
+
+        OptimizingFlatBinaryForest optimizingForest = new OptimizingFlatBinaryForest(fbf);
+        // train counts
+        for (Instance inst : dataset1) {
+            optimizingForest.predict(inst.toDoubleArray());
+        }
+        LegacyFlatBinaryForest of_DEFAULT = optimizingForest.buildOptimizedForest();
+        LegacyFlatBinaryForest of_COUNT = optimizingForest.buildOptimizedForest(BY_COUNT, BY_COUNT);
+        LegacyFlatBinaryForest of_TREE_COUNT = optimizingForest.buildOptimizedForest(BY_TREE_COUNT, BY_TREE_COUNT);
+        LegacyFlatBinaryForest of_TREE_DEPTH_COUNT = optimizingForest.buildOptimizedForest(BY_TREE_DEPTH_COUNT, BY_TREE_DEPTH_COUNT);
+        LegacyFlatBinaryForest of_TREE_DEPTH = optimizingForest.buildOptimizedForest(BY_TREE_DEPTH, BY_TREE_DEPTH);
+        LegacyFlatBinaryForest of_DEPTH = optimizingForest.buildOptimizedForest(BY_DEPTH, BY_DEPTH);
+        LegacyFlatBinaryForest of_DEPTH_COUNT = optimizingForest.buildOptimizedForest(BY_DEPTH_COUNT, BY_DEPTH_COUNT);
+        FlatBinaryForest fbf_NO_LAGACY = ff.toFlatBinaryForest(false);
+
+        ShortLegacyFlatBinaryForest shortForest = ShortLegacyFlatBinaryForest.from(fbf);
+
+        int n = 100;
+        int m = 5;
+        for (int i=0; i!=m; ++i) {
+            System.out.printf("Original: %d ms\n", benchPredictions(n, dataset1, ff));
+            System.out.printf("Flat: %d ms\n", benchPredictions(n, dataset1, fbf));
+            System.out.printf("Flat no legacy: %d ms\n", benchPredictions(n, dataset1, fbf_NO_LAGACY));
+            System.out.printf("OPT_DEFAULT : %d ms\n", benchPredictions(n, dataset1, of_DEFAULT));
+            System.out.printf("OPT_COUNT  : %d ms\n", benchPredictions(n, dataset1, of_COUNT));
+            System.out.printf("OPT_TREE_COUNT : %d ms\n", benchPredictions(n, dataset1, of_TREE_COUNT));
+            System.out.printf("OPT_TREE_DEPTH_COUNT : %d ms\n", benchPredictions(n, dataset1, of_TREE_DEPTH_COUNT));
+            System.out.printf("OPT_TREE_DEPTH : %d ms\n", benchPredictions(n, dataset1, of_TREE_DEPTH));
+            System.out.printf("OPT_DEPTH : %d ms\n", benchPredictions(n, dataset1, of_DEPTH));
+            System.out.printf("OPT_DEPTH_COUNT : %d ms\n", benchPredictions(n, dataset1, of_DEPTH_COUNT));
+            System.out.printf("Short: %d ms\n", benchPredictions(n, dataset1, shortForest));
+            System.out.println("------");
+        }
+    }
+
+    private long benchPredictions(int n, Instances dataset, BinaryForest forest) {
+        int m = dataset.size();
+        double[][] instances = new double[m][];
+        for (int i=0; i!=m; ++i) {
+            instances[i] = dataset.get(i).toDoubleArray();
+        }
+
+        ATimer timer = ATimer.startTimer();
+        for (int i=0; i!=n; ++i) {
+            for (double[] inst : instances) {
+                forest.predict(inst);
+            }
+        }
+        return timer.getTime();
+    }
+
+    private void testEqualStructure(BinaryForest forestA, BinaryForest forestB) {
+        assertEquals(forestA.getNumTrees(),      forestB.getNumTrees());
+        assertEquals(forestA.getNumAttributes(), forestB.getNumAttributes());
+        assertEquals(forestA.getMaxDepth(),      forestB.getMaxDepth());
+    }
+
+
+    private void testEqualPredictions(Instances dataset, BinaryForest forestA, BinaryForest forestB, double DELTA) {
+        for (Instance inst : dataset) {
+            double[] classProbs_fbf = forestA.distributionForInst(inst);
+            double[] classProbs_opt = forestB.distributionForInst(inst);
+
+            assertArrayEquals(classProbs_opt, classProbs_fbf, DELTA);
+        }
+    }
+
+
 
     @Test
     public void flattenFF2() throws Exception {
@@ -150,7 +306,7 @@ public class FasterForestTest {
 
         for (Instance inst : dataset1) {
             double[] classProbs_ff = ff.distributionForInstance(inst);
-            double[] classProbs_fbf = fbf.distributionForInstance(inst);
+            double[] classProbs_fbf = fbf.distributionForInst(inst);
             // here they will not be equal
         }
         
@@ -170,7 +326,7 @@ public class FasterForestTest {
 
         for (Instance inst : dataset1) {
             double[] classProbs_ff = ff.distributionForInstance(inst);
-            double[] classProbs_fbf = fbf.distributionForInstance(inst);
+            double[] classProbs_fbf = fbf.distributionForInst(inst);
 
             assertArrayEquals(classProbs_ff, classProbs_fbf, 0.000000000000001d);
         }

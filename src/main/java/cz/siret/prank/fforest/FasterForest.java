@@ -23,9 +23,7 @@
 
 package cz.siret.prank.fforest;
 
-import cz.siret.prank.fforest.api.FlatBinaryForest;
-import cz.siret.prank.fforest.api.FlatBinaryForestBuilder;
-import cz.siret.prank.fforest.api.FlattableForest;
+import cz.siret.prank.fforest.api.*;
 import weka.classifiers.AbstractClassifier;
 import weka.core.*;
 import weka.core.TechnicalInformation.Field;
@@ -99,7 +97,7 @@ import java.util.Vector;
  */
 public class FasterForest
     extends AbstractClassifier
-    implements OptionHandler, Randomizable, WeightedInstancesHandler,
+    implements BinaryForest, OptionHandler, Randomizable, WeightedInstancesHandler,
     AdditionalMeasureProducer, TechnicalInformationHandler, FlattableForest {
 
   /**
@@ -691,7 +689,7 @@ public class FasterForest
    *
    * @throws Exception if computation fails
    */
-  public double[] distributionForInstance(Instance instance) throws Exception{
+  public double[] distributionForInstance(Instance instance) throws Exception {
 
     if(m_ZeroR != null){  // default model?
       return m_ZeroR.distributionForInstance(instance);
@@ -763,7 +761,7 @@ public class FasterForest
   // Conversions
   ////////////////////////////
 
-  public FlatBinaryForest toFlatBinaryForest() {
+  public LegacyFlatBinaryForest toFlatBinaryForest() {
     return new FlatBinaryForestBuilder().buildFromFasterTreesLegacy(getFeatureVectorLength(), m_bagger.getClassifiersAsTrees());
   }
 
@@ -799,6 +797,18 @@ public class FasterForest
       res[i] = getTree(i).distributionForAttributes(attributes);
     }
     return res;
+  }
+
+//===============================================================================================//
+
+  @Override
+  public int getNumAttributes() {
+    return getFeatureVectorLength();
+  }
+
+  @Override
+  public double predict(double[] instanceAttributes) {
+    return distributionForAttributes(instanceAttributes, 2)[1];
   }
 
 

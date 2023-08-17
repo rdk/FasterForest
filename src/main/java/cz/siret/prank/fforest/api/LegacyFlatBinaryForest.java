@@ -8,10 +8,10 @@ import weka.core.Utils;
  */
 public class LegacyFlatBinaryForest extends FlatBinaryForest {
 
-    protected double[][] classProbs;
+    protected final double[][] classProbs;
 
-    public LegacyFlatBinaryForest(int numTrees, int numAttributes, int[] childRight, int[] childLeft, int[] attributeIndex, double[] splitPoint, double[][] classProbs) {
-        super(numTrees, numAttributes, childRight, childLeft, attributeIndex, splitPoint, null);
+    public LegacyFlatBinaryForest(int numTrees, int numAttributes, int[] childLeft, int[] childRight, int[] attributeIndex, double[] splitPoint, double[][] classProbs) {
+        super(numTrees, numAttributes, childLeft, childRight, attributeIndex, splitPoint, null);
         this.classProbs = classProbs;
     }
 
@@ -37,7 +37,7 @@ public class LegacyFlatBinaryForest extends FlatBinaryForest {
         return res;
     }
 
-    private double[] predictTreeClassProbs(int tree, double[] instanceAttributes) {
+    protected double[] predictTreeClassProbs(int tree, double[] instanceAttributes) {
         int currentNode = tree;
         int attr;
 

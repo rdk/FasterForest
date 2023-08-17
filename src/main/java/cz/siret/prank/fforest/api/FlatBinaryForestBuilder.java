@@ -55,8 +55,8 @@ public class FlatBinaryForestBuilder {
      * @param trees
      * @return
      */
-    public FlatBinaryForest buildFromFasterTreesLegacy(int numAttributes, List<FasterTree> trees) {
-        return buildFromFasterTrees(numAttributes, trees, true);
+    public LegacyFlatBinaryForest buildFromFasterTreesLegacy(int numAttributes, List<FasterTree> trees) {
+        return (LegacyFlatBinaryForest)buildFromFasterTrees(numAttributes, trees, true);
     }
 
 
@@ -103,10 +103,10 @@ public class FlatBinaryForestBuilder {
         }
 
         if (legacyClassProbs) {
-            return new LegacyFlatBinaryForest(trees.size(), numAttributes, childRight, childLeft, attributeIndex, splitPoint, classProbs);
+            return new LegacyFlatBinaryForest(trees.size(), numAttributes, childLeft, childRight, attributeIndex, splitPoint, classProbs);
         } else {
             double[] scores = calculateScoresFromProbs(classProbs);
-            return new FlatBinaryForest(trees.size(), numAttributes, childRight, childLeft, attributeIndex, splitPoint, scores);
+            return new FlatBinaryForest(trees.size(), numAttributes, childLeft, childRight, attributeIndex, splitPoint, scores);
         }
         
     }

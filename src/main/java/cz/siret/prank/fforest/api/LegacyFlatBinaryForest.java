@@ -22,6 +22,34 @@ public class LegacyFlatBinaryForest extends FlatBinaryForest {
         return predictClassProbs(instanceAttributes)[1];
     }
 
+
+
+    @Override
+    public double[] predictForBatch(double[][] instances) {
+        int n = instances.length;
+        double[] sumsClass0 = new double[n];
+        double[] sumsClass1 = new double[n];
+
+
+        for (int t=0; t!=numTrees; ++t) {
+            for (int i=0; i!=n; ++i) {
+                double[] classProbs = predictTreeClassProbs(t, instances[i]);
+                sumsClass0[i] += classProbs[0];
+                sumsClass1[i] += classProbs[1];
+            }
+        }
+
+        double[] res = new double[n];
+        for (int i=0; i!=n; ++i) {
+            double[] cp = new double[] { sumsClass0[i], sumsClass1[i] };
+            Utils.normalize(cp);
+            res[i] = cp[1];
+        }
+        return res;
+    }
+
+//===============================================================================================//
+
     public double[] predictClassProbs(double[] instanceAttributes) {
         double sum0 = 0d;
         double sum1 = 0d;

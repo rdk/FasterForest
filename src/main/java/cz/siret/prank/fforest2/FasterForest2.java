@@ -24,6 +24,7 @@
 package cz.siret.prank.fforest2;
 
 import cz.siret.prank.fforest.FasterTree;
+import cz.siret.prank.fforest.api.BinaryForest;
 import cz.siret.prank.fforest.api.FlatBinaryForest;
 import cz.siret.prank.fforest.api.FlatBinaryForestBuilder;
 import cz.siret.prank.fforest.api.FlattableForest;
@@ -117,7 +118,7 @@ import java.util.concurrent.ExecutionException;
  */
 public class FasterForest2
   extends AbstractClassifier
-  implements OptionHandler, Randomizable, WeightedInstancesHandler,
+  implements BinaryForest, OptionHandler, Randomizable, WeightedInstancesHandler,
              AdditionalMeasureProducer, TechnicalInformationHandler, FlattableForest {
 
   /** for serialization */
@@ -317,6 +318,7 @@ public class FasterForest2
   public int getMaxDepth(){
     return m_MaxDepth;
   }
+
 
   /**
    * Set the maximum depth of the tree, 0 for unlimited.
@@ -900,6 +902,7 @@ public class FasterForest2
 
 //===============================================================================================//
 
+
   public FlatBinaryForest toFlatBinaryForest() {
     return new FlatBinaryForestBuilder().buildFromFasterTreesLegacy(getFeatureVectorLength(), m_bagger.getClassifiersAsTrees());
   }
@@ -907,7 +910,6 @@ public class FasterForest2
   public FlatBinaryForest toFlatBinaryForest(boolean legacyClassProbs) {
     return new FlatBinaryForestBuilder().buildFromFasterTrees(getFeatureVectorLength(), m_bagger.getClassifiersAsTrees(), legacyClassProbs);
   }
-
 
   FasterTree getTree(int i) {
     return (FasterTree)m_bagger.getClassifiers()[i];
@@ -937,6 +939,22 @@ public class FasterForest2
     return res;
   }
 
+//===============================================================================================//
+
+  @Override
+  public int getNumAttributes() {
+    return getFeatureVectorLength();
+  }
+
+  @Override
+  public double predict(double[] instanceAttributes) {
+    return distributionForAttributes(instanceAttributes, 2)[1];
+  }
+
+  @Override
+  public double[] predictForBatch(double[][] instances) {
+    throw new UnsupportedOperationException();
+  }
 
 }
 

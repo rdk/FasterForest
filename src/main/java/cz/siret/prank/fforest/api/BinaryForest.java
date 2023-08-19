@@ -21,6 +21,8 @@ public interface BinaryForest {
      */
     double predict(double[] instanceAttributes);
 
+    double[] predictForBatch(double[][] instances);
+
 //===============================================================================================//
 
     default double[] distributionForInst(Instance instance) {
@@ -30,6 +32,6 @@ public interface BinaryForest {
 
     default int getNumClasses() {
         return 2;
-    };
+    }
 
 }

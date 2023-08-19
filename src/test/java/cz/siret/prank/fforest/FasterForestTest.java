@@ -173,8 +173,12 @@ public class FasterForestTest {
         //System.out.println("OPTI: " + StrUtils.toStr(optimizedForest2));
 
         testEqualStructure(fbf, optimizedForest2);
-        testEqualPredictions(dataset1, fbf, optimizedForest2, 0.000000000000001d);
+        testEqualPredictions(dataset1, fbf, optimizedForest2, DELTA_15);
     }
+
+
+    public static final double DELTA_15 = 0.000_000_000_000_001d;
+    public static final double DELTA_7 = 0.000_000_1d;
 
     @Test
     public void optimizingFlatForestLegacyBenchmark() throws Exception {
@@ -197,20 +201,23 @@ public class FasterForestTest {
         //System.out.println(StrUtils.toStr(optimizedForest));
 
         testEqualStructure(fbf, optimizedForest);
-        testEqualPredictions(dataset1, fbf, optimizedForest, 0.000000000000001d);
+        testEqualPredictions(dataset1, fbf, optimizedForest, DELTA_15);
+        testEqualBatchPredictions(dataset1, fbf, optimizedForest, DELTA_15);
 
         ShortLegacyFlatBinaryForest shortForest = ShortLegacyFlatBinaryForest.from(fbf);
 
         testEqualStructure(fbf, shortForest);
-        testEqualPredictions(dataset1, fbf, shortForest, 0.0000001d);
+        testEqualPredictions(dataset1, fbf, shortForest, DELTA_7);
+
+        double[][] instances = instancesToArrays(dataset1);
 
         int n = 200;
         int m = 5;
         for (int i=0; i!=m; ++i) {
-            System.out.printf("Original: %d ms\n", benchPredictions(n, dataset1, ff));
-            System.out.printf("Flat: %d ms\n", benchPredictions(n, dataset1, fbf));
-            System.out.printf("Optimized: %d ms\n", benchPredictions(n, dataset1, optimizedForest));
-            System.out.printf("Short: %d ms\n", benchPredictions(n, dataset1, shortForest));
+            System.out.printf("Original: %d ms\n", benchPredictions(n, instances, ff));
+            System.out.printf("Flat: %d ms\n", benchPredictions(n, instances, fbf));
+            System.out.printf("Optimized: %d ms\n", benchPredictions(n, instances, optimizedForest));
+            System.out.printf("Short: %d ms\n", benchPredictions(n, instances, shortForest));
             System.out.println("------");
         }
     }
@@ -240,36 +247,52 @@ public class FasterForestTest {
 
         ShortLegacyFlatBinaryForest shortForest = ShortLegacyFlatBinaryForest.from(fbf);
 
+        double[][] instances = instancesToArrays(dataset1);
+
         int n = 100;
         int m = 5;
         for (int i=0; i!=m; ++i) {
-            System.out.printf("Original: %d ms\n", benchPredictions(n, dataset1, ff));
-            System.out.printf("Flat: %d ms\n", benchPredictions(n, dataset1, fbf));
-            System.out.printf("Flat no legacy: %d ms\n", benchPredictions(n, dataset1, fbf_NO_LAGACY));
-            System.out.printf("OPT_DEFAULT : %d ms\n", benchPredictions(n, dataset1, of_DEFAULT));
-            System.out.printf("OPT_COUNT  : %d ms\n", benchPredictions(n, dataset1, of_COUNT));
-            System.out.printf("OPT_TREE_COUNT : %d ms\n", benchPredictions(n, dataset1, of_TREE_COUNT));
-            System.out.printf("OPT_TREE_DEPTH_COUNT : %d ms\n", benchPredictions(n, dataset1, of_TREE_DEPTH_COUNT));
-            System.out.printf("OPT_TREE_DEPTH : %d ms\n", benchPredictions(n, dataset1, of_TREE_DEPTH));
-            System.out.printf("OPT_DEPTH : %d ms\n", benchPredictions(n, dataset1, of_DEPTH));
-            System.out.printf("OPT_DEPTH_COUNT : %d ms\n", benchPredictions(n, dataset1, of_DEPTH_COUNT));
-            System.out.printf("Short: %d ms\n", benchPredictions(n, dataset1, shortForest));
+            System.out.printf("Original: %d ms\n", benchPredictions(n, instances, ff));
+            System.out.printf("Flat: %d ms\n", benchPredictions(n, instances, fbf));
+            System.out.printf("Flat BATCH: %d ms\n", benchPredictionsBatch(n, instances, fbf));
+            System.out.printf("Flat no legacy: %d ms\n", benchPredictions(n, instances, fbf_NO_LAGACY));
+            System.out.printf("OPT_DEFAULT : %d ms\n", benchPredictions(n, instances, of_DEFAULT));
+            System.out.printf("OPT_COUNT  : %d ms\n", benchPredictions(n, instances, of_COUNT));
+            System.out.printf("OPT_TREE_COUNT : %d ms\n", benchPredictions(n, instances, of_TREE_COUNT));
+            System.out.printf("OPT_TREE_COUNT BATCH: %d ms\n", benchPredictionsBatch(n, instances, of_TREE_COUNT));
+            System.out.printf("OPT_TREE_DEPTH_COUNT : %d ms\n", benchPredictions(n, instances, of_TREE_DEPTH_COUNT));
+            System.out.printf("OPT_TREE_DEPTH : %d ms\n", benchPredictions(n, instances, of_TREE_DEPTH));
+            System.out.printf("OPT_DEPTH : %d ms\n", benchPredictions(n, instances, of_DEPTH));
+            System.out.printf("OPT_DEPTH_COUNT : %d ms\n", benchPredictions(n, instances, of_DEPTH_COUNT));
+            System.out.printf("Short: %d ms\n", benchPredictions(n, instances, shortForest));
+            System.out.printf("Short BATCH: %d ms\n", benchPredictionsBatch(n, instances, shortForest));
             System.out.println("------");
         }
     }
 
-    private long benchPredictions(int n, Instances dataset, BinaryForest forest) {
+    private double[][] instancesToArrays(Instances dataset) {
         int m = dataset.size();
         double[][] instances = new double[m][];
         for (int i=0; i!=m; ++i) {
             instances[i] = dataset.get(i).toDoubleArray();
         }
+        return instances;
+    }
 
+    private long benchPredictions(int n, double[][] instances, BinaryForest forest) {
         ATimer timer = ATimer.startTimer();
         for (int i=0; i!=n; ++i) {
             for (double[] inst : instances) {
                 forest.predict(inst);
             }
+        }
+        return timer.getTime();
+    }
+
+    private long benchPredictionsBatch(int n, double[][] instances, BinaryForest forest) {
+        ATimer timer = ATimer.startTimer();
+        for (int i=0; i!=n; ++i) {
+            forest.predictForBatch(instances);
         }
         return timer.getTime();
     }
@@ -288,6 +311,15 @@ public class FasterForestTest {
 
             assertArrayEquals(classProbs_opt, classProbs_fbf, DELTA);
         }
+    }
+
+    private void testEqualBatchPredictions(Instances dataset, BinaryForest forestA, BinaryForest forestB, double DELTA) {
+        double[][] instances = instancesToArrays(dataset);
+
+        double[] scoresA = forestA.predictForBatch(instances);
+        double[] scoresB = forestB.predictForBatch(instances);
+
+        assertArrayEquals(scoresA, scoresB, DELTA);
     }
 
 

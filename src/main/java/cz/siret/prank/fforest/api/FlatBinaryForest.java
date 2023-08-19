@@ -4,6 +4,7 @@ import weka.classifiers.Classifier;
 import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
+import weka.core.Utils;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -124,6 +125,23 @@ public class FlatBinaryForest implements BinaryForest, Classifier, Serializable 
         }
 
         return sum / numTreesAsDouble;
+    }
+
+    @Override
+    public double[] predictForBatch(double[][] instances) {
+        int n = instances.length;
+        double[] sums = new double[n];
+
+        for (int t=0; t!=numTrees; ++t) {
+            for (int i=0; i!=n; ++i) {
+                sums[i] = predictTree(t, instances[i]);
+            }
+        }
+
+        for (int i=0; i!=n; ++i) {
+            sums[i] /= numTrees;
+        }
+        return sums;
     }
 
 //===============================================================================================//

@@ -54,6 +54,30 @@ public class ShortLegacyFlatBinaryForest implements BinaryForest {
         return predictClassProbs(instanceAttributes)[1];
     }
 
+    @Override
+    public double[] predictForBatch(double[][] instances) {
+        int n = instances.length;
+        float[] sumsClass0 = new float[n];
+        float[] sumsClass1 = new float[n];
+
+
+        for (int t=0; t!=numTrees; ++t) {
+            for (int i=0; i!=n; ++i) {
+                float[] classProbs = predictTreeClassProbs(t, instances[i]);
+                sumsClass0[i] += classProbs[0];
+                sumsClass1[i] += classProbs[1];
+            }
+        }
+
+        double[] res = new double[n];
+        for (int i=0; i!=n; ++i) {
+            double[] cp = new double[] { sumsClass0[i], sumsClass1[i] };
+            Utils.normalize(cp);
+            res[i] = cp[1];
+        }
+        return res;
+    }
+
     public double[] predictClassProbs(double[] instanceAttributes) {
         float sum0 = 0f;
         float sum1 = 0f;

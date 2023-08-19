@@ -227,6 +227,11 @@ public class OptimizingFlatBinaryForest implements BinaryForest {
         return predictClassProbs(instanceAttributes)[1];
     }
 
+    @Override
+    public double[] predictForBatch(double[][] instances) {
+        throw new UnsupportedOperationException();
+    }
+
     public double[] predictClassProbs(double[] instanceAttributes) {
         double sum0 = 0d;
         double sum1 = 0d;

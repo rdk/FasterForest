@@ -811,6 +811,10 @@ public class FasterForest
     return distributionForAttributes(instanceAttributes, 2)[1];
   }
 
+  @Override
+  public double[] predictForBatch(double[][] instances) {
+    throw new UnsupportedOperationException();
+  }
 
 }
 

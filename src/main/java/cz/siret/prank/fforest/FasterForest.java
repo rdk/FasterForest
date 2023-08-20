@@ -34,6 +34,8 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.Vector;
 
+import static cz.siret.prank.ffutils.NormalizationUtils.normalizedClass1Probs;
+
 /**
  * Based on the "weka.classifiers.trees.RandomForest" class, revision 1.12,
  * by Richard Kirkby, with minor modifications:
@@ -114,7 +116,12 @@ public class FasterForest
   /**
    * Length of input feature vector.
    */
-  protected int featureVectorLength = 0;
+  protected int m_featureVectorLength = 0;
+
+  /**
+   * Fix lagacy bug where leaves were not normalized.
+   */
+  protected boolean m_ensureLeavesNormalized = false;
 
   /**
    * Number of features to consider in random feature selection.
@@ -240,7 +247,7 @@ public class FasterForest
   /**
    * Input vector length.
    */
-  public int getFeatureVectorLength() {
+  public int getM_featureVectorLength() {
     return m_Info.numAttributes();
   }
 
@@ -364,6 +371,14 @@ public class FasterForest
    */
   public void setNumThreads(int value){
     m_NumThreads = value;
+  }
+
+  public boolean isEnsureLeavesNormalized() {
+    return m_ensureLeavesNormalized;
+  }
+
+  public void setEnsureLeavesNormalized(boolean m_ensureLeavesNormalized) {
+    this.m_ensureLeavesNormalized = m_ensureLeavesNormalized;
   }
 
   ////////////////////////////
@@ -654,7 +669,7 @@ public class FasterForest
     /* Save header with attribute info. Can be accessed later by FastRfTrees
      * through their m_MotherForest field. */
     m_Info = new Instances(data, 0);
-    featureVectorLength = m_Info.numAttributes();
+    m_featureVectorLength = m_Info.numAttributes();
 
     m_bagger = new FastRfBagging();
 
@@ -762,11 +777,11 @@ public class FasterForest
   ////////////////////////////
 
   public LegacyFlatBinaryForest toFlatBinaryForest() {
-    return new FlatBinaryForestBuilder().buildFromFasterTreesLegacy(getFeatureVectorLength(), m_bagger.getClassifiersAsTrees());
+    return new FlatBinaryForestBuilder().buildFromFasterTreesLegacy(getM_featureVectorLength(), m_bagger.getClassifiersAsTrees());
   }
 
   public FlatBinaryForest toFlatBinaryForest(boolean legacyClassProbs) {
-    return new FlatBinaryForestBuilder().buildFromFasterTrees(getFeatureVectorLength(), m_bagger.getClassifiersAsTrees(), legacyClassProbs);
+    return new FlatBinaryForestBuilder().buildFromFasterTrees(getM_featureVectorLength(), m_bagger.getClassifiersAsTrees(), legacyClassProbs);
   }
 
 //===============================================================================================//
@@ -803,7 +818,7 @@ public class FasterForest
 
   @Override
   public int getNumAttributes() {
-    return getFeatureVectorLength();
+    return getM_featureVectorLength();
   }
 
   @Override
@@ -813,8 +828,26 @@ public class FasterForest
 
   @Override
   public double[] predictForBatch(double[][] instances) {
-    throw new UnsupportedOperationException();
+    return predictBatchForFasterTrees(getTrees(), instances);
   }
+
+  public static double[] predictBatchForFasterTrees(List<FasterTree> trees, double[][] instances) {
+    int n = instances.length;
+    double[] sumsClass0 = new double[n];
+    double[] sumsClass1 = new double[n];
+
+    for (FasterTree tree : trees) {
+      for (int i=0; i!=n; ++i) {
+        double[] classProbs = tree.distributionForAttributes(instances[i]);
+        sumsClass0[i] += classProbs[0];
+        sumsClass1[i] += classProbs[1];
+      }
+    }
+
+    return normalizedClass1Probs(sumsClass0, sumsClass1);
+  }
+
+
 
 }
 

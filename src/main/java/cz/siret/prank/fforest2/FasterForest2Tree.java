@@ -24,6 +24,7 @@
 package cz.siret.prank.fforest2;
 
 import cz.siret.prank.fforest.FasterTree;
+import cz.siret.prank.ffutils.NormalizationUtils;
 import weka.classifiers.AbstractClassifier;
 import weka.core.*;
 import weka.core.Capabilities.Capability;
@@ -319,6 +320,10 @@ class FasterForest2Tree
       return 1;
     }
   }
+
+  private void conditionallyEnsureNormalized(float[] classProbs) {
+    NormalizationUtils.conditionallyEnsureNormalizedBinary(classProbs, m_MotherForest.m_ensureLeavesNormalized);
+  }
   
  /**
    * Recursively generates a tree. A derivative of the buildTree function from
@@ -404,6 +409,8 @@ class FasterForest2Tree
         classProbs[0] /= sortedIndicesLength;
         classProbs[1] /= sortedIndicesLength;
       }
+      conditionallyEnsureNormalized(classProbs);
+
       m_ClassProbs = classProbs;
       this.data = null;
       return;
@@ -525,6 +532,10 @@ class FasterForest2Tree
         classProbs[0] /= sortedIndicesLength;
         classProbs[1] /= sortedIndicesLength;
       }
+      if (classProbs[0] + classProbs[1] > 1d) {
+        System.out.println("Badly calibrated leaf class probs (2): " + Arrays.toString(classProbs));
+      }
+
       m_ClassProbs = classProbs;
     }
     this.data = null; // dereference all pointers so data can be GC'd after tree is built

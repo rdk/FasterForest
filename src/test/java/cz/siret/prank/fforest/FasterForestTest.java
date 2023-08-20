@@ -3,7 +3,6 @@ package cz.siret.prank.fforest;
 import cz.siret.prank.fforest.api.*;
 import cz.siret.prank.fforest2.FasterForest2;
 import cz.siret.prank.ffutils.ATimer;
-import cz.siret.prank.ffutils.StrUtils;
 import org.junit.Before;
 import org.junit.Test;
 import weka.core.Instance;
@@ -97,7 +96,7 @@ public class FasterForestTest {
 
         assertEquals(ff.calculateMaxTreeDepth(), fbf.getMaxDepth());
         assertEquals(ff.getNumTrees(), fbf.getNumTrees());
-        assertEquals(ff.getFeatureVectorLength(), fbf.getNumAttributes());
+        assertEquals(ff.getM_featureVectorLength(), fbf.getNumAttributes());
 
         for (Instance inst : dataset1) {
             double[] classProbs_ff = ff.distributionForInst(inst);
@@ -117,7 +116,7 @@ public class FasterForestTest {
 
         assertEquals(ff.calculateMaxTreeDepth(), fbf.getMaxDepth());
         assertEquals(ff.getNumTrees(), fbf.getNumTrees());
-        assertEquals(ff.getFeatureVectorLength(), fbf.getNumAttributes());
+        assertEquals(ff.getM_featureVectorLength(), fbf.getNumAttributes());
 
         System.out.println("Orig tree depths:" + Arrays.toString(ff.calculateTreeDepths()));
         System.out.println("Flat tree depths:" + Arrays.toString(fbf.getTreeDepths()));

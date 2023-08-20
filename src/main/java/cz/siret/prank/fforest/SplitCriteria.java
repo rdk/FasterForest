@@ -34,7 +34,6 @@ package cz.siret.prank.fforest;
  */
 public class SplitCriteria {
   
-  
   /**
    * Similar to weka.core.ContingencyTables.entropyConditionedOnRows.
    * 
@@ -67,8 +66,6 @@ public class SplitCriteria {
          
   }
 
-  
-
   /**
    * Similar to weka.core.ContingencyTables.entropyOverColumns
    * 
@@ -100,8 +97,6 @@ public class SplitCriteria {
     return (returnValue + lnFunc(total)); 
      
   }
-
-  
   
   /**
    * A fast approximation of log base 2, in single precision. Approximately
@@ -124,9 +119,7 @@ public class SplitCriteria {
      return (val + log_2);
 
    }
-  
-  
-  
+
   /**
    * Help method for computing entropy.
    */
@@ -141,8 +134,4 @@ public class SplitCriteria {
     
   }
 
-  
-
-  
-  
 }

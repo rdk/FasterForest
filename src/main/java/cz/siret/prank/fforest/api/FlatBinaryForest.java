@@ -98,7 +98,6 @@ public class FlatBinaryForest implements BinaryForest, Classifier, Serializable 
         return max;
     }
 
-
     /**
      * @return max tree depth
      */

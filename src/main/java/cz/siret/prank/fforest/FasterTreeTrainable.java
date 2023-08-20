@@ -1,5 +1,6 @@
 package cz.siret.prank.fforest;
 
+import cz.siret.prank.ffutils.NormalizationUtils;
 import weka.core.Utils;
 
 import java.util.Arrays;
@@ -72,6 +73,10 @@ public class FasterTreeTrainable extends FasterTree {
         this.tempDistsOther = from.tempDistsOther;
         this.tempProps = from.tempProps;
         this.tempIndices = from.tempIndices;
+    }
+
+    private void conditionallyEnsureNormalized(double[] classProbs) {
+        NormalizationUtils.conditionallyEnsureNormalized(classProbs, m_MotherForest.m_ensureLeavesNormalized);
     }
 
     /**
@@ -152,10 +157,12 @@ public class FasterTreeTrainable extends FasterTree {
             // normalize by dividing with the number of instances (as of ver. 0.97)
             // unless leaf is empty - this can happen with splits on nominal
             // attributes with more than two categories
-            if ( sortedIndicesLength != 0 )
+            if ( sortedIndicesLength != 0 ) {
                 for (int c = 0; c < classProbs.length; c++) {
                     classProbs[c] /= sortedIndicesLength;
                 }
+            }
+            conditionallyEnsureNormalized(classProbs);
             m_ClassProbs = classProbs;
             this.data = null;
             return;
@@ -267,7 +274,7 @@ public class FasterTreeTrainable extends FasterTree {
                 dist[i] = null;
 
             }
-            sortedIndices = null;
+            sortedIndices = null; // for GC
 
 
         } else { // ------ make leaf --------
@@ -280,7 +287,7 @@ public class FasterTreeTrainable extends FasterTree {
             for (int c = 0; c < classProbs.length; c++) {
                 classProbs[c] /= sortedIndicesLength;
             }
-
+            conditionallyEnsureNormalized(classProbs);
             m_ClassProbs = classProbs;
 
         }

@@ -23,6 +23,7 @@
 
 package cz.siret.prank.fforest2;
 
+import cz.siret.prank.fforest.FasterForest;
 import cz.siret.prank.fforest.FasterTree;
 import cz.siret.prank.fforest.api.BinaryForest;
 import cz.siret.prank.fforest.api.FlatBinaryForest;
@@ -38,6 +39,8 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.ExecutionException;
+
+import static cz.siret.prank.ffutils.NormalizationUtils.normalizedClass1Probs;
 
 /**
  * Based on the "weka.classifiers.trees.RandomForest" class, revision 1.12,
@@ -166,6 +169,11 @@ public class FasterForest2
    * The size of each bag sample, as a percentage of the training size
    */
   protected int m_BagSizePercent = 100;
+
+  /**
+   * Fix lagacy bug where leaves were not normalized.
+   */
+  protected boolean m_ensureLeavesNormalized = false;
 
   /**
    * Returns a string describing classifier
@@ -375,9 +383,15 @@ public class FasterForest2
     this.m_BagSizePercent = m_BagSizePercent;
   }
 
+  public boolean isEnsureLeavesNormalized() {
+    return m_ensureLeavesNormalized;
+  }
 
+  public void setEnsureLeavesNormalized(boolean m_ensureLeavesNormalized) {
+    this.m_ensureLeavesNormalized = m_ensureLeavesNormalized;
+  }
 
-  ////////////////////////////
+////////////////////////////
   // Feature importances stuff
   ////////////////////////////
 
@@ -953,7 +967,7 @@ public class FasterForest2
 
   @Override
   public double[] predictForBatch(double[][] instances) {
-    throw new UnsupportedOperationException();
+    return FasterForest.predictBatchForFasterTrees(getTrees(), instances);
   }
 
 }

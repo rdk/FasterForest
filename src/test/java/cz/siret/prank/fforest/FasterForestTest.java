@@ -96,7 +96,7 @@ public class FasterForestTest {
 
         assertEquals(ff.calculateMaxTreeDepth(), fbf.getMaxDepth());
         assertEquals(ff.getNumTrees(), fbf.getNumTrees());
-        assertEquals(ff.getM_featureVectorLength(), fbf.getNumAttributes());
+        assertEquals(ff.getFeatureVectorLength(), fbf.getNumAttributes());
 
         for (Instance inst : dataset1) {
             double[] classProbs_ff = ff.distributionForInst(inst);
@@ -116,7 +116,7 @@ public class FasterForestTest {
 
         assertEquals(ff.calculateMaxTreeDepth(), fbf.getMaxDepth());
         assertEquals(ff.getNumTrees(), fbf.getNumTrees());
-        assertEquals(ff.getM_featureVectorLength(), fbf.getNumAttributes());
+        assertEquals(ff.getFeatureVectorLength(), fbf.getNumAttributes());
 
         System.out.println("Orig tree depths:" + Arrays.toString(ff.calculateTreeDepths()));
         System.out.println("Flat tree depths:" + Arrays.toString(fbf.getTreeDepths()));
@@ -208,15 +208,22 @@ public class FasterForestTest {
         testEqualStructure(fbf, shortForest);
         testEqualPredictions(dataset1, fbf, shortForest, DELTA_7);
 
+
+        SuperShortLegacyFlatBinaryForest ssForest = SuperShortLegacyFlatBinaryForest.from(fbf);
+
+        testEqualStructure(fbf, ssForest);
+        testEqualPredictions(dataset1, fbf, ssForest, DELTA_7);
+
         double[][] instances = instancesToArrays(dataset1);
 
         int n = 200;
         int m = 5;
         for (int i=0; i!=m; ++i) {
-            System.out.printf("Original: %d ms\n", benchPredictions(n, instances, ff));
-            System.out.printf("Flat: %d ms\n", benchPredictions(n, instances, fbf));
-            System.out.printf("Optimized: %d ms\n", benchPredictions(n, instances, optimizedForest));
-            System.out.printf("Short: %d ms\n", benchPredictions(n, instances, shortForest));
+            System.out.printf("Original: %d ms\n", benchPredictionsBatch(n, instances, ff));
+            System.out.printf("Flat: %d ms\n", benchPredictionsBatch(n, instances, fbf));
+            System.out.printf("Optimized: %d ms\n", benchPredictionsBatch(n, instances, optimizedForest));
+            System.out.printf("Short: %d ms\n", benchPredictionsBatch(n, instances, shortForest));
+            System.out.printf("SuperShort: %d ms\n", benchPredictionsBatch(n, instances, ssForest));
             System.out.println("------");
         }
     }

@@ -247,7 +247,7 @@ public class FasterForest
   /**
    * Input vector length.
    */
-  public int getM_featureVectorLength() {
+  public int getFeatureVectorLength() {
     return m_Info.numAttributes();
   }
 
@@ -777,11 +777,11 @@ public class FasterForest
   ////////////////////////////
 
   public LegacyFlatBinaryForest toFlatBinaryForest() {
-    return new FlatBinaryForestBuilder().buildFromFasterTreesLegacy(getM_featureVectorLength(), m_bagger.getClassifiersAsTrees());
+    return new FlatBinaryForestBuilder().buildFromFasterTreesLegacy(getFeatureVectorLength(), m_bagger.getClassifiersAsTrees());
   }
 
   public FlatBinaryForest toFlatBinaryForest(boolean legacyClassProbs) {
-    return new FlatBinaryForestBuilder().buildFromFasterTrees(getM_featureVectorLength(), m_bagger.getClassifiersAsTrees(), legacyClassProbs);
+    return new FlatBinaryForestBuilder().buildFromFasterTrees(getFeatureVectorLength(), m_bagger.getClassifiersAsTrees(), legacyClassProbs);
   }
 
 //===============================================================================================//
@@ -818,7 +818,7 @@ public class FasterForest
 
   @Override
   public int getNumAttributes() {
-    return getM_featureVectorLength();
+    return getFeatureVectorLength();
   }
 
   @Override

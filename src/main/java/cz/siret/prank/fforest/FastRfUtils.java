@@ -220,7 +220,7 @@ public class FastRfUtils {
     if (Double.isNaN(sum)) {
       throw new IllegalArgumentException("Can't normalize array. Sum is NaN.");
     }
-    if (sum == 0) {
+    if (sum == 0d) {
       return;
     }
     for (int i = 0; i < doubles.length; i++) {

@@ -224,7 +224,7 @@ public class FastRfUtils {
     if (Float.isNaN(sum)) {
       throw new IllegalArgumentException("Can't normalize array. Sum is NaN.");
     }
-    if (sum == 0) {
+    if (sum == 0f) {
       return;
     }
     for (int i = 0; i < doubles.length; i++) {

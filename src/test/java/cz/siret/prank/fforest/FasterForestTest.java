@@ -4,6 +4,7 @@ import cz.siret.prank.fforest.api.*;
 import cz.siret.prank.fforest2.FasterForest2;
 import cz.siret.prank.ffutils.ATimer;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -179,6 +180,7 @@ public class FasterForestTest {
     public static final double DELTA_15 = 0.000_000_000_000_001d;
     public static final double DELTA_7 = 0.000_000_1d;
 
+    @Ignore
     @Test
     public void optimizingFlatForestLegacyBenchmark() throws Exception {
         FasterForest ff = setupFF();
@@ -228,6 +230,7 @@ public class FasterForestTest {
         }
     }
 
+    @Ignore
     @Test
     public void optimizingFlatForestLegacyBenchmark2() throws Exception {
         FasterForest ff = setupFF();

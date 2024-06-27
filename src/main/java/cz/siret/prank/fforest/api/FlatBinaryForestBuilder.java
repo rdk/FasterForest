@@ -2,7 +2,6 @@ package cz.siret.prank.fforest.api;
 
 import cz.siret.prank.fforest.FasterTree;
 
-import java.util.Arrays;
 import java.util.List;
 
 /**

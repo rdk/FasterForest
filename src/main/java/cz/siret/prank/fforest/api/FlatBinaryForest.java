@@ -4,7 +4,6 @@ import weka.classifiers.Classifier;
 import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
-import weka.core.Utils;
 
 import java.io.Serializable;
 import java.util.Arrays;

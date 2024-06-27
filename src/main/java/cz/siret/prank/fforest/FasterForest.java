@@ -34,7 +34,7 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.Vector;
 
-import static cz.siret.prank.ffutils.NormalizationUtils.normalizedClass1Probs;
+import static cz.siret.prank.ffutils.NormalizationUtils.normalizedClass1ProbsReuseArray;
 
 /**
  * Based on the "weka.classifiers.trees.RandomForest" class, revision 1.12,
@@ -844,7 +844,7 @@ public class FasterForest
       }
     }
 
-    return normalizedClass1Probs(sumsClass0, sumsClass1);
+    return normalizedClass1ProbsReuseArray(sumsClass0, sumsClass1);
   }
 
 

@@ -40,7 +40,6 @@ import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.ExecutionException;
 
-import static cz.siret.prank.ffutils.NormalizationUtils.normalizedClass1Probs;
 
 /**
  * Based on the "weka.classifiers.trees.RandomForest" class, revision 1.12,

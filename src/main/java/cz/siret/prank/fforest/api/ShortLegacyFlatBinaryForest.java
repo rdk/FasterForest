@@ -1,5 +1,6 @@
 package cz.siret.prank.fforest.api;
 
+import cz.siret.prank.ffutils.NormalizationUtils;
 import weka.core.Utils;
 
 /**
@@ -72,7 +73,7 @@ public class ShortLegacyFlatBinaryForest implements BinaryForest {
         double[] res = new double[n];
         for (int i=0; i!=n; ++i) {
             double[] cp = new double[] { sumsClass0[i], sumsClass1[i] };
-            Utils.normalize(cp);
+            NormalizationUtils.normalizeBinary(cp);
             res[i] = cp[1];
         }
         return res;

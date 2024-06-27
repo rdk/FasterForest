@@ -1,8 +1,8 @@
 package cz.siret.prank.fforest.api;
 
-import weka.core.Utils;
+import cz.siret.prank.ffutils.NormalizationUtils;
 
-import static cz.siret.prank.ffutils.NormalizationUtils.normalizedClass1Probs;
+import static cz.siret.prank.ffutils.NormalizationUtils.normalizedClass1ProbsReuseArray;
 
 /**
  * FlatBinaryForest that remembers classProbabilities for both classes in each leaf
@@ -38,7 +38,7 @@ public class LegacyFlatBinaryForest extends FlatBinaryForest {
             }
         }
 
-        return normalizedClass1Probs(sumsClass0, sumsClass1);
+        return normalizedClass1ProbsReuseArray(sumsClass0, sumsClass1);
     }
 
 //===============================================================================================//
@@ -54,7 +54,7 @@ public class LegacyFlatBinaryForest extends FlatBinaryForest {
         }
 
         double[] res = new double[] { sum0, sum1 };
-        Utils.normalize(res);
+        NormalizationUtils.normalizeBinary(res);
         return res;
     }
 

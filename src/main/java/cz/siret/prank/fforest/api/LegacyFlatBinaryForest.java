@@ -10,6 +10,8 @@ import static cz.siret.prank.ffutils.NormalizationUtils.normalizedClass1ProbsReu
  */
 public class LegacyFlatBinaryForest extends FlatBinaryForest {
 
+    private static final long serialVersionUID = -4570003757601764377L;
+
     protected final double[][] classProbs;
 
     public LegacyFlatBinaryForest(int numTrees, int numAttributes, int[] childLeft, int[] childRight, int[] attributeIndex, double[] splitPoint, double[][] classProbs) {
@@ -20,12 +22,12 @@ public class LegacyFlatBinaryForest extends FlatBinaryForest {
 //===============================================================================================//
 
     @Override
-    public double predict(double[] instanceAttributes) {
+    public double predict(final double[] instanceAttributes) {
         return predictClassProbs(instanceAttributes)[1];
     }
 
     @Override
-    public double[] predictForBatch(double[][] instances) {
+    public double[] predictForBatch(final double[][] instances) {
         int n = instances.length;
         double[] sumsClass0 = new double[n];
         double[] sumsClass1 = new double[n];
@@ -43,7 +45,7 @@ public class LegacyFlatBinaryForest extends FlatBinaryForest {
 
 //===============================================================================================//
 
-    public double[] predictClassProbs(double[] instanceAttributes) {
+    public double[] predictClassProbs(final double[] instanceAttributes) {
         double sum0 = 0d;
         double sum1 = 0d;
 
@@ -58,14 +60,19 @@ public class LegacyFlatBinaryForest extends FlatBinaryForest {
         return res;
     }
 
-    protected double[] predictTreeClassProbs(int tree, double[] instanceAttributes) {
-        int currentNode = tree;
-        int attr;
+    /**
+     * @param currentNode = tree number when called for the first time for a tree
+     * @param instanceAttributes
+     * @return
+     */
+    protected double[] predictTreeClassProbs(int currentNode, final double[] instanceAttributes) {
+        final int[] childRight = this.childRight;
+        final int[] childLeft = this.childLeft;
+        final int[] attributeIndex = this.attributeIndex;
+        final double[] splitPoint = this.splitPoint;
 
-        while (true) {
-            attr = attributeIndex[currentNode];
-
-            if (instanceAttributes[attr] < splitPoint[currentNode]) {
+        do {
+            if (instanceAttributes[attributeIndex[currentNode]] < splitPoint[currentNode]) {
                 currentNode = childLeft[currentNode];
             } else {
                 currentNode = childRight[currentNode];
@@ -74,7 +81,7 @@ public class LegacyFlatBinaryForest extends FlatBinaryForest {
             if (currentNode < 0) {
                 return classProbs[-currentNode];
             }
-        }
+        } while (true);
 
     }
 

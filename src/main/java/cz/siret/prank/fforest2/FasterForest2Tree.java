@@ -532,9 +532,10 @@ class FasterForest2Tree
         classProbs[0] /= sortedIndicesLength;
         classProbs[1] /= sortedIndicesLength;
       }
-      if (classProbs[0] + classProbs[1] > 1d) {
-        System.out.println("Badly calibrated leaf class probs (2): " + Arrays.toString(classProbs));
-      }
+      conditionallyEnsureNormalized(classProbs);
+      //if (classProbs[0] + classProbs[1] > 1d) {
+      //  System.out.println("Badly calibrated leaf class probs (2): " + Arrays.toString(classProbs));
+      //}
 
       m_ClassProbs = classProbs;
     }

@@ -132,7 +132,7 @@ public class FlatBinaryForest implements BinaryForest, Classifier, Serializable 
 
         for (int t=0; t!=numTrees; ++t) {
             for (int i=0; i!=n; ++i) {
-                sums[i] = predictTree(t, instances[i]);
+                sums[i] += predictTree(t, instances[i]);
             }
         }
 

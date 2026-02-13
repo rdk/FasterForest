@@ -94,6 +94,11 @@ public class VotesCollector implements Callable<Double>{
 
     }
 
+    // Return NaN for instances that were in-bag for all trees (see TODO.md #4)
+    if (numVotes == 0) {
+      return Double.NaN;
+    }
+
     double vote;
     if(regression)
       vote = regrValue / numVotes;         // average - for regression

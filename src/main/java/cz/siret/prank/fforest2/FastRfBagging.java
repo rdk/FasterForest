@@ -275,6 +275,11 @@ public class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
 
       double vote = votes.get(i).get();
 
+      // Skip instances that were in-bag for all trees (see TODO.md #4)
+      if (Double.isNaN(vote)) {
+        continue;
+      }
+
       // error for instance
       outOfBagCount += data.instance(i).weight();
       if (numeric) {
@@ -315,6 +320,12 @@ public class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
     for (int i = 0; i < data.numInstances; i++) {
 
       double vote = votes.get(i).get();
+
+      // Skip instances that were in-bag for all trees (see TODO.md #4)
+      if (Double.isNaN(vote)) {
+        continue;
+      }
+
       // error for instance
       outOfBagCount += data.instWeights[i];
       if ( (int) vote != data.instClassValues[i] ) {
@@ -507,8 +518,12 @@ public class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
     for (int i = 0; i < myData.numAttributes; ++i) {
       m_Interactions[i] = new double[myData.numAttributes];
     }
-    // compute importances
-    computeImportances();
+    // Compute importances only if not already computed, to avoid overwriting
+    // with a different RNG state when both importances and interactions are enabled
+    // (see TODO.md #5)
+    if (m_FeatureImportances == null) {
+      computeImportances();
+    }
     // compute interactions
     // TODO Tampoc cal agafar tots els abres, nomes aquells que tenen els atributs "i" i "j"
     for (int i = 0; i < myData.numAttributes; ++i) {

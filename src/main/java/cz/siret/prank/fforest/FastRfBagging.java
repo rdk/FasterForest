@@ -257,6 +257,11 @@ public class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
 
       double vote = votes.get(i).get();
 
+      // Skip instances that were in-bag for all trees (see TODO.md #4)
+      if (Double.isNaN(vote)) {
+        continue;
+      }
+
       // error for instance
       outOfBagCount += data.instance(i).weight();
       if (numeric) {
@@ -302,6 +307,12 @@ public class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
     for (int i = 0; i < data.numInstances; i++) {
 
       double vote = votes.get(i).get();
+
+      // Skip instances that were in-bag for all trees (see TODO.md #4)
+      if (Double.isNaN(vote)) {
+        continue;
+      }
+
       // error for instance
       outOfBagCount += data.instWeights[i];
       if ( (int) vote != data.instClassValues[i] ) {

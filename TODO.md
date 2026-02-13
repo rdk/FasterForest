@@ -3,94 +3,6 @@
 
 ## Medium
 
-### #3 Biased Fisher-Yates shuffle (FasterForest and FasterForest2)
-
-**Files:**
-- `src/main/java/cz/siret/prank/fforest/FastRfUtils.java:239-254`
-- `src/main/java/cz/siret/prank/fforest2/FastRfUtils.java:243-258`
-
-The Knuth (Fisher-Yates) shuffle implementation picks the swap target from the
-entire array instead of the remaining unshuffled portion:
-
-```java
-for (int i = 0; i < numElems - 1; i++) {
-    int next = rng.nextInt(numElems);          // BUG: biased
-    // should be: rng.nextInt(numElems - i) + i
-    int tmp = permutation[i];
-    permutation[i] = permutation[next];
-    permutation[next] = tmp;
-}
-```
-
-A correct Fisher-Yates shuffle must pick `next` from `[i, numElems)`. Picking from
-`[0, numElems)` produces a non-uniform distribution over permutations (the "naive
-shuffle" bias, well-documented in the literature).
-
-This is used for:
-- Feature importance computation (scrambling attribute values to measure OOB error
-  increase). The bias means importance values have a small systematic error.
-- Feature subset selection in FasterForest2 (`DataCache2.resample()`). The bias
-  means certain attribute subsets are slightly more/less likely than they should be.
-
-**Fix:** Change to `int next = rng.nextInt(numElems - i) + i;` (in both files).
-
-
-### #4 OOB error counts instances that are never out-of-bag (FasterForest and FasterForest2)
-
-**Files:**
-- `src/main/java/cz/siret/prank/fforest/FastRfBagging.java:299-314`
-- `src/main/java/cz/siret/prank/fforest2/FastRfBagging.java:303-325`
-
-When computing OOB error via `computeOOBError()`, every instance contributes to the
-error calculation, even those that happen to be in-bag for ALL trees. For such
-instances, the OOB vote array (`classProbs`) is all zeros, so
-`Utils.maxIndex(classProbs)` returns 0 (the first class). If the true class is not 0,
-the instance is counted as misclassified.
-
-With 100 trees and standard 100% bootstrap, the probability of a single instance
-being in-bag for all trees is approximately `(1 - 1/e)^100`, which is vanishingly
-small. But with small forests (e.g. 10 trees) or reduced bag sizes, this becomes
-more likely and inflates the OOB error.
-
-**Suggested fixes:**
-- **(a) (Recommended)** In `computeOOBError`, skip instances where total vote weight
-  is zero (i.e. sum of `classProbs` == 0). Simple check, no changes to vote
-  collectors needed.
-- (b) In the OOB vote collectors (`VotesCollector` / `VotesCollectorDataCache`),
-  return a sentinel value (e.g. -1) when `numVotes == 0`, and handle it in the
-  caller. More invasive but makes the "no votes" case explicit.
-
-
-### #5 `computeInteractions` overwrites importances via redundant recomputation (FasterForest2)
-
-**File:** `src/main/java/cz/siret/prank/fforest2/FastRfBagging.java:504-527`
-
-When both feature importance and interactions are enabled, the call sequence is:
-
-1. `buildClassifier()` calls `computeImportances()` — computes and stores
-   `m_FeatureImportances`, advancing the shared `random` RNG state.
-2. `buildClassifier()` calls `computeInteractions()` — which internally calls
-   `computeImportances()` AGAIN (line 511), overwriting `m_FeatureImportances`
-   with different values (because `random` has advanced since step 1).
-
-The interaction formula at line 522 subtracts `importance[i] + importance[j]` from
-the joint scramble error, using the second-computation importances. But the
-importances returned to the user via `getFeatureImportances()` are also these
-second-computation values, not the original ones from step 1.
-
-This means: (a) the reported importances are computed with a non-fresh RNG state,
-and (b) the importances and interactions come from different scramble sequences.
-
-**Suggested fixes:**
-- **(a) (Recommended)** Guard the call in `computeInteractions()`: only call
-  `computeImportances()` if `m_FeatureImportances == null`. This avoids the
-  redundant recomputation and keeps importances consistent.
-- (b) Save `m_FeatureImportances` before the call in `computeInteractions()` and
-  restore it after. Preserves the original values but still wastes RNG state.
-- (c) Give `computeInteractions()` its own `Random` instance (separate from the
-  shared field). Fully isolates the two computations but adds complexity.
-
-
 ### #6 FF2 split evaluation skips potentially optimal split points (FasterForest2)
 
 **File:** `src/main/java/cz/siret/prank/fforest2/FasterForest2Tree.java:746`
@@ -191,6 +103,22 @@ Only triggers with completely degenerate data (all instance weights zero).
 
 
 ## Resolved
+
+### #3 Biased Fisher-Yates shuffle (FasterForest and FasterForest2) — FIXED
+
+Changed `rng.nextInt(numElems)` to `rng.nextInt(numElems - i) + i` in both
+`FastRfUtils.java` files. Now produces correct uniform permutations.
+
+### #4 OOB error counts instances that are never out-of-bag (FasterForest and FasterForest2) — FIXED
+
+VotesCollector and VotesCollectorDataCache now return `NaN` when `numVotes == 0`.
+All `computeOOBError` loops skip `NaN` votes. Fixed in both FF and FF2 (8 files).
+
+### #5 `computeInteractions` overwrites importances via redundant recomputation (FasterForest2) — FIXED
+
+Guarded `computeImportances()` call in `computeInteractions()` with
+`if (m_FeatureImportances == null)`. Importances are no longer recomputed when
+both importances and interactions are enabled.
 
 ### #1 NPE in `buildRootTree` when `classIndex == 0` (FasterForest) — DOCUMENTED
 

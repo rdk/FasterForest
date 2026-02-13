@@ -243,8 +243,9 @@ public class FastRfUtils {
     for (int i = 0; i < numElems; i++)
       permutation[i] = i;
 
+    // Fixed: pick from [i, numElems) for correct Fisher-Yates shuffle (see TODO.md #3)
     for (int i = 0; i < numElems - 1; i++) {
-      int next = rng.nextInt(numElems);
+      int next = rng.nextInt(numElems - i) + i;
       int tmp = permutation[i];
       permutation[i] = permutation[next];
       permutation[next] = tmp;

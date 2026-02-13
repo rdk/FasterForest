@@ -518,7 +518,7 @@ public class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
         if (j == myData.classIndex) continue;
         float[] unscrambled2 = myData.scrambleOneAttribute(j, random);
         double sError = computeOOBError(myData, inBag, threadPool, m_Classifiers);
-        myData.vals[i] = unscrambled2; // restore to the scrambled matrix with the "i" feature
+        myData.vals[j] = unscrambled2; // restore j's original data, keep i scrambled
         m_Interactions[i][j] = (sError - m_OutOfBagError) - m_FeatureImportances[i] - m_FeatureImportances[j];
         m_Interactions[j][i] = m_Interactions[i][j];
       }

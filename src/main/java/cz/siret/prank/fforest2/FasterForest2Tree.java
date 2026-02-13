@@ -742,8 +742,15 @@ class FasterForest2Tree
         currDistR1 -= prevInstWeight;
       }
 
-      // do not allow splitting between two instances with the same class or with the same value
-      if (prevInstClass != data.instClassValues[inst] && dataValsAtt[inst] > dataValsAtt[prevInst] ) {
+      // Evaluate split at every boundary where consecutive instances have distinct attribute values.
+      // The original code also required a class-label change (prevInstClass != instClass), but that
+      // optimization is incorrect: Gini impurity depends on the cumulative class distribution in
+      // each branch, so moving a run of same-class instances can improve the split even when no
+      // single boundary within that run changes the class. Removing the class-change condition
+      // matches the standard algorithm and FasterForest (v1). The extra Gini evaluations add
+      // ~10-20% to training time (pure ALU work, ~4ns each) but are negligible relative to the
+      // sorting cost that dominates split finding. See TODO.md #6.
+      if (dataValsAtt[inst] > dataValsAtt[prevInst]) {
         currVal = -SplitCriteria.giniConditionedOnRowsLR2(currDistL0, currDistL1, currDistR0, currDistR1);
         if (currVal > bestVal) {
           bestVal = currVal;

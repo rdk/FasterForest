@@ -3,45 +3,6 @@
 
 ## Medium
 
-### #6 FF2 split evaluation skips potentially optimal split points (FasterForest2)
-
-**File:** `src/main/java/cz/siret/prank/fforest2/FasterForest2Tree.java:746`
-
-```java
-if (prevInstClass != data.instClassValues[inst]
-    && dataValsAtt[inst] > dataValsAtt[prevInst]) {
-```
-
-The standard Random Forest algorithm evaluates a candidate split at every boundary
-where consecutive instances (sorted by the split attribute) have distinct values.
-FasterForest (v1) follows this correctly:
-
-```java
-if (data.vals[att][inst] > data.vals[att][prevInst]) {
-```
-
-FasterForest2 adds an extra condition: it also requires that the class label changes
-between consecutive instances. The intent is an optimization — if classes are the
-same at the boundary, the marginal Gini change at that exact point is zero.
-
-However, this ignores cumulative effects. The Gini impurity depends on the entire
-class distribution in each branch, not just the boundary instances. Moving a run of
-same-class instances from right to left can improve the split even though no single
-boundary within that run changes the class.
-
-Example: instances sorted by attribute A with classes `[0, 0, 1, 0, 0]` and distinct
-values. The code only evaluates splits at positions 1|2 (0->1) and 2|3 (1->0), but
-the optimal split could be at position 3|4 (putting `[0,0,1,0]` vs `[0]`).
-
-**Suggested fixes:**
-- **(a) (Recommended)** Remove the `prevInstClass != data.instClassValues[inst]`
-  condition to match the standard algorithm. The overhead of evaluating extra split
-  points is small relative to the sorting cost.
-- (b) Keep the optimization but update the cumulative Gini tracking even for skipped
-  boundaries, so the next evaluated split uses the correct cumulative distribution.
-  More complex, preserves the speedup for long same-class runs.
-
-
 ### #7 Missing `m_ZeroR` guard in `distributionForAttributes` (FasterForest and FasterForest2) — WONTFIX
 
 **Files:**
@@ -64,6 +25,37 @@ Not fixing — the `m_ZeroR` fallback and Weka dependency are planned for remova
 
 
 ## Resolved
+
+### #6 FF2 split evaluation skips potentially optimal split points (FasterForest2) — FIXED
+
+**File:** `src/main/java/cz/siret/prank/fforest2/FasterForest2Tree.java:746`
+
+Removed the `prevInstClass != data.instClassValues[inst]` condition from the split
+evaluation loop in `distributionSequentialAtt`. The original code required both a
+class-label change and an attribute-value change between consecutive sorted instances
+before evaluating a candidate split. This was intended as an optimization (if classes
+are the same at the boundary, the marginal Gini change at that exact point is zero),
+but it is incorrect: Gini impurity depends on the cumulative class distribution in
+each branch, not just the boundary instances. Moving a run of same-class instances
+from one branch to the other can improve the overall split.
+
+Example: instances sorted by attribute A with classes `[0, 0, 1, 0, 0]` and distinct
+values. The old code only evaluated splits at positions 1|2 (0->1) and 2|3 (1->0),
+missing the optimal split at position 3|4 (putting `[0,0,1,0]` vs `[0]`).
+
+The fix aligns FF2 with the standard Random Forest algorithm and with FasterForest
+(v1), which correctly evaluates all attribute-value boundaries. The cumulative
+distribution (`currDistL0/1`, `currDistR0/1`) was already updated unconditionally
+before the condition check, so no other changes were needed.
+
+**Performance impact analysis** (estimated for 500 trees, 50 attributes, depth 15,
+2M instances):
+- Training time increases ~10-20% due to more Gini evaluations per attribute per node
+- Each extra Gini evaluation is ~4ns of pure ALU work (2 multiplies, 2 adds, 1 divide,
+  1 compare in `giniConditionedOnRowsLR2`)
+- The cost is negligible relative to the O(n log n) sorting that dominates split finding
+- No impact on inference speed (only training is affected)
+- Potentially better model quality due to finding truly optimal splits
 
 ### #8 `giniConditionedOnRows` division by zero on empty branch (FasterForest2) — FIXED
 

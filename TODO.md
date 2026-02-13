@@ -63,46 +63,16 @@ This also affects all code paths that go through `distributionForAttributes`:
 Not fixing — the `m_ZeroR` fallback and Weka dependency are planned for removal.
 
 
-## Low
-
-### #8 `giniConditionedOnRows` division by zero on empty branch (FasterForest2)
-
-**Files:**
-- `src/main/java/cz/siret/prank/fforest2/SplitCriteria.java:71-89`
-- `src/main/java/cz/siret/prank/fforest2/SplitCriteria.java:107-117`
-
-In `giniConditionedOnRows` and `giniConditionedOnRowsLR2`:
-
-```java
-returnValue += sumForBranch - auxSum / sumForBranch;
-```
-
-If a branch has zero total weight (`sumForBranch == 0`), this divides by zero,
-producing NaN that propagates through all subsequent comparisons.
-
-In practice, the split evaluation loop in `distributionSequentialAtt` always has at
-least one instance per branch (it starts scanning from `startAt + 1`), so the zero
-case should not arise during normal split search. However, the guard is missing and
-could trigger in edge cases or if the function is called from a different context.
-
-**Fix:** Add `if (sumForBranch == 0) continue;` before the division.
-
-
-### #9 `giniOverColumns` division by zero on empty data (FasterForest2)
-
-**File:** `src/main/java/cz/siret/prank/fforest2/SplitCriteria.java:169-183`
-
-```java
-return total - auxSum / total;
-```
-
-Same issue as above — divides by `total` which is zero when all weights are zero.
-Only triggers with completely degenerate data (all instance weights zero).
-
-**Fix:** Return 0 when `total == 0`.
-
-
 ## Resolved
+
+### #8 `giniConditionedOnRows` division by zero on empty branch (FasterForest2) — FIXED
+
+Added zero guards to `giniConditionedOnRows`, `giniRow`, and `giniConditionedOnRowsLR2`
+in `SplitCriteria.java`. Empty branches now contribute 0 instead of NaN.
+
+### #9 `giniOverColumns` division by zero on empty data (FasterForest2) — FIXED
+
+Added `if (total == 0) return 0;` guard in `giniOverColumns` in `SplitCriteria.java`.
 
 ### #3 Biased Fisher-Yates shuffle (FasterForest and FasterForest2) — FIXED
 

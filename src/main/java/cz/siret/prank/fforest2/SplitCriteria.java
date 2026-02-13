@@ -82,6 +82,8 @@ public class SplitCriteria {
         auxSum += v * v;
         sumForBranch += v;
       }
+      // Guard against division by zero on empty branch (see TODO.md #8)
+      if (sumForBranch == 0) continue;
       returnValue += sumForBranch - auxSum / sumForBranch;
     }
 
@@ -101,17 +103,20 @@ public class SplitCriteria {
       sumForBranch += v;
     }
 
+    // Guard against division by zero on empty branch (see TODO.md #8)
+    if (sumForBranch == 0) return 0;
     return sumForBranch - auxSum / sumForBranch;
   }
 
   public static float giniConditionedOnRowsLR2(float distL0, float distL1, float distR0, float distR1) {
     float auxSum = distL0*distL0 + distL1*distL1;
     float sumForBranch = distL0 + distL1;
-    float res = sumForBranch - auxSum / sumForBranch;
+    // Guard against division by zero on empty branch (see TODO.md #8)
+    float res = sumForBranch == 0 ? 0 : sumForBranch - auxSum / sumForBranch;
 
     auxSum = distR0*distR0 + distR1*distR1;
     sumForBranch = distR0 + distR1;
-    res += sumForBranch - auxSum / sumForBranch;
+    res += sumForBranch == 0 ? 0 : sumForBranch - auxSum / sumForBranch;
 
     return res;
   }
@@ -179,6 +184,8 @@ public class SplitCriteria {
       total += sumForColumn;
     }
 
+    // Guard against division by zero on empty data (see TODO.md #9)
+    if (total == 0) return 0;
     return total - auxSum/total;
   }
 

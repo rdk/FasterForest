@@ -30,15 +30,9 @@ public class FlatBinaryForestBuilder {
 
 //===============================================================================================//
 
-//    /**
-//     * @param trees
-//     * @param useOnlyPositiveClassProbability Use only positive class probability p_class[1] instead of ratio p_class[1] / (p_class[0] + p_class[1])
-//     */
-//    public FlatBinaryForest buildFromFasterTrees(int numAttributes, List<FasterTree> trees, boolean useOnlyPositiveClassProbability) {
-//        useOnlyPositive = useOnlyPositiveClassProbability;
-//        return buildFromFasterTrees(numAttributes, trees);
-//    }
+    private FlatBinaryForestBuilder() {}
 
+//===============================================================================================//
 
     /**
      *
@@ -46,8 +40,8 @@ public class FlatBinaryForestBuilder {
      * @param trees
      * @return
      */
-    public FlatBinaryForest buildFromFasterTrees(int numAttributes, List<FasterTree> trees) {
-        return buildFromFasterTrees(numAttributes, trees, false);
+    public static FlatBinaryForest buildFromFasterTrees(int numAttributes, List<FasterTree> trees) {
+        return new FlatBinaryForestBuilder().doBuildFromFasterTrees(numAttributes, trees, false);
     }
 
     /**
@@ -56,10 +50,9 @@ public class FlatBinaryForestBuilder {
      * @param trees
      * @return
      */
-    public LegacyFlatBinaryForest buildFromFasterTreesLegacy(int numAttributes, List<FasterTree> trees) {
-        return (LegacyFlatBinaryForest)buildFromFasterTrees(numAttributes, trees, true);
+    public static LegacyFlatBinaryForest buildFromFasterTreesLegacy(int numAttributes, List<FasterTree> trees) {
+        return (LegacyFlatBinaryForest) new FlatBinaryForestBuilder().doBuildFromFasterTrees(numAttributes, trees, true);
     }
-
 
     /**
      *
@@ -67,7 +60,25 @@ public class FlatBinaryForestBuilder {
      * @param trees
      * @return
      */
-    public FlatBinaryForest buildFromFasterTrees(int numAttributes, List<FasterTree> trees, boolean legacyClassProbs) {
+    public static FlatBinaryForest buildFromFasterTrees(int numAttributes, List<FasterTree> trees, boolean legacyClassProbs) {
+        return new FlatBinaryForestBuilder().doBuildFromFasterTrees(numAttributes, trees, legacyClassProbs);
+    }
+
+    /**
+     * Build an InterleavedBfsForest from FasterTrees.
+     * Uses BFS node ordering and interleaved int[] node data layout.
+     *
+     * @param numAttributes input vector length
+     * @param trees list of trained FasterTree instances
+     * @return optimized InterleavedBfsForest
+     */
+    public static InterleavedBfsForest buildInterleavedBfsForest(int numAttributes, List<FasterTree> trees) {
+        return new FlatBinaryForestBuilder().doBuildInterleavedBfsForest(numAttributes, trees);
+    }
+
+//===============================================================================================//
+
+    private FlatBinaryForest doBuildFromFasterTrees(int numAttributes, List<FasterTree> trees, boolean legacyClassProbs) {
 
         int splitNodes = 0;
         int leaves = 0;
@@ -109,7 +120,7 @@ public class FlatBinaryForestBuilder {
             double[] scores = calculateScoresFromProbs(classProbs);
             return new FlatBinaryForest(trees.size(), numAttributes, childLeft, childRight, attributeIndex, splitPoint, scores);
         }
-        
+
     }
 
     private double[] calculateScoresFromProbs(double[][] classProbs) {
@@ -194,15 +205,7 @@ public class FlatBinaryForestBuilder {
     private int bfsPosSplitNodes;
     private int bfsPosClassProbs;
 
-    /**
-     * Build an InterleavedBfsForest from FasterTrees.
-     * Uses BFS node ordering and interleaved int[] node data layout.
-     *
-     * @param numAttributes input vector length
-     * @param trees list of trained FasterTree instances
-     * @return optimized InterleavedBfsForest
-     */
-    public InterleavedBfsForest buildInterleavedBfsForest(int numAttributes, List<FasterTree> trees) {
+    private InterleavedBfsForest doBuildInterleavedBfsForest(int numAttributes, List<FasterTree> trees) {
         int splitNodes = 0;
         int leaves = 0;
 
@@ -248,13 +251,6 @@ public class FlatBinaryForestBuilder {
         for (int i = 1; i < bfsClassProbs.length; ++i) {
             score[i] = (float) getScoreFromProbs(bfsClassProbs[i]);
         }
-
-        // Release temporary arrays
-        bfsChildLeft = null;
-        bfsChildRight = null;
-        bfsAttributeIndex = null;
-        bfsSplitPoint = null;
-        bfsClassProbs = null;
 
         return new InterleavedBfsForest(numTrees, numAttributes, nodeData, score);
     }

@@ -29,6 +29,7 @@ import weka.classifiers.Classifier;
 import weka.classifiers.RandomizableIteratedSingleClassifierEnhancer;
 import weka.core.*;
 
+import java.io.Serial;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -72,13 +73,14 @@ import java.util.concurrent.Future;
  * @author Jordi Pique (2.0 version)
  * @version $Revision: 2.0$
  */
-class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
+public class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
   implements WeightedInstancesHandler, AdditionalMeasureProducer {
 
   /**
    * for serialization
    */
-  static final long serialVersionUID = 1L;
+  @Serial
+  private static final long serialVersionUID = 1L;
 
   protected transient DataCache2 myData;
   protected transient boolean[][] inBag;

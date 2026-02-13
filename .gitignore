@@ -27,4 +27,5 @@ out/*
 !releases
 !lib/*
 !*.md
+CLAUDE.local.md
 

@@ -29,6 +29,7 @@ import weka.core.*;
 import weka.core.TechnicalInformation.Field;
 import weka.core.TechnicalInformation.Type;
 
+import java.io.Serial;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
@@ -100,12 +101,13 @@ import static cz.siret.prank.ffutils.NormalizationUtils.normalizedClass1ProbsReu
 public class FasterForest
     extends AbstractClassifier
     implements BinaryForest, OptionHandler, Randomizable, WeightedInstancesHandler,
-    AdditionalMeasureProducer, TechnicalInformationHandler, FlattableForest {
+    AdditionalMeasureProducer, TechnicalInformationHandler, FlattableForest, TrainableFasterForest {
 
   /**
    * for serialization
    */
-  static final long serialVersionUID = 4216839470751428701L;
+  @Serial
+  private static final long serialVersionUID = 4216839470751428701L;
 
   /**
    * Number of trees in forest.
@@ -644,7 +646,7 @@ public class FasterForest
    *
    * @throws Exception if something goes wrong
    */
-  public void buildClassifier(Instances data) throws Exception{
+  public void buildClassifier(Instances data) throws Exception {
 
     // can classifier handle the data?
     getCapabilities().testWithFail(data);
@@ -777,20 +779,21 @@ public class FasterForest
   ////////////////////////////
 
   public LegacyFlatBinaryForest toFlatBinaryForest() {
-    return new FlatBinaryForestBuilder().buildFromFasterTreesLegacy(getFeatureVectorLength(), m_bagger.getClassifiersAsTrees());
+    return FlatBinaryForestBuilder.buildFromFasterTreesLegacy(getFeatureVectorLength(), m_bagger.getClassifiersAsTrees());
   }
 
   public FlatBinaryForest toFlatBinaryForest(boolean legacyClassProbs) {
-    return new FlatBinaryForestBuilder().buildFromFasterTrees(getFeatureVectorLength(), m_bagger.getClassifiersAsTrees(), legacyClassProbs);
+    return FlatBinaryForestBuilder.buildFromFasterTrees(getFeatureVectorLength(), m_bagger.getClassifiersAsTrees(), legacyClassProbs);
   }
 
 //===============================================================================================//
 
-  FasterTree getTree(int i) {
+  public FasterTree getTree(int i) {
     return (FasterTree)m_bagger.getClassifiers()[i];
   }
 
-  List<FasterTree> getTrees() {
+  @Override
+  public List<FasterTree> getTrees() {
     return m_bagger.getClassifiersAsTrees();
   }
 

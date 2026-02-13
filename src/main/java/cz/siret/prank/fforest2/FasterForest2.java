@@ -25,15 +25,13 @@ package cz.siret.prank.fforest2;
 
 import cz.siret.prank.fforest.FasterForest;
 import cz.siret.prank.fforest.FasterTree;
-import cz.siret.prank.fforest.api.BinaryForest;
-import cz.siret.prank.fforest.api.FlatBinaryForest;
-import cz.siret.prank.fforest.api.FlatBinaryForestBuilder;
-import cz.siret.prank.fforest.api.FlattableForest;
+import cz.siret.prank.fforest.api.*;
 import weka.classifiers.AbstractClassifier;
 import weka.core.*;
 import weka.core.TechnicalInformation.Field;
 import weka.core.TechnicalInformation.Type;
 
+import java.io.Serial;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
@@ -121,10 +119,11 @@ import java.util.concurrent.ExecutionException;
 public class FasterForest2
   extends AbstractClassifier
   implements BinaryForest, OptionHandler, Randomizable, WeightedInstancesHandler,
-             AdditionalMeasureProducer, TechnicalInformationHandler, FlattableForest {
+             AdditionalMeasureProducer, TechnicalInformationHandler, FlattableForest, TrainableFasterForest {
 
   /** for serialization */
-  static final long serialVersionUID = 4216839470751428700L;
+  @Serial
+  private static final long serialVersionUID = 4216839470751428700L;
 
   /** Number of trees in forest. */
   protected int m_numTrees = 100;
@@ -673,6 +672,7 @@ public class FasterForest2
    *
    * @throws Exception if something goes wrong
    */
+  @Override
   public void buildClassifier(Instances data) throws Exception {
 
     // can classifier handle the data?
@@ -917,18 +917,19 @@ public class FasterForest2
 
 
   public FlatBinaryForest toFlatBinaryForest() {
-    return new FlatBinaryForestBuilder().buildFromFasterTreesLegacy(getFeatureVectorLength(), m_bagger.getClassifiersAsTrees());
+    return FlatBinaryForestBuilder.buildFromFasterTreesLegacy(getFeatureVectorLength(), m_bagger.getClassifiersAsTrees());
   }
 
   public FlatBinaryForest toFlatBinaryForest(boolean legacyClassProbs) {
-    return new FlatBinaryForestBuilder().buildFromFasterTrees(getFeatureVectorLength(), m_bagger.getClassifiersAsTrees(), legacyClassProbs);
+    return FlatBinaryForestBuilder.buildFromFasterTrees(getFeatureVectorLength(), m_bagger.getClassifiersAsTrees(), legacyClassProbs);
   }
 
-  FasterTree getTree(int i) {
+  public FasterTree getTree(int i) {
     return (FasterTree)m_bagger.getClassifiers()[i];
   }
 
-  List<FasterTree> getTrees() {
+  @Override
+  public List<FasterTree> getTrees() {
     return m_bagger.getClassifiersAsTrees();
   }
 

@@ -1018,6 +1018,10 @@ public class FasterTreeTrainable extends FasterTree {
         // TODO recycle this array
         tempIndices = new int[n];
 
+        // Warning: assumes classIndex != 0. sortedIndices[classIndex] is null (skipped
+        // during sorting), so if classIndex == 0 this will NPE. OK in practice because
+        // Weka convention places the class attribute last. Would break if a dataset has
+        // classIndex == 0. Fix: replace with data.numInBag - 1. See TODO.md #1.
         buildTree(data.sortedIndices, 0, data.sortedIndices[0].length-1,
             classProbs, attIndicesWindow, 0);
 

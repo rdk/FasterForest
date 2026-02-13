@@ -1,67 +1,6 @@
 # TODO — Known Bugs
 
 
-## High
-
-### #1 NPE in `buildRootTree` when `classIndex == 0` (FasterForest)
-
-**File:** `src/main/java/cz/siret/prank/fforest/FasterTreeTrainable.java:1020`
-
-```java
-buildTree(data.sortedIndices, 0, data.sortedIndices[0].length-1,
-    classProbs, attIndicesWindow, 0);
-```
-
-During training, `createInBagSortedIndices()` populates `sortedIndices[a]` for every
-attribute `a` except the class attribute (`a == classIndex`), leaving
-`sortedIndices[classIndex]` as `null`. The `buildRootTree` method uses
-`data.sortedIndices[0].length - 1` as the `endAt` parameter. If the class attribute
-happens to be at index 0, this dereferences `null` and throws a `NullPointerException`.
-
-The typical case (class attribute is the last column) works fine because
-`sortedIndices[0]` is a non-class attribute. But Weka datasets can have the class
-attribute at any position, so this is a real crash scenario.
-
-**Suggested fixes:**
-- **(a) (Recommended)** Replace `data.sortedIndices[0].length - 1` with `data.numInBag - 1`.
-  Direct, no iteration needed, and `numInBag` is always correctly set.
-- (b) Find the first non-null `sortedIndices` entry and use its length.
-  More defensive but adds unnecessary iteration.
-
-
-### #2 `createInBagSortedIndicesNew` overflows `attInSortedIndices` (FasterForest2)
-
-**File:** `src/main/java/cz/siret/prank/fforest2/DataCache2.java:275-304`
-
-In `resample()`, the array `attInSortedIndices` is allocated with size
-`nAttInSortedIndices`, which counts only non-nominal attributes among the selected
-features. But `createInBagSortedIndicesNew()` iterates over ALL `selectedAttributes`
-(including nominal ones) and writes every one of them into `attInSortedIndices`:
-
-```java
-for (int a : selectedAttributes) {
-    attInSortedIndices[idx] = a;
-    ++idx;
-    ...
-}
-```
-
-If any nominal attributes are among the selected features, `idx` exceeds the array
-length, causing an `ArrayIndexOutOfBoundsException`. The special case
-`allCategorical` allocates size 1, which also overflows with multiple nominal
-attributes.
-
-Currently harmless because the classifier only enables `NUMERIC_ATTRIBUTES` in its
-capabilities, so nominal attributes never appear. But this is a latent crash if
-nominal support is added.
-
-**Suggested fixes:**
-- **(a)** Skip nominal attributes in the `createInBagSortedIndicesNew` loop (matching
-  the sizing logic in `resample()`).
-- **(b) (Recommended)** Size `attInSortedIndices` to `selectedAttributes.length` so it
-  can hold all selected attributes regardless of type. Simpler and more robust.
-
-
 ## Medium
 
 ### #3 Biased Fisher-Yates shuffle (FasterForest and FasterForest2)
@@ -252,6 +191,16 @@ Only triggers with completely degenerate data (all instance weights zero).
 
 
 ## Resolved
+
+### #1 NPE in `buildRootTree` when `classIndex == 0` (FasterForest) — DOCUMENTED
+
+Warning comment added in `FasterTreeTrainable.java:1021`. OK in practice because Weka
+convention places the class attribute last. Would break if `classIndex == 0`.
+
+### #2 `createInBagSortedIndicesNew` overflows `attInSortedIndices` (FasterForest2) — DOCUMENTED
+
+Warning comment added in `DataCache2.java:278`. OK in practice because the classifier
+only enables `NUMERIC_ATTRIBUTES`. Would break if nominal attribute support is added.
 
 ### #10 `getMaxDepth()` returns training depth limit, not actual tree depth (FasterForest) — FIXED
 

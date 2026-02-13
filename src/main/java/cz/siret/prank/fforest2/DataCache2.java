@@ -282,6 +282,10 @@ public class DataCache2 {
     boolean allCategorical = attInSortedIndices.length == 0;
     if (allCategorical) attInSortedIndices = new int[1];
 
+    // Warning: attInSortedIndices is sized for non-nominal attributes only, but this
+    // loop writes ALL selectedAttributes into it. Will overflow if nominal attributes
+    // are present. OK in practice because the classifier only enables NUMERIC_ATTRIBUTES.
+    // Would break if nominal attribute support is added. See TODO.md #2.
     for (int a : selectedAttributes) {
       // we will add, at most, only one categorical feature in sortedIndices
 

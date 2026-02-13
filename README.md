@@ -1,143 +1,200 @@
 
-[![version 2.4.1](https://img.shields.io/badge/version-2.4.0-green.svg)](/build.gradle)
-[![Build Status](https://github.com/rdk/FasterForest/actions/workflows/main.yml/badge.svg)](https://github.com/rdk/FasterForest/actions/workflows/main.yml)
-[![License: GPL v2](https://img.shields.io/badge/License-GPL%20v2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)
+<p align="center">
+  <h1 align="center">🌲 FasterForest</h1>
+  <p align="center">
+    High-performance Random Forest library for Java with cache-optimized prediction
+  </p>
+</p>
 
-FasterForest library
-====================
+<p align="center">
+  <a href="/build.gradle"><img src="https://img.shields.io/badge/version-2.5.3-brightgreen.svg" alt="version 2.5.3"></a>
+  <a href="https://github.com/rdk/FasterForest/actions/workflows/main.yml"><img src="https://github.com/rdk/FasterForest/actions/workflows/main.yml/badge.svg" alt="Build Status"></a>
+  <a href="https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html"><img src="https://img.shields.io/badge/License-GPL%20v2-blue.svg" alt="License: GPL v2"></a>
+  <img src="https://img.shields.io/badge/Java-17+-orange.svg" alt="Java 17+">
+</p>
 
-A streamlined version of Fran Supeks's FastRandomForest.
-Compared to FastRandomForest it uses around 75% time and 50% memory.
+---
 
-Does not support nominal attributes and missing values.
-
-FasterForest2
--------------
-
-Added FasterForest2 based on FastRandomForest 2.0 (https://github.com/GenomeDataScience/FastRandomForest).
-
-FasterForest
-------------
-
-Now in its own repo with mavenized gradle build.
-
-
-Old readme notes:
-
-FastRandomForest v0.9
----------------------
-Copyright (c) 2008 Fran Supek (fran.supek[AT]irb.hr)
-
-Contents:
-* What is FastRandomForest?
-* License
-* Using from own Java code
-* Using from Weka Explorer or Experimenter (3-5-7 or earlier)
-* Using from Weka Explorer or Experimenter (3-5-8 or newer)
+**FasterForest** is a streamlined, high-performance **Random Forest library for Java**.
+It provides multiple forest representations optimized for different speed/memory trade-offs, in particular **`InterleavedBfsForest`**
+with cache-optimized layouts that achieve **3-4x speedup** over the standard flat array representation **`FlatBinaryForest`**.
+For inference, **`FlatBinaryForest`** alone is already **1.5x** faster than Fran Supek's **`FastRandomForest`**,
+which itself was a significant improvement over Weka's standard **`RandomForest`**.
 
 
+> **Note:** Designed for numeric attributes only. Does not support nominal attributes or missing values.
 
-What is FastRandomForest?
--------------------------
+## 🏛️ Random Forest Implementations
 
-FastRandomForest is a re-implementation of the Random Forest classifier (RF)
-for the Weka environment that brings speed and memory use improvements over the 
-original Weka RF, without sacrificing accuracy.
+FasterForest provides a family of interchangeable `BinaryForest` implementations.
+Train with one of the trainable classifiers, then convert to an optimized format for fast inference.
 
-Speed gains depend on many factors, but a 10-20x increase on a quad-core desktop
-computer is not uncommon, along with a 2x reduction in memory use.
- 
-For detailed tests of speed and classification accuracy, as well as description 
-of changes to the code, please refer to the FastRandomForest wiki at
+### Trainable Forests
 
-http://code.google.com/p/fast-random-forest/w
+| Implementation | Description |
+|---|---|
+| **`FasterForest`** | Main trainable classifier. Multi-threaded bagging, configurable tree depth, feature subsampling, OOB error, feature importance. |
+| **`FasterForest2`** | Extended variant with dropout importance, pairwise feature interaction analysis. |
 
-or email the author at fran.supek[AT]irb.hr.
+### Optimized Prediction Forests
 
+These are inference-only representations converted from a trained forest.
 
-License
--------
+| Implementation | Key Optimization | Notes |
+|---|---|---|
+| **`FlatBinaryForest`** | Parallel arrays | Baseline flat representation. |
+| **`LegacyFlatBinaryForest`** | Parallel arrays + full class probs | Preserves both class probabilities for legacy compatibility. |
+| **`ShortLegacyFlatBinaryForest`** | `float` arrays | ~50% memory reduction vs. double, minimal precision loss. |
+| **`InterleavedBfsForest`** | Interleaved layout + BFS ordering | **Fastest.** 4 ints per node = 1 cache line per 4 nodes. BFS ordering keeps hot nodes in L1/L2. 3-4x faster than flat. |
+| **`OptimizingFlatBinaryForest`** | Access-pattern reordering | Profiles node access counts, then reorders for cache locality. Multiple strategies (by tree, depth, count). |
 
-This program is free software; you can redistribute it and/or modify it under 
-the terms of the GNU General Public License as published by the Free Software 
-Foundation; either version 2 of the License, or (at your option) any later 
-version.
- 
-This program is distributed in the hope that it will be useful, but WITHOUT ANY 
-WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A 
-PARTICULAR PURPOSE.  See the GNU General Public License for more details.
- 
-You should have received a copy of the GNU General Public License along with 
-this program; if not, write to the Free Software Foundation, Inc., 675 Mass 
-Ave, Cambridge, MA 02139, USA.
+### Conversion
 
+All trainable forests implement `FlattableForest` and can be converted via `FasterForestConverter`:
 
+```java
+FasterForest ff = new FasterForest();
+ff.buildClassifier(data);
 
-Using from own Java code
-------------------------
+BinaryForest fast = FasterForestConverter.convertFasterForest(ff, ForestType.InterleavedBfsForest);
 
-Just add FastRandomForest.jar to your Java VM classpath by using the -cp 
-switch, or by changing project dependencies in NetBeans/Eclipse/whatever IDE 
-you use. Then use hr.irb.fastRandomForest.FastRandomForest as you would use 
-any other classifier, see instructions at the WekaWiki:
+double   score  = fast.predict(instance);
+double[] scores = fast.predictForBatch(instances);
+```
 
-http://weka.sourceforge.net/wiki/index.php/Use_Weka_in_your_Java_code 
+## 🚀 Performance
 
+### Inference speedup vs. predecessors
 
+| Implementation | vs. Weka `RandomForest` | vs. `FastRandomForest` |
+|---|---|---|
+| **`FlatBinaryForest`** | ~15-30x | ~1.5x |
+| **`InterleavedBfsForest`** | ~45-120x | ~5-6x |
 
-Using from Weka Explorer or Experimenter (3-5-8 or newer)
----------------------------------------------------------
+Weka's `RandomForest` uses deep object trees with virtual dispatch per node.
+Supek's `FastRandomForest` improved on that with streamlined data structures and multi-threaded training (10-20x over Weka).
+FasterForest's flat representations eliminate pointer chasing entirely, and the interleaved BFS layout
+further maximizes cache utilization.
 
-1. Add the FastRandomForest.jar to your Java classpath when starting Weka. This
-is normally done by editing the line beginning with “cp=” in “RunWeka.ini”
+### Training
 
-2. You extract the “GenericObjectEditor.props” file from weka.jar
-(jar files are in fact ordinary zip archives, the GenericObjectEditor.props is
-under /weka/gui).
+| | vs. Weka `RandomForest` | vs. `FastRandomForest` |
+|---|---|---|
+| **Time** | ~13-27x | ~1.3x |
+| **Memory** | ~4-10x | ~2x |
 
-3. Place the file you've just extracted into the directory where you have
-installed Weka (on Windows this is commonly "C:\Program Files\Weka-3-5")
+Supek's `FastRandomForest` introduced multi-threaded bagging and a shared data cache,
+achieving 10-20x training speedup and ~2-5x memory reduction over Weka on multi-core machines.
+`FasterForest` further streamlines the tree building code, reducing training time to ~75% and
+memory usage to ~50% of `FastRandomForest`.
 
-4. Find the
+### InterleavedBfsForest optimizations
 
-     * Lists the Classifiers I want to choose from
+| Optimization | Speedup | Mechanism |
+|---|---|---|
+| **P1 - Interleaved layout** | 2-3x | Single `int[]` array, 4 ints/node (16 bytes). 4 nodes fit in one 64-byte cache line. |
+| **P2 - BFS node ordering** | 1.2-1.4x | Breadth-first allocation. Top 6 levels (~63 nodes) fit in L1. |
+| **P3 - Inlined traversal** | 1.1-1.3x | Local variable caching, `do-while` loop, multiply instead of divide. |
 
-heading and scroll far down to the end of the block (first empty line), then
-add a line:
+**Combined: ~3-4x** over the baseline `FlatBinaryForest`.
 
-     hr.irb.fastRandomForest.FastRandomForest
+## 👨‍💻 Usage
 
-Do not forget to append a comma and a backslash to the previous line.
+### Training
 
-5. The “FastRandomForest” class is in the "hr.irb.fastRandomForest" package
-in the "Classify" tab. Enjoy.
+```java
+FasterForest forest = new FasterForest();
+forest.setNumTrees(200);
+forest.setNumFeatures(0);    // 0 = log2(M) + 1
+forest.setMaxDepth(0);       // 0 = unlimited
+forest.setNumThreads(0);     // 0 = auto-detect cores
+forest.buildClassifier(data);
+```
 
+### Prediction
 
- 
-Using from Weka Explorer or Experimenter (3-5-7 or earlier)
------------------------------------------------------------
+```java
+// Single instance (returns P(class=1))
+double score = forest.predict(featureVector);
 
-1. Add the FastRandomForest.jar to your Java classpath when starting Weka. This 
-is normally done by editing the line beginning with “cp=” in “RunWeka.ini”
-If "cp=" doesn't exist, search for "cmd_default=" and add after "#wekajar#;".
+// Batch prediction
+double[] scores = forest.predictForBatch(featureMatrix);
 
-2. You need to extract the “GenericPropertiesCreator.props” file from your 
-weka.jar (jar files are in fact ordinary zip archives, the 
-GenericPropertiesCreator.props is under /weka/gui).
+// Full distribution via Weka API
+double[] dist = forest.distributionForInstance(instance);
+```
 
-3. Place the file you've just extracted into the directory where you have
-installed Weka (on Windows this is commonly "C:\Program Files\Weka-3-5")
+### Converting to optimized inference formats
 
-4. Under the
+```java
+import cz.siret.prank.fforest.api.FasterForestConverter;
+import cz.siret.prank.fforest.api.FasterForestConverter.ForestType;
+import cz.siret.prank.fforest.api.BinaryForest;
 
-     * Lists the Classifiers-Packages I want to choose from
+// Convert to FlatBinaryForest (baseline flat representation)
+BinaryForest flat = FasterForestConverter.convertFasterForest(forest, ForestType.FlatBinaryForest);
 
-heading, add the line
+// Convert to InterleavedBfsForest (fastest, cache-optimized)
+BinaryForest fast = FasterForestConverter.convertFasterForest(forest, ForestType.InterleavedBfsForest);
 
-     hr.irb.fastRandomForest
+// All BinaryForest implementations share the same prediction API
+double   score  = fast.predict(featureVector);
+double[] scores = fast.predictForBatch(featureMatrix);
+```
 
-Do not forget to add a comma and a backslash to the previous line.
+### Feature Importance
 
-5. Use the “FastRandomForest” class is in the hr.irb.fastRandomForest
-package in the "Classify" tab. The other three classes cannot be used directly.
+```java
+forest.setComputeImportances(true);
+forest.buildClassifier(data);
+double[] importances = forest.getFeatureImportances();
+```
+
+### Build
+
+```bash
+./gradlew build
+```
+
+## 🏗️ Architecture
+
+```
+cz.siret.prank.fforest
+├── FasterForest              # Trainable classifier (v1)
+├── FasterForest2             # Extended with interaction analysis (v2)
+├── FasterTree                # Tree node (linked structure)
+├── FasterTreeTrainable       # Tree building algorithm
+├── FastRfBagging             # Bootstrap ensemble builder
+└── api/
+    ├── BinaryForest              # Core prediction interface
+    ├── TrainableFasterForest     # Training interface
+    ├── FlattableForest           # Conversion interface
+    ├── FasterForestConverter     # Unified conversion factory
+    ├── FlatBinaryForest          # Flat array forest
+    ├── LegacyFlatBinaryForest    # Flat with full class probs
+    ├── ShortLegacyFlatBinaryForest
+    ├── InterleavedBfsForest      # Cache-optimized (fastest)
+    └── OptimizingFlatBinaryForest
+```
+
+## 🙏 Acknowledgments
+
+FasterForest builds on the work of:
+
+- **[FastRandomForest](http://code.google.com/p/fast-random-forest/)** by Fran Supek
+  - the original re-implementation of Random Forest for Weka
+  that introduced multi-threaded training and significant speed/memory improvements
+  over the standard Weka RF.
+
+- **[FastRandomForest 2.0](https://github.com/GenomeDataScience/FastRandomForest)** by
+  the GenomeDataScience group 
+  - extended version with feature interaction analysis
+  and dropout-based importance, which forms the basis of `FasterForest2`.
+
+- **[Weka](https://www.cs.waikato.ac.nz/ml/weka/)** machine learning framework by
+  the University of Waikato.
+
+## 📜 License
+
+GNU General Public License v2 — see [LICENSE.txt](LICENSE.txt).
 

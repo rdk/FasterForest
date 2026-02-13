@@ -222,7 +222,9 @@ public class FasterForest
    * @return Value of numTrees.
    */
   public int getNumTrees(){
-
+    if (m_bagger != null) {
+      return m_bagger.getClassifiers().length;
+    }
     return m_numTrees;
   }
 
@@ -314,11 +316,24 @@ public class FasterForest
   }
 
   /**
-   * Get the maximum depth of trh tree, 0 for unlimited.
+   * Get the maximum depth of the built trees.
+   * Before building, returns the configured training depth limit.
    *
-   * @return the maximum depth.
+   * @return the actual maximum depth of the built trees, or the training depth limit if not yet built.
    */
   public int getMaxDepth(){
+    if (m_bagger != null) {
+      return calculateMaxTreeDepth();
+    }
+    return m_MaxDepth;
+  }
+
+  /**
+   * Get the training depth limit, 0 for unlimited.
+   *
+   * @return the training depth limit.
+   */
+  public int getMaxDepthLimit(){
     return m_MaxDepth;
   }
 
@@ -523,9 +538,9 @@ public class FasterForest
     result.add("-S");
     result.add("" + getSeed());
 
-    if(getMaxDepth() > 0){
+    if(getMaxDepthLimit() > 0){
       result.add("-depth");
-      result.add("" + getMaxDepth());
+      result.add("" + getMaxDepthLimit());
     }
 
     if(getNumThreads() > 0){
@@ -736,7 +751,7 @@ public class FasterForest
         + " trees, each constructed while considering "
         + m_KValue + " random feature" + (m_KValue == 1 ? "" : "s") + ".\n"
         + "Out of bag error: " + Utils.doubleToString(m_bagger.measureOutOfBagError()*100.0, 3) + "%\n"
-        + (getMaxDepth() > 0 ? ("Max. depth of trees: " + getMaxDepth() + "\n") : (""))
+        + (getMaxDepthLimit() > 0 ? ("Max. depth of trees: " + getMaxDepthLimit() + "\n") : (""))
         + "\n");
       if ( getComputeImportances() ) {
         sb.append("Feature importances - increase in out-of-bag error (as % misclassified instances) after feature permuted:\n");

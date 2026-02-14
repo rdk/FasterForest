@@ -1,3 +1,7 @@
+
+Old changelog from Fran Supek's FastRandomForest implementation
+==================================================================
+
 --- VERSION 0.99 ---
 
 Multiple speed and memory optimizations, for more details, please refer to

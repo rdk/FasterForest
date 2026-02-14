@@ -1,4 +1,5 @@
 apply plugin:'java'
+apply plugin:'maven-publish'
 
 
 group = 'cz.siret.prank'
@@ -38,6 +39,16 @@ test {
     }
 
 }
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            from components.java
+        }
+    }
+}
+
+assemble.dependsOn generatePomFileForMavenPublication
 
 dependencies {
     implementation 'org.apache.commons:commons-lang3:3.18.0'

@@ -196,5 +196,5 @@ FasterForest builds on the work of:
 
 ## 📜 License
 
-GNU General Public License v2 — see [LICENSE.txt](LICENSE.txt).
+GNU General Public License v2 - see [LICENSE.txt](LICENSE.txt).
 

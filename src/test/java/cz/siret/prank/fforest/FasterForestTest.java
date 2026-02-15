@@ -3,6 +3,7 @@ package cz.siret.prank.fforest;
 import cz.siret.prank.fforest.api.*;
 import cz.siret.prank.fforest2.FasterForest2;
 import cz.siret.prank.ffutils.ATimer;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -180,9 +181,10 @@ public class FasterForestTest {
     public static final double DELTA_15 = 0.000_000_000_000_001d;
     public static final double DELTA_7 = 0.000_000_1d;
 
-    //@Ignore
     @Test
     public void optimizingFlatForestLegacyBenchmark() throws Exception {
+        Assume.assumeTrue("Benchmark skipped. Run with -Dbenchmark=true or ./gradlew benchmark",
+                Boolean.getBoolean("benchmark"));
         FasterForest ff = setupFF();
         ff.setNumTrees(100);
         ff.setMaxDepth(0);
@@ -233,9 +235,10 @@ public class FasterForestTest {
         }
     }
 
-    @Ignore
     @Test
     public void optimizingFlatForestLegacyBenchmark2() throws Exception {
+        Assume.assumeTrue("Benchmark skipped. Run with -Dbenchmark=true or ./gradlew benchmark",
+                Boolean.getBoolean("benchmark"));
         FasterForest ff = setupFF();
         ff.setNumTrees(100);
         ff.setMaxDepth(0);

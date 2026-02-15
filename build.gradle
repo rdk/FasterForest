@@ -38,6 +38,27 @@ test {
         showStandardStreams = false
     }
 
+    // pass -Dbenchmark=true to enable benchmark tests
+    systemProperty 'benchmark', System.getProperty('benchmark')
+}
+
+tasks.register('benchmark', Test) {
+    description = 'Run prediction speed benchmarks'
+    group = 'verification'
+
+    testClassesDirs = testing.suites.test.sources.output.classesDirs
+    classpath = testing.suites.test.sources.runtimeClasspath
+
+    systemProperty 'benchmark', 'true'
+    include '**/PredictionSpeedBenchmark*'
+
+    testLogging {
+        events "passed", "failed"
+        showStandardStreams = true
+    }
+
+    // benchmarks may take a long time
+    timeout = Duration.ofMinutes(30)
 }
 
 publishing {

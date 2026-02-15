@@ -180,7 +180,7 @@ public class FasterForestTest {
     public static final double DELTA_15 = 0.000_000_000_000_001d;
     public static final double DELTA_7 = 0.000_000_1d;
 
-    @Ignore
+    //@Ignore
     @Test
     public void optimizingFlatForestLegacyBenchmark() throws Exception {
         FasterForest ff = setupFF();
@@ -213,6 +213,8 @@ public class FasterForestTest {
 
         SuperShortLegacyFlatBinaryForest ssForest = SuperShortLegacyFlatBinaryForest.from(fbf);
 
+        BinaryForest interleavedBfs = FasterForestConverter.convertFasterForest(ff, FasterForestConverter.ForestType.InterleavedBfsForest);
+
         testEqualStructure(fbf, ssForest);
         testEqualPredictions(dataset1, fbf, ssForest, DELTA_7);
 
@@ -226,6 +228,7 @@ public class FasterForestTest {
             System.out.printf("Optimized: %d ms\n", benchPredictionsBatch(n, instances, optimizedForest));
             System.out.printf("Short: %d ms\n", benchPredictionsBatch(n, instances, shortForest));
             System.out.printf("SuperShort: %d ms\n", benchPredictionsBatch(n, instances, ssForest));
+            System.out.printf("InterleavedBfs: %d ms\n", benchPredictionsBatch(n, instances, interleavedBfs));
             System.out.println("------");
         }
     }

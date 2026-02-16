@@ -40,6 +40,7 @@ public class PredictionSpeedBenchmark {
     static final boolean ENABLE_SHORT_LEGACY       = true;
     static final boolean ENABLE_SUPER_SHORT        = false;
     static final boolean ENABLE_INTERLEAVED_BFS    = true;
+    static final boolean ENABLE_INTERLEAVED_BFS_D  = true;
 
     // --- benchmark parameters (overridable via -D system properties) ---
 
@@ -61,6 +62,7 @@ public class PredictionSpeedBenchmark {
     ShortLegacyFlatBinaryForest shortForest;
     SuperShortLegacyFlatBinaryForest superShortForest;
     BinaryForest interleavedBfsForest;
+    BinaryForest interleavedBfsDoubleForest;
 
     // =========================================================================
 
@@ -118,6 +120,9 @@ public class PredictionSpeedBenchmark {
         }
         if (ENABLE_INTERLEAVED_BFS) {
             interleavedBfsForest = FasterForestConverter.convertFasterForest(ff, FasterForestConverter.ForestType.InterleavedBfsForest);
+        }
+        if (ENABLE_INTERLEAVED_BFS_D) {
+            interleavedBfsDoubleForest = FasterForestConverter.convertFasterForest(ff, FasterForestConverter.ForestType.InterleavedBfsDoubleForest);
         }
 
         System.out.printf("Dataset: %d instances, %d attributes%n", dataset.size(), dataset.numAttributes() - 1);
@@ -189,6 +194,7 @@ public class PredictionSpeedBenchmark {
         if (ENABLE_SHORT_LEGACY)   forests.put("ShortLegacy", shortForest);
         if (ENABLE_SUPER_SHORT)    forests.put("SuperShort", superShortForest);
         if (ENABLE_INTERLEAVED_BFS) forests.put("InterleavedBfs", interleavedBfsForest);
+        if (ENABLE_INTERLEAVED_BFS_D) forests.put("InterleavedBfsDouble", interleavedBfsDoubleForest);
         return forests;
     }
 

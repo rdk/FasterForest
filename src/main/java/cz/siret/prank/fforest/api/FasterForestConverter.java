@@ -14,7 +14,8 @@ public class FasterForestConverter {
         LegacyFlatBinaryForest,
         ShortFlatBinaryForest,
         SuperShortLegacyFlatBinaryForest,
-        InterleavedBfsForest
+        InterleavedBfsForest,
+        InterleavedBfsDoubleForest
     }
 
     public static BinaryForest convertFasterForest(TrainableFasterForest forest, ForestType targetType) {
@@ -32,6 +33,8 @@ public class FasterForestConverter {
                 return SuperShortLegacyFlatBinaryForest.from(FlatBinaryForestBuilder.buildFromFasterTreesLegacy(numAttributes, trees));
             case InterleavedBfsForest:
                 return InterleavedBfsForest.fromFasterTrees(numAttributes, trees);
+            case InterleavedBfsDoubleForest:
+                return InterleavedBfsDoubleForest.fromFasterTrees(numAttributes, trees);
             default:
                 throw new IllegalArgumentException("Unknown forest type: " + targetType);
         }

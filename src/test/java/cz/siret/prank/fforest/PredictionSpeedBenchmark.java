@@ -43,6 +43,8 @@ public class PredictionSpeedBenchmark {
     static final boolean ENABLE_INTERLEAVED_BFS_D  = true;
     static final boolean ENABLE_CONTIGUOUS_BFS_D   = true;
     static final boolean ENABLE_SEPARATE_BFS       = true;
+    static final boolean ENABLE_BRANCHLESS_BFS     = true;
+    static final boolean ENABLE_CONTIGUOUS_DFS     = true;
 
     // --- benchmark parameters (overridable via -D system properties) ---
 
@@ -67,6 +69,8 @@ public class PredictionSpeedBenchmark {
     BinaryForest interleavedBfsDoubleForest;
     BinaryForest contiguousBfsDoubleForest;
     BinaryForest separateArraysBfsForest;
+    BinaryForest branchlessBfsForest;
+    BinaryForest contiguousDfsForest;
 
     // =========================================================================
 
@@ -133,6 +137,12 @@ public class PredictionSpeedBenchmark {
         }
         if (ENABLE_SEPARATE_BFS) {
             separateArraysBfsForest = FasterForestConverter.convertFasterForest(ff, FasterForestConverter.ForestType.SeparateArraysBfsForest);
+        }
+        if (ENABLE_BRANCHLESS_BFS) {
+            branchlessBfsForest = FasterForestConverter.convertFasterForest(ff, FasterForestConverter.ForestType.BranchlessBfsForest);
+        }
+        if (ENABLE_CONTIGUOUS_DFS) {
+            contiguousDfsForest = FasterForestConverter.convertFasterForest(ff, FasterForestConverter.ForestType.ContiguousDfsForest);
         }
 
         System.out.printf("Dataset: %d instances, %d attributes%n", dataset.size(), dataset.numAttributes() - 1);
@@ -207,6 +217,8 @@ public class PredictionSpeedBenchmark {
         if (ENABLE_INTERLEAVED_BFS_D) forests.put("InterleavedBfsDouble", interleavedBfsDoubleForest);
         if (ENABLE_CONTIGUOUS_BFS_D) forests.put("ContiguousBfsDouble", contiguousBfsDoubleForest);
         if (ENABLE_SEPARATE_BFS) forests.put("SeparateArraysBfs", separateArraysBfsForest);
+        if (ENABLE_BRANCHLESS_BFS) forests.put("BranchlessBfs", branchlessBfsForest);
+        if (ENABLE_CONTIGUOUS_DFS) forests.put("ContiguousDfs", contiguousDfsForest);
         return forests;
     }
 

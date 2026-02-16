@@ -17,7 +17,9 @@ public class FasterForestConverter {
         InterleavedBfsForest,
         InterleavedBfsDoubleForest,
         ContiguousBfsDoubleForest,
-        SeparateArraysBfsForest
+        SeparateArraysBfsForest,
+        BranchlessBfsForest,
+        ContiguousDfsForest
     }
 
     public static BinaryForest convertFasterForest(TrainableFasterForest forest, ForestType targetType) {
@@ -41,6 +43,10 @@ public class FasterForestConverter {
                 return ContiguousBfsDoubleForest.fromFasterTrees(numAttributes, trees);
             case SeparateArraysBfsForest:
                 return SeparateArraysBfsForest.fromFasterTrees(numAttributes, trees);
+            case BranchlessBfsForest:
+                return BranchlessBfsForest.fromFasterTrees(numAttributes, trees);
+            case ContiguousDfsForest:
+                return ContiguousDfsForest.fromFasterTrees(numAttributes, trees);
             default:
                 throw new IllegalArgumentException("Unknown forest type: " + targetType);
         }

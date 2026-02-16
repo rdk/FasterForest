@@ -156,6 +156,33 @@ double[] importances = forest.getFeatureImportances();
 ./gradlew build
 ```
 
+### Benchmarking
+
+Run prediction speed benchmarks:
+
+```bash
+./benchmark.sh                            # run with defaults
+./benchmark.sh -r 20 -i 500              # 20 measured rounds, 500 iters each
+./benchmark.sh -t 200 -d 15              # 200 trees, max depth 15
+./benchmark.sh -r 20 -i 500 -t 200 -d 15 # all params
+```
+
+| Flag | Parameter | Default | Description |
+|---|---|---|---|
+| `-r` | `MEASURE_ROUNDS` | 10 | Number of measured rounds |
+| `-i` | `ITERS_PER_ROUND` | 400 | Prediction iterations per round |
+| `-t` | `NUM_TREES` | 100 | Number of trees in the forest |
+| `-d` | `TREE_DEPTH` | 0 | Max tree depth (0 = unlimited) |
+
+The benchmark Gradle task applies recommended JVM settings for stable results (`-server`, `-XX:-TieredCompilation`, `-XX:+AlwaysPreTouch`, `-XX:+UseParallelGC`).
+
+You can also run benchmarks directly via Gradle:
+
+```bash
+./gradlew benchmark
+./gradlew benchmark -Dbench.measureRounds=20 -Dbench.itersPerRound=500
+```
+
 ## 🏗️ Architecture
 
 ```

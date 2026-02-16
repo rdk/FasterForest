@@ -50,7 +50,21 @@ tasks.register('benchmark', Test) {
     classpath = testing.suites.test.sources.runtimeClasspath
 
     systemProperty 'benchmark', 'true'
+
+    // forward bench.* params to the JVM running the tests
+    ['bench.numTrees', 'bench.treeDepth', 'bench.measureRounds', 'bench.itersPerRound'].each { key ->
+        if (System.getProperty(key) != null) {
+            systemProperty key, System.getProperty(key)
+        }
+    }
+
     include '**/PredictionSpeedBenchmark*'
+
+    jvmArgs '-server',
+            '-Xms512m', '-Xmx2g',
+            '-XX:+AlwaysPreTouch',
+            '-XX:-TieredCompilation',
+            '-XX:+UseParallelGC'
 
     testLogging {
         events "passed", "failed"

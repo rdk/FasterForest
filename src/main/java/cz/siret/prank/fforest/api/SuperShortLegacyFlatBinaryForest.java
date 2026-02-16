@@ -3,7 +3,8 @@ package cz.siret.prank.fforest.api;
 import weka.core.Utils;
 
 /**
- *
+ * Like ShortLegacyFlatBinaryForest, but with short instead of int for tree structure.
+ * This is more memory efficient, but can only be used for small trees (max 32767 nodes per tree).
  */
 public class SuperShortLegacyFlatBinaryForest implements BinaryForest {
 

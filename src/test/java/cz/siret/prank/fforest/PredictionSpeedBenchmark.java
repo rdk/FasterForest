@@ -42,6 +42,7 @@ public class PredictionSpeedBenchmark {
     static final boolean ENABLE_INTERLEAVED_BFS    = true;
     static final boolean ENABLE_INTERLEAVED_BFS_D  = true;
     static final boolean ENABLE_CONTIGUOUS_BFS_D   = true;
+    static final boolean ENABLE_SEPARATE_BFS       = true;
 
     // --- benchmark parameters (overridable via -D system properties) ---
 
@@ -65,6 +66,7 @@ public class PredictionSpeedBenchmark {
     BinaryForest interleavedBfsForest;
     BinaryForest interleavedBfsDoubleForest;
     BinaryForest contiguousBfsDoubleForest;
+    BinaryForest separateArraysBfsForest;
 
     // =========================================================================
 
@@ -128,6 +130,9 @@ public class PredictionSpeedBenchmark {
         }
         if (ENABLE_CONTIGUOUS_BFS_D) {
             contiguousBfsDoubleForest = FasterForestConverter.convertFasterForest(ff, FasterForestConverter.ForestType.ContiguousBfsDoubleForest);
+        }
+        if (ENABLE_SEPARATE_BFS) {
+            separateArraysBfsForest = FasterForestConverter.convertFasterForest(ff, FasterForestConverter.ForestType.SeparateArraysBfsForest);
         }
 
         System.out.printf("Dataset: %d instances, %d attributes%n", dataset.size(), dataset.numAttributes() - 1);
@@ -201,6 +206,7 @@ public class PredictionSpeedBenchmark {
         if (ENABLE_INTERLEAVED_BFS) forests.put("InterleavedBfs", interleavedBfsForest);
         if (ENABLE_INTERLEAVED_BFS_D) forests.put("InterleavedBfsDouble", interleavedBfsDoubleForest);
         if (ENABLE_CONTIGUOUS_BFS_D) forests.put("ContiguousBfsDouble", contiguousBfsDoubleForest);
+        if (ENABLE_SEPARATE_BFS) forests.put("SeparateArraysBfs", separateArraysBfsForest);
         return forests;
     }
 

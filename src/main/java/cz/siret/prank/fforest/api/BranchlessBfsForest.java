@@ -42,7 +42,7 @@ public class BranchlessBfsForest implements BinaryForest, Classifier, Serializab
     protected final double[] score;
     protected final int[] treeRoots;
 
-    protected transient final double invNumTrees;
+    protected final double invNumTrees;
 
 //===============================================================================================//
 

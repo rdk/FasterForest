@@ -49,7 +49,7 @@ public class InterleavedBfsDoubleForest implements BinaryForest, Classifier, Ser
      */
     protected final double[] score;
 
-    protected transient final double invNumTrees;
+    protected final double invNumTrees;
 
 //===============================================================================================//
 

@@ -25,7 +25,7 @@ public class FlatBinaryForest implements BinaryForest, Classifier, Serializable 
 
 
 
-    protected transient final double numTreesAsDouble;  // cache to avoid repeated type conversion
+    protected final double numTreesAsDouble;  // cache to avoid repeated type conversion
     protected transient int maxDepth = -1; // lazy, -1 = not calculated yet
 
     protected transient int[] treeDepths;

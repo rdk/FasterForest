@@ -35,7 +35,7 @@ public class SeparateArraysBfsForest implements BinaryForest, Classifier, Serial
     protected final double[] score;
     protected final int[] treeRoots;
 
-    protected transient final double invNumTrees;
+    protected final double invNumTrees;
 
 //===============================================================================================//
 

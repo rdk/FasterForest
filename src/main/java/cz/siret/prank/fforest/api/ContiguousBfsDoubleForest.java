@@ -63,7 +63,7 @@ public class ContiguousBfsDoubleForest implements BinaryForest, Classifier, Seri
      */
     protected final int[] treeRoots;
 
-    protected transient final double invNumTrees;
+    protected final double invNumTrees;
 
 //===============================================================================================//
 

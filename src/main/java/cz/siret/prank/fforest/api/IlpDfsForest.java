@@ -33,7 +33,7 @@ public class IlpDfsForest implements BinaryForest, Classifier, Serializable {
     protected final double[] score;
     protected final int[] treeRoots;
 
-    protected transient final double invNumTrees;
+    protected final double invNumTrees;
 
 //===============================================================================================//
 

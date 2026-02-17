@@ -170,7 +170,7 @@ public class PredictionSpeedBenchmark {
         }
     }
 
-    @Test
+    //@Test
     public void benchmarkBatchPrediction() throws Exception {
         System.out.println("=== Batch Prediction Benchmark ===");
         printConfig();

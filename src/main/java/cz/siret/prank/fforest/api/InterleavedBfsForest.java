@@ -56,7 +56,7 @@ public class InterleavedBfsForest implements BinaryForest, Classifier, Serializa
      */
     protected final float[] score;
 
-    protected transient final double invNumTrees;
+    protected final double invNumTrees;
 
 //===============================================================================================//
 

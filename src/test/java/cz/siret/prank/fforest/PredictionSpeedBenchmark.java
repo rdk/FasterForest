@@ -183,26 +183,36 @@ public class PredictionSpeedBenchmark {
 
     @Test
     public void benchmarkAll() throws Exception {
-//        System.out.println("=== Single Prediction Benchmark ===");
-//        printConfig();
-//        printHeader();
-//
-//        LinkedHashMap<String, BinaryForest> forests = buildForestMap();
-//
-//        for (Map.Entry<String, BinaryForest> entry : forests.entrySet()) {
-//            printResult(entry.getKey(), runBenchmark(entry.getValue(), false));
-//        }
-
         printConfig();
         LinkedHashMap<String, BinaryForest> forests = buildForestMap();
 
+        // Run benchmarks and collect results
+        LinkedHashMap<String, BenchResult> results = new LinkedHashMap<>();
+        for (Map.Entry<String, BinaryForest> entry : forests.entrySet()) {
+            System.out.printf("Running: %s ...%n", entry.getKey());
+            results.put(entry.getKey(), runBenchmark(entry.getValue(), true));
+        }
+
+        // JSON output
+        System.out.println();
+        System.out.println("=== JSON ===");
+        System.out.println("[");
+        int i = 0;
+        for (Map.Entry<String, BenchResult> entry : results.entrySet()) {
+            BenchResult r = entry.getValue();
+            System.out.printf("  {\"name\": \"%s\", \"mean_ms\": %.1f, \"std_ms\": %.1f, \"min_ms\": %d, \"max_ms\": %d, \"pred_per_sec\": %.0f}%s%n",
+                    entry.getKey(), r.mean(), r.stddev(), r.min(), r.max(), r.predictionsPerSecond(),
+                    (++i < results.size()) ? "," : "");
+        }
+        System.out.println("]");
+
+        // Formatted table at the end
         System.out.println();
         System.out.println("=== Batch Prediction Benchmark ===");
         System.out.println();
         printHeader();
-
-        for (Map.Entry<String, BinaryForest> entry : forests.entrySet()) {
-            printResult(entry.getKey(), runBenchmark(entry.getValue(), true));
+        for (Map.Entry<String, BenchResult> entry : results.entrySet()) {
+            printResult(entry.getKey(), entry.getValue());
         }
     }
 

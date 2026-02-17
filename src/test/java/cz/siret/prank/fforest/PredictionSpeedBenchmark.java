@@ -45,6 +45,7 @@ public class PredictionSpeedBenchmark {
     static final boolean ENABLE_SEPARATE_BFS       = true;
     static final boolean ENABLE_BRANCHLESS_BFS     = true;
     static final boolean ENABLE_CONTIGUOUS_DFS     = true;
+    static final boolean ENABLE_ILP_DFS            = true;
 
     // --- benchmark parameters (overridable via -D system properties) ---
 
@@ -71,6 +72,7 @@ public class PredictionSpeedBenchmark {
     BinaryForest separateArraysBfsForest;
     BinaryForest branchlessBfsForest;
     BinaryForest contiguousDfsForest;
+    BinaryForest ilpDfsForest;
 
     // =========================================================================
 
@@ -143,6 +145,9 @@ public class PredictionSpeedBenchmark {
         }
         if (ENABLE_CONTIGUOUS_DFS) {
             contiguousDfsForest = FasterForestConverter.convertFasterForest(ff, FasterForestConverter.ForestType.ContiguousDfsForest);
+        }
+        if (ENABLE_ILP_DFS) {
+            ilpDfsForest = FasterForestConverter.convertFasterForest(ff, FasterForestConverter.ForestType.IlpDfsForest);
         }
 
         System.out.printf("Dataset: %d instances, %d attributes%n", dataset.size(), dataset.numAttributes() - 1);
@@ -219,6 +224,7 @@ public class PredictionSpeedBenchmark {
         if (ENABLE_SEPARATE_BFS) forests.put("SeparateArraysBfs", separateArraysBfsForest);
         if (ENABLE_BRANCHLESS_BFS) forests.put("BranchlessBfs", branchlessBfsForest);
         if (ENABLE_CONTIGUOUS_DFS) forests.put("ContiguousDfs", contiguousDfsForest);
+        if (ENABLE_ILP_DFS) forests.put("IlpDfs", ilpDfsForest);
         return forests;
     }
 

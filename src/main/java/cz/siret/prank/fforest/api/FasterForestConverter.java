@@ -19,7 +19,8 @@ public class FasterForestConverter {
         ContiguousBfsDoubleForest,
         SeparateArraysBfsForest,
         BranchlessBfsForest,
-        ContiguousDfsForest
+        ContiguousDfsForest,
+        IlpDfsForest
     }
 
     public static BinaryForest convertFasterForest(TrainableFasterForest forest, ForestType targetType) {
@@ -47,6 +48,8 @@ public class FasterForestConverter {
                 return BranchlessBfsForest.fromFasterTrees(numAttributes, trees);
             case ContiguousDfsForest:
                 return ContiguousDfsForest.fromFasterTrees(numAttributes, trees);
+            case IlpDfsForest:
+                return IlpDfsForest.fromFasterTrees(numAttributes, trees);
             default:
                 throw new IllegalArgumentException("Unknown forest type: " + targetType);
         }

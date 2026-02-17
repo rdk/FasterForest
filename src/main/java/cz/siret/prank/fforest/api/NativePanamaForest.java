@@ -105,8 +105,9 @@ public class NativePanamaForest implements BinaryForest, Classifier, AutoCloseab
 
     // Pre-allocated reusable buffers for batch prediction (avoids per-call allocation)
     private MemorySegment instanceBuffer;
+    private int instanceBufferCapacity;
     private MemorySegment outputBuffer;
-    private int bufferCapacity; // number of instances the buffers can hold
+    private int outputBufferCapacity;
 
     private NativePanamaForest(int numTrees, int numAttributes, Arena arena, MemorySegment forestHandle) {
         this.numTrees = numTrees;
@@ -262,12 +263,71 @@ public class NativePanamaForest implements BinaryForest, Classifier, AutoCloseab
         }
     }
 
+    /**
+     * Batch prediction from a contiguous off-heap buffer. Zero-copy path -- no data
+     * marshalling overhead.
+     *
+     * <p>The data segment must contain {@code n} rows of {@code numAttributes} doubles
+     * in row-major order (row 0 attr 0, row 0 attr 1, ..., row 1 attr 0, ...).
+     * Total size must be at least {@code n * numAttributes * Double.BYTES} bytes.
+     *
+     * @param data contiguous off-heap MemorySegment with instance data (row-major doubles)
+     * @param n    number of instances (rows) in the data segment
+     * @return prediction scores (one per instance)
+     */
+    public double[] predictForBatchContiguous(MemorySegment data, int n) {
+        if (n == 0) return new double[0];
+
+        try {
+            ensureOutputCapacity(n);
+
+            FF_PREDICT_BATCH.invokeExact(forestHandle, data, n, outputBuffer);
+
+            double[] result = new double[n];
+            MemorySegment dst = MemorySegment.ofArray(result);
+            MemorySegment.copy(outputBuffer, 0, dst, 0, (long) n * Double.BYTES);
+            return result;
+        } catch (Throwable t) {
+            throw new RuntimeException("Native predictForBatchContiguous failed", t);
+        }
+    }
+
+    /**
+     * Flatten a {@code double[][]} into a contiguous off-heap MemorySegment suitable for
+     * {@link #predictForBatchContiguous(MemorySegment, int)}.
+     *
+     * <p>The returned segment is allocated in the given arena and lives until that arena
+     * is closed. Callers who reuse the same instances across multiple predictions should
+     * flatten once and call {@code predictForBatchContiguous} repeatedly.
+     *
+     * @param instances Java double[][] array (each row has numAttributes elements)
+     * @param targetArena arena that owns the returned segment
+     * @return contiguous row-major off-heap segment
+     */
+    public static MemorySegment flattenToOffHeap(double[][] instances, int numAttributes, Arena targetArena) {
+        final int n = instances.length;
+        final long rowBytes = (long) numAttributes * Double.BYTES;
+        MemorySegment seg = targetArena.allocate(n * rowBytes, Double.BYTES);
+        for (int i = 0; i < n; i++) {
+            MemorySegment src = MemorySegment.ofArray(instances[i]);
+            MemorySegment.copy(src, 0, seg, (long) i * rowBytes, rowBytes);
+        }
+        return seg;
+    }
+
     private void ensureBufferCapacity(int n) {
-        if (n <= bufferCapacity) return;
-        // Grow buffers (owned by the forest's arena, so they live until close())
-        instanceBuffer = arena.allocate((long) n * numAttributes * Double.BYTES, Double.BYTES);
-        outputBuffer = arena.allocate((long) n * Double.BYTES, Double.BYTES);
-        bufferCapacity = n;
+        if (n > instanceBufferCapacity) {
+            instanceBuffer = arena.allocate((long) n * numAttributes * Double.BYTES, Double.BYTES);
+            instanceBufferCapacity = n;
+        }
+        ensureOutputCapacity(n);
+    }
+
+    private void ensureOutputCapacity(int n) {
+        if (n > outputBufferCapacity) {
+            outputBuffer = arena.allocate((long) n * Double.BYTES, Double.BYTES);
+            outputBufferCapacity = n;
+        }
     }
 
 //===============================================================================================//

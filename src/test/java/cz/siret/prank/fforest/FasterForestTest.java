@@ -422,6 +422,21 @@ public class FasterForestTest {
         }
 
         System.out.println("Native predictions match Java for all " + instances.length + " instances (bit-identical)");
+
+        // Test zero-copy batch prediction (predictForBatchContiguous)
+        try (java.lang.foreign.Arena offHeapArena = java.lang.foreign.Arena.ofShared()) {
+            java.lang.foreign.MemorySegment offHeapData = NativePanamaForest.flattenToOffHeap(
+                    instances, ff.getFeatureVectorLength(), offHeapArena);
+            double[] zeroCopyBatch = nativeForest.predictForBatchContiguous(offHeapData, instances.length);
+            assertEquals(javaBatch.length, zeroCopyBatch.length);
+            for (int i = 0; i < javaBatch.length; i++) {
+                assertEquals("Zero-copy batch predict mismatch at instance " + i,
+                        Double.doubleToRawLongBits(javaBatch[i]),
+                        Double.doubleToRawLongBits(zeroCopyBatch[i]));
+            }
+            System.out.println("Zero-copy predictions match for all " + instances.length + " instances (bit-identical)");
+        }
+
         nativeForest.close();
     }
 

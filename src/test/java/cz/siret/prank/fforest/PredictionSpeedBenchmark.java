@@ -8,6 +8,8 @@ import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.converters.ConverterUtils;
 
+import java.lang.foreign.Arena;
+import java.lang.foreign.MemorySegment;
 import java.util.*;
 
 /**
@@ -47,6 +49,7 @@ public class PredictionSpeedBenchmark {
     static final boolean ENABLE_CONTIGUOUS_DFS     = true;
     static final boolean ENABLE_ILP_DFS            = true;
     static final boolean ENABLE_NATIVE_PANAMA      = true;
+    static final boolean ENABLE_NATIVE_PANAMA_0COPY = true;
 
     // --- benchmark parameters (overridable via -D system properties) ---
 
@@ -75,6 +78,10 @@ public class PredictionSpeedBenchmark {
     BinaryForest contiguousDfsForest;
     BinaryForest ilpDfsForest;
     BinaryForest nativePanamaForest;
+
+    // --- zero-copy native data ---
+    Arena offHeapArena;
+    MemorySegment offHeapInstances;
 
     // =========================================================================
 
@@ -151,9 +158,15 @@ public class PredictionSpeedBenchmark {
         if (ENABLE_ILP_DFS) {
             ilpDfsForest = FasterForestConverter.convertFasterForest(ff, FasterForestConverter.ForestType.IlpDfsForest);
         }
-        if (ENABLE_NATIVE_PANAMA && NativePanamaForest.isAvailable()) {
+        if ((ENABLE_NATIVE_PANAMA || ENABLE_NATIVE_PANAMA_0COPY) && NativePanamaForest.isAvailable()) {
             nativePanamaForest = FasterForestConverter.convertFasterForest(ff, FasterForestConverter.ForestType.NativePanamaForest);
             System.out.printf("Native SIMD level: %d%n", NativePanamaForest.simdLevel());
+        }
+        if (ENABLE_NATIVE_PANAMA_0COPY && nativePanamaForest != null) {
+            // Pre-flatten instances to off-heap for zero-copy benchmark
+            offHeapArena = Arena.ofShared();
+            offHeapInstances = NativePanamaForest.flattenToOffHeap(
+                    instances, nativePanamaForest.getNumAttributes(), offHeapArena);
         }
 
         System.out.printf("Dataset: %d instances, %d attributes%n", dataset.size(), dataset.numAttributes() - 1);
@@ -197,6 +210,12 @@ public class PredictionSpeedBenchmark {
         for (Map.Entry<String, BinaryForest> entry : forests.entrySet()) {
             System.out.printf("Running: %s ...%n", entry.getKey());
             results.put(entry.getKey(), runBenchmark(entry.getValue(), true));
+        }
+
+        // Zero-copy native benchmark (special case — uses pre-flattened off-heap data)
+        if (ENABLE_NATIVE_PANAMA_0COPY && nativePanamaForest != null) {
+            System.out.printf("Running: %s ...%n", "NativePanama0copy");
+            results.put("NativePanama0copy", runNativeZeroCopyBenchmark());
         }
 
         // JSON output
@@ -258,6 +277,31 @@ public class PredictionSpeedBenchmark {
         }
 
         return new BenchResult(times, (long) ITERS_PER_ROUND * instances.length);
+    }
+
+    private BenchResult runNativeZeroCopyBenchmark() {
+        NativePanamaForest npf = (NativePanamaForest) nativePanamaForest;
+        int n = instances.length;
+        MemorySegment data = offHeapInstances;
+
+        for (int w = 0; w < WARMUP_ROUNDS; w++) {
+            for (int i = 0; i < ITERS_PER_ROUND; i++) {
+                npf.predictForBatchContiguous(data, n);
+            }
+            System.gc();
+        }
+
+        long[] times = new long[MEASURE_ROUNDS];
+        for (int r = 0; r < MEASURE_ROUNDS; r++) {
+            long t0 = System.nanoTime();
+            for (int i = 0; i < ITERS_PER_ROUND; i++) {
+                npf.predictForBatchContiguous(data, n);
+            }
+            times[r] = (System.nanoTime() - t0) / 1_000_000;
+            System.gc();
+        }
+
+        return new BenchResult(times, (long) ITERS_PER_ROUND * n);
     }
 
     private long runOneRound(BinaryForest forest, boolean batch) {

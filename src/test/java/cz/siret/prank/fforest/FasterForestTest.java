@@ -388,6 +388,44 @@ public class FasterForestTest {
 
 
     @Test
+    public void nativePredictionMatchesJava() throws Exception {
+        Assume.assumeTrue("Native library not available", NativePanamaForest.isAvailable());
+
+        FasterForest ff = setupFF();
+        ff.buildClassifier(dataset1);
+
+        ContiguousDfsForest javaForest = ContiguousDfsForest.fromFasterTrees(
+                ff.getFeatureVectorLength(), ff.getTrees());
+        NativePanamaForest nativeForest = NativePanamaForest.fromContiguousDfsForest(javaForest);
+
+        System.out.println("Native SIMD level: " + NativePanamaForest.simdLevel());
+
+        double[][] instances = instancesToArrays(dataset1);
+
+        // Test single predictions (bit-identical)
+        for (double[] inst : instances) {
+            double javaResult = javaForest.predict(inst);
+            double nativeResult = nativeForest.predict(inst);
+            assertEquals("Single predict mismatch",
+                    Double.doubleToRawLongBits(javaResult),
+                    Double.doubleToRawLongBits(nativeResult));
+        }
+
+        // Test batch predictions (bit-identical)
+        double[] javaBatch = javaForest.predictForBatch(instances);
+        double[] nativeBatch = nativeForest.predictForBatch(instances);
+        assertEquals(javaBatch.length, nativeBatch.length);
+        for (int i = 0; i < javaBatch.length; i++) {
+            assertEquals("Batch predict mismatch at instance " + i,
+                    Double.doubleToRawLongBits(javaBatch[i]),
+                    Double.doubleToRawLongBits(nativeBatch[i]));
+        }
+
+        System.out.println("Native predictions match Java for all " + instances.length + " instances (bit-identical)");
+        nativeForest.close();
+    }
+
+    @Test
     public void flattenFF2() throws Exception {
         FasterForest2 ff = setupFF2();
 

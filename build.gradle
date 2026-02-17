@@ -7,8 +7,8 @@ version = '2.7.0'
 description = "Fast Random Forest implementations for Weka. Streamlined version of Fans Supek's FastRandomForest."
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.VERSION_22
+    targetCompatibility = JavaVersion.VERSION_22
 }
 
 
@@ -40,6 +40,9 @@ test {
 
     // pass -Dbenchmark=true to enable benchmark tests
     systemProperty 'benchmark', System.getProperty('benchmark')
+
+    // Panama FFM requires native access
+    jvmArgs '--enable-native-access=ALL-UNNAMED'
 }
 
 tasks.register('benchmark', Test) {
@@ -64,7 +67,8 @@ tasks.register('benchmark', Test) {
             '-Xms512m', '-Xmx2g',
             '-XX:+AlwaysPreTouch',
             '-XX:-TieredCompilation',
-            '-XX:+UseParallelGC'
+            '-XX:+UseParallelGC',
+            '--enable-native-access=ALL-UNNAMED'
 
     testLogging {
         events "passed", "failed"

@@ -46,6 +46,7 @@ public class PredictionSpeedBenchmark {
     static final boolean ENABLE_BRANCHLESS_BFS     = true;
     static final boolean ENABLE_CONTIGUOUS_DFS     = true;
     static final boolean ENABLE_ILP_DFS            = true;
+    static final boolean ENABLE_NATIVE_PANAMA      = true;
 
     // --- benchmark parameters (overridable via -D system properties) ---
 
@@ -73,6 +74,7 @@ public class PredictionSpeedBenchmark {
     BinaryForest branchlessBfsForest;
     BinaryForest contiguousDfsForest;
     BinaryForest ilpDfsForest;
+    BinaryForest nativePanamaForest;
 
     // =========================================================================
 
@@ -148,6 +150,10 @@ public class PredictionSpeedBenchmark {
         }
         if (ENABLE_ILP_DFS) {
             ilpDfsForest = FasterForestConverter.convertFasterForest(ff, FasterForestConverter.ForestType.IlpDfsForest);
+        }
+        if (ENABLE_NATIVE_PANAMA && NativePanamaForest.isAvailable()) {
+            nativePanamaForest = FasterForestConverter.convertFasterForest(ff, FasterForestConverter.ForestType.NativePanamaForest);
+            System.out.printf("Native SIMD level: %d%n", NativePanamaForest.simdLevel());
         }
 
         System.out.printf("Dataset: %d instances, %d attributes%n", dataset.size(), dataset.numAttributes() - 1);
@@ -235,6 +241,7 @@ public class PredictionSpeedBenchmark {
         if (ENABLE_BRANCHLESS_BFS) forests.put("BranchlessBfs", branchlessBfsForest);
         if (ENABLE_CONTIGUOUS_DFS) forests.put("ContiguousDfs", contiguousDfsForest);
         if (ENABLE_ILP_DFS) forests.put("IlpDfs", ilpDfsForest);
+        if (ENABLE_NATIVE_PANAMA && nativePanamaForest != null) forests.put("NativePanama", nativePanamaForest);
         return forests;
     }
 

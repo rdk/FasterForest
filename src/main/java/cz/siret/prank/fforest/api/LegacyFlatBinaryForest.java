@@ -2,6 +2,8 @@ package cz.siret.prank.fforest.api;
 
 import cz.siret.prank.ffutils.NormalizationUtils;
 
+import java.io.Serial;
+
 import static cz.siret.prank.ffutils.NormalizationUtils.normalizedClass1ProbsReuseArray;
 
 /**
@@ -10,6 +12,7 @@ import static cz.siret.prank.ffutils.NormalizationUtils.normalizedClass1ProbsReu
  */
 public class LegacyFlatBinaryForest extends FlatBinaryForest {
 
+    @Serial
     private static final long serialVersionUID = -4570003757601764377L;
 
     protected final double[][] classProbs;

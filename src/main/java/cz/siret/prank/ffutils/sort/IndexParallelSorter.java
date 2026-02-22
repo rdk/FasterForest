@@ -1,5 +1,6 @@
 package cz.siret.prank.ffutils.sort;
 
+import java.io.Serial;
 import java.util.Arrays;
 import java.util.concurrent.CountedCompleter;
 import java.util.concurrent.ForkJoinPool;
@@ -80,6 +81,7 @@ public class IndexParallelSorter {
      * A trigger for secondary merge of two merges
      */
     static final class Relay extends CountedCompleter<Void> {
+        @Serial
         static final long serialVersionUID = 2446542900576103244L;
         final CountedCompleter<?> task;
         Relay(CountedCompleter<?> task) {
@@ -97,6 +99,7 @@ public class IndexParallelSorter {
      * quartile task, that does not need to maintain array state.
      */
     static final class EmptyCompleter extends CountedCompleter<Void> {
+        @Serial
         static final long serialVersionUID = 2446542900576103244L;
         EmptyCompleter(CountedCompleter<?> p) { super(p); }
         public final void compute() { }
@@ -108,6 +111,7 @@ public class IndexParallelSorter {
 
         static final class Sorter extends CountedCompleter<Void> {
 
+            @Serial
             static final long serialVersionUID = 2446542900576103244L;
             final int[] a, w;
             final int base, size, wbase, gran;
@@ -147,6 +151,7 @@ public class IndexParallelSorter {
         }
 
         static final class Merger extends CountedCompleter<Void> {
+            @Serial
             static final long serialVersionUID = 2446542900576103244L;
             final int[] a, w; // main and workspace arrays
             final int lbase, lsize, rbase, rsize, wbase, gran;

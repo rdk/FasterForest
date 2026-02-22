@@ -6,6 +6,7 @@ import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.List;
 
@@ -21,6 +22,7 @@ import java.util.List;
  */
 public class ContiguousDfsForest implements BinaryForest, Classifier, Serializable {
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
     protected final int numTrees;

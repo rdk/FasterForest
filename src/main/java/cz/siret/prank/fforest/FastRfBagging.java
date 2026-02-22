@@ -27,6 +27,7 @@ import weka.classifiers.Classifier;
 import weka.classifiers.RandomizableIteratedSingleClassifierEnhancer;
 import weka.core.*;
 
+import java.io.Serial;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -75,6 +76,7 @@ public class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
   /**
    * for serialization
    */
+  @Serial
   static final long serialVersionUID = -505879962237199702L;
 
   public boolean isVersion2() {

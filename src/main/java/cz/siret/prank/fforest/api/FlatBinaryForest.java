@@ -5,6 +5,7 @@ import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Arrays;
 
@@ -13,6 +14,7 @@ import java.util.Arrays;
  */
 public class FlatBinaryForest implements BinaryForest, Classifier, Serializable {
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
     protected final int numTrees;

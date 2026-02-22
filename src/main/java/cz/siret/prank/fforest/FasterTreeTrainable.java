@@ -3,6 +3,7 @@ package cz.siret.prank.fforest;
 import cz.siret.prank.ffutils.NormalizationUtils;
 import weka.core.Utils;
 
+import java.io.Serial;
 import java.util.Arrays;
 
 /**
@@ -11,6 +12,7 @@ import java.util.Arrays;
 public class FasterTreeTrainable extends FasterTree {
 
     /** for serialization */
+    @Serial
     static final long serialVersionUID = -9136056750085906361L;
 
     /**

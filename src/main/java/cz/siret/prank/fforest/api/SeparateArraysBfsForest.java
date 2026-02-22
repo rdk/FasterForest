@@ -6,6 +6,7 @@ import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.ArrayDeque;
 import java.util.List;
@@ -24,6 +25,7 @@ import java.util.Queue;
  */
 public class SeparateArraysBfsForest implements BinaryForest, Classifier, Serializable {
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
     protected final int numTrees;

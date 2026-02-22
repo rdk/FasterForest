@@ -7,6 +7,8 @@ import weka.core.Capabilities;
 import weka.core.Instances;
 import weka.core.RevisionUtils;
 
+import java.io.Serial;
+
 /**
  * Evaluate the merit of each attribute using a random forest.
  *
@@ -15,6 +17,7 @@ import weka.core.RevisionUtils;
  */
 public class FRFAttributeEval extends ASEvaluation implements AttributeEvaluator {
 
+  @Serial
   private static final long serialVersionUID = -4504270948574160991L;
 
   /** The feature importances. */

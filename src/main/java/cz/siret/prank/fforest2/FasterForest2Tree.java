@@ -29,6 +29,7 @@ import weka.classifiers.AbstractClassifier;
 import weka.core.*;
 import weka.core.Capabilities.Capability;
 
+import java.io.Serial;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Random;
@@ -56,6 +57,7 @@ class FasterForest2Tree
         implements OptionHandler, WeightedInstancesHandler {
 
   /** for serialization */
+  @Serial
   static final long serialVersionUID = 8934314652175299375L;
 
   /** A reference to the data.inBag field, in order to know which are the inBag instances for this tree after

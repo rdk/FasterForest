@@ -27,6 +27,7 @@ import weka.classifiers.Classifier;
 import weka.core.*;
 import weka.core.Capabilities.Capability;
 
+import java.io.Serial;
 import java.io.Serializable;
 
 
@@ -50,6 +51,7 @@ public class FasterTree
         implements Classifier, Serializable, Cloneable, CapabilitiesHandler, WeightedInstancesHandler {
 
   /** for serialization */
+  @Serial
   static final long serialVersionUID = 8934314652175299376L;
 
   /** Minimum number of instances for leaf. */

@@ -45,18 +45,27 @@ public class SuperShortLegacyFlatBinaryForest implements BinaryForest {
             classProbs[i] = new float[] {(float)forest.classProbs[i][0], (float)forest.classProbs[i][1]};
         }
 
-        short[] childLeft = intsToShorts(forest.childLeft);
-        short[] childRight = intsToShorts(forest.childRight);
-        short[] attributeIndex = intsToShorts(forest.attributeIndex);
+        short[] childLeft = intsToShorts(forest.childLeft, "childLeft");
+        short[] childRight = intsToShorts(forest.childRight, "childRight");
+        short[] attributeIndex = intsToShorts(forest.attributeIndex, "attributeIndex");
 
         return new SuperShortLegacyFlatBinaryForest(forest.numTrees, forest.numAttributes, childLeft, childRight, attributeIndex, splitPoint, classProbs);
     }
 
-    public static short[] intsToShorts(int[] ints) {
+    public static short[] intsToShorts(int[] ints, String arrayName) {
         int n = ints.length;
         short[] res = new short[n];
         for (int i=0; i!=n; ++i) {
-            res[i] = (short) ints[i];
+            int v = ints[i];
+            if (v < Short.MIN_VALUE || v > Short.MAX_VALUE) {
+                throw new IllegalArgumentException(
+                    "Forest too large for SuperShortLegacyFlatBinaryForest: " + arrayName
+                    + "[" + i + "] = " + v + " overflows short range ["
+                    + Short.MIN_VALUE + ", " + Short.MAX_VALUE
+                    + "]. Use ShortLegacyFlatBinaryForest or LegacyFlatBinaryForest instead."
+                );
+            }
+            res[i] = (short) v;
         }
         return res;
     }

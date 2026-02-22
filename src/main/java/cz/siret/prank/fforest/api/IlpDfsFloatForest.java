@@ -11,17 +11,18 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
- * Contiguous DFS forest with instruction-level parallelism (ILP) batch prediction.
+ * Contiguous DFS forest with instruction-level parallelism (ILP) batch prediction
+ * and float-precision split points and scores for reduced memory footprint.
  *
- * <p>Processes 4 instances simultaneously through the same tree. The 4 traversals
- * are interleaved in the same loop body, allowing the CPU's out-of-order engine to
- * overlap memory loads across lanes: while lane 0 waits for a cache line, lanes 1-3
- * can issue their own loads and comparisons.
+ * <p>Identical algorithm to {@link IlpDfsForest} but uses {@code float[]} for
+ * {@code splitPoint} and {@code score} arrays, halving their memory. More nodes
+ * fit per cache line, reducing cache misses during tree traversal.
  *
- * <p>Same data layout as {@link ContiguousDfsForest} — separate arrays, contiguous
- * per-tree DFS ordering. Only the batch prediction loop is different.
+ * <p>Instance attributes are cast to float before comparison to match the stored precision.
+ *
+ * @see IlpDfsForest
  */
-public class IlpDfsForest implements BinaryForest, Classifier, Serializable {
+public class IlpDfsFloatForest implements BinaryForest, Classifier, Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;
@@ -31,18 +32,18 @@ public class IlpDfsForest implements BinaryForest, Classifier, Serializable {
     protected final int[] childLeft;
     protected final int[] childRight;
     protected final int[] attributeIndex;
-    protected final double[] splitPoint;
-    protected final double[] score;
+    protected final float[] splitPoint;
+    protected final float[] score;
     protected final int[] treeRoots;
 
     protected final double invNumTrees;
 
 //===============================================================================================//
 
-    public IlpDfsForest(int numTrees, int numAttributes,
-                        int[] childLeft, int[] childRight,
-                        int[] attributeIndex, double[] splitPoint,
-                        double[] score, int[] treeRoots) {
+    public IlpDfsFloatForest(int numTrees, int numAttributes,
+                             int[] childLeft, int[] childRight,
+                             int[] attributeIndex, float[] splitPoint,
+                             float[] score, int[] treeRoots) {
         this.numTrees = numTrees;
         this.numAttributes = numAttributes;
         this.childLeft = childLeft;
@@ -59,17 +60,26 @@ public class IlpDfsForest implements BinaryForest, Classifier, Serializable {
 //===============================================================================================//
 
     /**
-     * Build from trained FasterTrees (delegates to ContiguousDfsForest layout).
+     * Build from trained FasterTrees (delegates to ContiguousDfsForest layout, converts to float).
      */
-    public static IlpDfsForest fromFasterTrees(int numAttributes, List<FasterTree> trees) {
-        // Reuse ContiguousDfsForest's construction, then wrap with our prediction logic
+    public static IlpDfsFloatForest fromFasterTrees(int numAttributes, List<FasterTree> trees) {
         ContiguousDfsForest base = ContiguousDfsForest.fromFasterTrees(numAttributes, trees);
-        return new IlpDfsForest(
+        return new IlpDfsFloatForest(
                 base.numTrees, base.numAttributes,
                 base.childLeft, base.childRight,
-                base.attributeIndex, base.splitPoint,
-                base.score, base.treeRoots
+                base.attributeIndex,
+                toFloatArray(base.splitPoint),
+                toFloatArray(base.score),
+                base.treeRoots
         );
+    }
+
+    private static float[] toFloatArray(double[] src) {
+        float[] dst = new float[src.length];
+        for (int i = 0; i < src.length; i++) {
+            dst[i] = (float) src[i];
+        }
+        return dst;
     }
 
 //===============================================================================================//
@@ -107,8 +117,8 @@ public class IlpDfsForest implements BinaryForest, Classifier, Serializable {
         final int[] cl = this.childLeft;
         final int[] cr = this.childRight;
         final int[] ai = this.attributeIndex;
-        final double[] sp = this.splitPoint;
-        final double[] sc = this.score;
+        final float[] sp = this.splitPoint;
+        final float[] sc = this.score;
         final int[] roots = this.treeRoots;
         double sum = 0.0;
 
@@ -116,7 +126,7 @@ public class IlpDfsForest implements BinaryForest, Classifier, Serializable {
             int node = roots[t];
             while (true) {
                 int attr = ai[node];
-                if (instanceAttributes[attr] < sp[node]) {
+                if ((float) instanceAttributes[attr] < sp[node]) {
                     node = cl[node];
                 } else {
                     node = cr[node];
@@ -138,8 +148,8 @@ public class IlpDfsForest implements BinaryForest, Classifier, Serializable {
         final int[] cl = this.childLeft;
         final int[] cr = this.childRight;
         final int[] ai = this.attributeIndex;
-        final double[] sp = this.splitPoint;
-        final double[] sc = this.score;
+        final float[] sp = this.splitPoint;
+        final float[] sc = this.score;
         final int[] roots = this.treeRoots;
         final int nt = this.numTrees;
 
@@ -161,16 +171,16 @@ public class IlpDfsForest implements BinaryForest, Classifier, Serializable {
                 // CPU out-of-order engine overlaps loads across lanes.
                 while ((n0 >= 0) | (n1 >= 0) | (n2 >= 0) | (n3 >= 0)) {
                     if (n0 >= 0) {
-                        if (i0[ai[n0]] < sp[n0]) n0 = cl[n0]; else n0 = cr[n0];
+                        if ((float) i0[ai[n0]] < sp[n0]) n0 = cl[n0]; else n0 = cr[n0];
                     }
                     if (n1 >= 0) {
-                        if (i1[ai[n1]] < sp[n1]) n1 = cl[n1]; else n1 = cr[n1];
+                        if ((float) i1[ai[n1]] < sp[n1]) n1 = cl[n1]; else n1 = cr[n1];
                     }
                     if (n2 >= 0) {
-                        if (i2[ai[n2]] < sp[n2]) n2 = cl[n2]; else n2 = cr[n2];
+                        if ((float) i2[ai[n2]] < sp[n2]) n2 = cl[n2]; else n2 = cr[n2];
                     }
                     if (n3 >= 0) {
-                        if (i3[ai[n3]] < sp[n3]) n3 = cl[n3]; else n3 = cr[n3];
+                        if ((float) i3[ai[n3]] < sp[n3]) n3 = cl[n3]; else n3 = cr[n3];
                     }
                 }
 
@@ -186,7 +196,7 @@ public class IlpDfsForest implements BinaryForest, Classifier, Serializable {
                 int node = root;
                 while (true) {
                     int attr = ai[node];
-                    if (inst[attr] < sp[node]) {
+                    if ((float) inst[attr] < sp[node]) {
                         node = cl[node];
                     } else {
                         node = cr[node];

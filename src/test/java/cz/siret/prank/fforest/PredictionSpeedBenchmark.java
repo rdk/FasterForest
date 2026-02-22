@@ -48,16 +48,20 @@ public class PredictionSpeedBenchmark {
     static final boolean ENABLE_BRANCHLESS_BFS     = true;
     static final boolean ENABLE_CONTIGUOUS_DFS     = true;
     static final boolean ENABLE_ILP_DFS            = true;
+    static final boolean ENABLE_ILP_DFS_FLOAT      = true;
+    static final boolean ENABLE_FLAT_FLOAT         = true;
     static final boolean ENABLE_NATIVE_PANAMA      = true;
     static final boolean ENABLE_NATIVE_PANAMA_0COPY = true;
+    static final boolean ENABLE_NATIVE_PANAMA_AVX2 = true;
+    static final boolean ENABLE_NATIVE_PANAMA_AVX2_0COPY = true;
 
     // --- benchmark parameters (overridable via -D system properties) ---
 
-    static final int NUM_TREES = Integer.getInteger("bench.numTrees", 100);
+    static final int NUM_TREES = Integer.getInteger("bench.numTrees", 200);
     static final int TREE_DEPTH = Integer.getInteger("bench.treeDepth", 0);
-    static final int WARMUP_ROUNDS = 3;
-    static final int MEASURE_ROUNDS = Integer.getInteger("bench.measureRounds", 10);
-    static final int ITERS_PER_ROUND = Integer.getInteger("bench.itersPerRound", 400);
+    static final int WARMUP_ROUNDS = 1;
+    static final int MEASURE_ROUNDS = Integer.getInteger("bench.measureRounds", 5);
+    static final int ITERS_PER_ROUND = Integer.getInteger("bench.itersPerRound", 100);
 
     Instances dataset;
     double[][] instances;
@@ -77,11 +81,16 @@ public class PredictionSpeedBenchmark {
     BinaryForest branchlessBfsForest;
     BinaryForest contiguousDfsForest;
     BinaryForest ilpDfsForest;
+    BinaryForest ilpDfsFloatForest;
+    BinaryForest flatFloatForest;
     BinaryForest nativePanamaForest;
+    BinaryForest nativePanamaAvx2Forest;
 
     // --- zero-copy native data ---
     Arena offHeapArena;
     MemorySegment offHeapInstances;
+    Arena offHeapArenaAvx2;
+    MemorySegment offHeapInstancesAvx2;
 
     // =========================================================================
 
@@ -158,15 +167,28 @@ public class PredictionSpeedBenchmark {
         if (ENABLE_ILP_DFS) {
             ilpDfsForest = FasterForestConverter.convertFasterForest(ff, FasterForestConverter.ForestType.IlpDfsForest);
         }
+        if (ENABLE_ILP_DFS_FLOAT) {
+            ilpDfsFloatForest = FasterForestConverter.convertFasterForest(ff, FasterForestConverter.ForestType.IlpDfsFloatForest);
+        }
+        if (ENABLE_FLAT_FLOAT) {
+            flatFloatForest = FasterForestConverter.convertFasterForest(ff, FasterForestConverter.ForestType.FlatBinaryFloatForest);
+        }
         if ((ENABLE_NATIVE_PANAMA || ENABLE_NATIVE_PANAMA_0COPY) && NativePanamaForest.isAvailable()) {
             nativePanamaForest = FasterForestConverter.convertFasterForest(ff, FasterForestConverter.ForestType.NativePanamaForest);
             System.out.printf("Native SIMD level: %d%n", NativePanamaForest.simdLevel());
         }
         if (ENABLE_NATIVE_PANAMA_0COPY && nativePanamaForest != null) {
-            // Pre-flatten instances to off-heap for zero-copy benchmark
             offHeapArena = Arena.ofShared();
             offHeapInstances = NativePanamaForest.flattenToOffHeap(
                     instances, nativePanamaForest.getNumAttributes(), offHeapArena);
+        }
+        if ((ENABLE_NATIVE_PANAMA_AVX2 || ENABLE_NATIVE_PANAMA_AVX2_0COPY) && NativePanamaForestAvx2.isAvx2Available()) {
+            nativePanamaAvx2Forest = FasterForestConverter.convertFasterForest(ff, FasterForestConverter.ForestType.NativePanamaForestAvx2);
+        }
+        if (ENABLE_NATIVE_PANAMA_AVX2_0COPY && nativePanamaAvx2Forest != null) {
+            offHeapArenaAvx2 = Arena.ofShared();
+            offHeapInstancesAvx2 = NativePanamaForest.flattenToOffHeap(
+                    instances, nativePanamaAvx2Forest.getNumAttributes(), offHeapArenaAvx2);
         }
 
         System.out.printf("Dataset: %d instances, %d attributes%n", dataset.size(), dataset.numAttributes() - 1);
@@ -212,10 +234,16 @@ public class PredictionSpeedBenchmark {
             results.put(entry.getKey(), runBenchmark(entry.getValue(), true));
         }
 
-        // Zero-copy native benchmark (special case — uses pre-flattened off-heap data)
+        // Zero-copy native benchmarks (special case — uses pre-flattened off-heap data)
         if (ENABLE_NATIVE_PANAMA_0COPY && nativePanamaForest != null) {
             System.out.printf("Running: %s ...%n", "NativePanama0copy");
-            results.put("NativePanama0copy", runNativeZeroCopyBenchmark());
+            results.put("NativePanama0copy", runNativeZeroCopyBenchmark(
+                    (NativePanamaForest) nativePanamaForest, offHeapInstances));
+        }
+        if (ENABLE_NATIVE_PANAMA_AVX2_0COPY && nativePanamaAvx2Forest != null) {
+            System.out.printf("Running: %s ...%n", "NativePanamaAvx20copy");
+            results.put("NativePanamaAvx20copy", runNativeZeroCopyBenchmark(
+                    (NativePanamaForest) nativePanamaAvx2Forest, offHeapInstancesAvx2));
         }
 
         // JSON output
@@ -260,7 +288,10 @@ public class PredictionSpeedBenchmark {
         if (ENABLE_BRANCHLESS_BFS) forests.put("BranchlessBfs", branchlessBfsForest);
         if (ENABLE_CONTIGUOUS_DFS) forests.put("ContiguousDfs", contiguousDfsForest);
         if (ENABLE_ILP_DFS) forests.put("IlpDfs", ilpDfsForest);
+        if (ENABLE_ILP_DFS_FLOAT) forests.put("IlpDfsFloat", ilpDfsFloatForest);
+        if (ENABLE_FLAT_FLOAT) forests.put("FlatFloat", flatFloatForest);
         if (ENABLE_NATIVE_PANAMA && nativePanamaForest != null) forests.put("NativePanama", nativePanamaForest);
+        if (ENABLE_NATIVE_PANAMA_AVX2 && nativePanamaAvx2Forest != null) forests.put("NativePanamaAvx2", nativePanamaAvx2Forest);
         return forests;
     }
 
@@ -279,10 +310,8 @@ public class PredictionSpeedBenchmark {
         return new BenchResult(times, (long) ITERS_PER_ROUND * instances.length);
     }
 
-    private BenchResult runNativeZeroCopyBenchmark() {
-        NativePanamaForest npf = (NativePanamaForest) nativePanamaForest;
+    private BenchResult runNativeZeroCopyBenchmark(NativePanamaForest npf, MemorySegment data) {
         int n = instances.length;
-        MemorySegment data = offHeapInstances;
 
         for (int w = 0; w < WARMUP_ROUNDS; w++) {
             for (int i = 0; i < ITERS_PER_ROUND; i++) {

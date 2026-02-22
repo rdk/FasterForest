@@ -21,6 +21,8 @@ public class FasterForestConverter {
         BranchlessBfsForest,
         ContiguousDfsForest,
         IlpDfsForest,
+        IlpDfsFloatForest,
+        FlatBinaryFloatForest,
         NativePanamaForest,
         NativePanamaForestAvx2
     }
@@ -52,6 +54,10 @@ public class FasterForestConverter {
                 return ContiguousDfsForest.fromFasterTrees(numAttributes, trees);
             case IlpDfsForest:
                 return IlpDfsForest.fromFasterTrees(numAttributes, trees);
+            case IlpDfsFloatForest:
+                return IlpDfsFloatForest.fromFasterTrees(numAttributes, trees);
+            case FlatBinaryFloatForest:
+                return FlatBinaryFloatForest.fromFasterTrees(numAttributes, trees);
             case NativePanamaForest:
                 return NativePanamaForest.fromFasterTrees(numAttributes, trees);
             case NativePanamaForestAvx2:

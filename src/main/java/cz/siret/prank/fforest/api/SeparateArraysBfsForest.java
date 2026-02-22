@@ -260,7 +260,7 @@ public class SeparateArraysBfsForest implements BinaryForest, Classifier, Serial
             }
         }
 
-        double inv = this.invNumTrees;
+        final double inv = this.invNumTrees;
         for (int i = 0; i < n; ++i) {
             sums[i] *= inv;
         }

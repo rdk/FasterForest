@@ -3,6 +3,7 @@ package cz.siret.prank.fforest.api;
 import cz.siret.prank.fforest.FasterTree;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 
@@ -189,6 +190,83 @@ public class FlatBinaryForestBuilder {
             return p1;
         } else {
             return p1 / (classProbs[0] + p1);
+        }
+    }
+
+//===============================================================================================//
+// Reverse conversion: FlatBinaryForest -> FasterTreeForest
+//===============================================================================================//
+
+    /**
+     * Reconstruct FasterTree objects from a LegacyFlatBinaryForest (lossless — preserves original classProbs).
+     */
+    public static FasterTreeForest toFasterTreeForest(LegacyFlatBinaryForest forest) {
+        int numTrees = forest.numTrees;
+        List<FasterTree> trees = new ArrayList<>(numTrees);
+
+        for (int i = 0; i < numTrees; i++) {
+            trees.add(reconstructNode(i, forest.childLeft, forest.childRight, forest.attributeIndex, forest.splitPoint,
+                    forest.classProbs, null));
+        }
+
+        return new FasterTreeForest(forest.numAttributes, trees);
+    }
+
+    /**
+     * Reconstruct FasterTree objects from a FlatBinaryForest.
+     * Leaf classProbs are synthesized as {1-score, score} (lossy if original probs were not normalized).
+     */
+    public static FasterTreeForest toFasterTreeForest(FlatBinaryForest forest) {
+        if (forest instanceof LegacyFlatBinaryForest) {
+            return toFasterTreeForest((LegacyFlatBinaryForest) forest);
+        }
+
+        int numTrees = forest.numTrees;
+        List<FasterTree> trees = new ArrayList<>(numTrees);
+
+        for (int i = 0; i < numTrees; i++) {
+            trees.add(reconstructNode(i, forest.childLeft, forest.childRight, forest.attributeIndex, forest.splitPoint,
+                    null, forest.score));
+        }
+
+        return new FasterTreeForest(forest.numAttributes, trees);
+    }
+
+    /**
+     * Reconstruct a single tree rooted at the given flat array index.
+     * Uses recursion (matching the forward compileSplitNode style).
+     */
+    private static FasterTree reconstructNode(int nodeIdx,
+                                              int[] childLeft, int[] childRight,
+                                              int[] attrIndex, double[] splitPt,
+                                              double[][] classProbs, double[] score) {
+
+        int left = childLeft[nodeIdx];
+        int right = childRight[nodeIdx];
+
+        // Leaf-only tree/node: both children point to the same leaf
+        if (left < 0 && left == right) {
+            return new FasterTree(null, null, -1, Double.NaN, leafClassProbs(classProbs, score, -left));
+        }
+
+        // Split node: reconstruct children
+        FasterTree leftChild = left < 0
+                ? new FasterTree(null, null, -1, Double.NaN, leafClassProbs(classProbs, score, -left))
+                : reconstructNode(left, childLeft, childRight, attrIndex, splitPt, classProbs, score);
+
+        FasterTree rightChild = right < 0
+                ? new FasterTree(null, null, -1, Double.NaN, leafClassProbs(classProbs, score, -right))
+                : reconstructNode(right, childLeft, childRight, attrIndex, splitPt, classProbs, score);
+
+        return new FasterTree(leftChild, rightChild, attrIndex[nodeIdx], splitPt[nodeIdx], null);
+    }
+
+    private static double[] leafClassProbs(double[][] classProbs, double[] score, int leafIdx) {
+        if (classProbs != null) {
+            return classProbs[leafIdx];
+        } else {
+            double s = score[leafIdx];
+            return new double[]{ 1.0 - s, s };
         }
     }
 

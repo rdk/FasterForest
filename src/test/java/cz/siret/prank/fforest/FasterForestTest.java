@@ -141,6 +141,54 @@ public class FasterForestTest {
 
 
     @Test
+    public void roundTripLegacyFlatToFasterTrees() throws Exception {
+        FasterForest ff = setupFF();
+        ff.buildClassifier(dataset1);
+
+        // FasterForest -> LegacyFlat -> FasterTreeForest -> LegacyFlat
+        LegacyFlatBinaryForest flat1 = ff.toFlatBinaryForest();
+        FasterTreeForest treeForest = FlatBinaryForestBuilder.toFasterTreeForest(flat1);
+        LegacyFlatBinaryForest flat2 = FlatBinaryForestBuilder.buildFromFasterTreesLegacy(treeForest.getNumAttributes(), treeForest.getTrees());
+
+        assertEquals(ff.getNumTrees(), treeForest.getTrees().size());
+        assertEquals(ff.getFeatureVectorLength(), treeForest.getNumAttributes());
+
+        testEqualStructure(flat1, flat2);
+        testEqualPredictions(dataset1, flat1, flat2, DELTA_15);
+        testEqualBatchPredictions(dataset1, flat1, flat2, DELTA_15);
+    }
+
+    @Test
+    public void roundTripPlainFlatToFasterTrees() throws Exception {
+        FasterForest ff = setupFF();
+        ff.buildClassifier(dataset1);
+
+        // FasterForest -> FlatBinaryForest -> FasterTreeForest -> FlatBinaryForest
+        FlatBinaryForest flat1 = ff.toFlatBinaryForest(false);
+        FasterTreeForest treeForest = FlatBinaryForestBuilder.toFasterTreeForest(flat1);
+        FlatBinaryForest flat2 = FlatBinaryForestBuilder.buildFromFasterTrees(treeForest.getNumAttributes(), treeForest.getTrees(), false);
+
+        testEqualStructure(flat1, flat2);
+        testEqualBatchPredictions(dataset1, flat1, flat2, DELTA_15);
+    }
+
+    @Test
+    public void roundTripLegacyFlatToConverterFormat() throws Exception {
+        FasterForest ff = setupFF();
+        ff.buildClassifier(dataset1);
+
+        // FasterForest -> LegacyFlat -> FasterTreeForest -> InterleavedBfs (via converter)
+        LegacyFlatBinaryForest flat = ff.toFlatBinaryForest();
+        FasterTreeForest treeForest = FlatBinaryForestBuilder.toFasterTreeForest(flat);
+
+        BinaryForest interleavedDirect = FasterForestConverter.convertFasterForest(ff, FasterForestConverter.ForestType.InterleavedBfsForest);
+        BinaryForest interleavedRoundTrip = FasterForestConverter.convertFasterForest(treeForest, FasterForestConverter.ForestType.InterleavedBfsForest);
+
+        testEqualStructure(interleavedDirect, interleavedRoundTrip);
+        testEqualBatchPredictions(dataset1, interleavedDirect, interleavedRoundTrip, DELTA_7);
+    }
+
+    @Test
     public void optimizingFlatForestLegacy() throws Exception {
         FasterForest ff = setupFF();
         ff.setNumTrees(512);

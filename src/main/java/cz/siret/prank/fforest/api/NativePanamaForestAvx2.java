@@ -2,65 +2,30 @@ package cz.siret.prank.fforest.api;
 
 import cz.siret.prank.fforest.FasterTree;
 
-import java.lang.foreign.Arena;
-import java.lang.foreign.MemorySegment;
 import java.util.List;
 
 /**
- * Native forest prediction using AVX2 SIMD when available, with scalar fallback.
+ * Stub for Java 17 compatibility. The real implementation lives in
+ * {@code src/main/java22} and is loaded automatically on Java 22+ via
+ * the multi-release JAR (META-INF/versions/22/).
  *
- * <p>Identical to {@link NativePanamaForest} except that batch prediction uses
- * the auto-dispatching native function which selects AVX2 on x86_64 CPUs that
- * support it (processing 4 instances in parallel per tree traversal step).
- *
- * <p>Use {@link #isAvx2Available()} to check whether AVX2 is active.
+ * <p>On Java 17, {@link #isAvx2Available()} returns {@code false} and all
+ * factory methods throw {@link UnsupportedOperationException}.
  */
 public class NativePanamaForestAvx2 extends NativePanamaForest {
 
-    private NativePanamaForestAvx2(int numTrees, int numAttributes, Arena arena,
-                                   MemorySegment forestHandle) {
-        super(numTrees, numAttributes, arena, forestHandle, FF_PREDICT_BATCH_AUTO);
+    protected NativePanamaForestAvx2() {
     }
 
-    /**
-     * Returns true if the native library is loaded and AVX2 batch prediction is active.
-     */
     public static boolean isAvx2Available() {
-        return NATIVE_LOADED && simdLevel() >= 2;
+        return false;
     }
 
-    /**
-     * Build from trained FasterTrees.
-     *
-     * @throws IllegalStateException if native library is not available
-     */
     public static NativePanamaForestAvx2 fromFasterTrees(int numAttributes, List<FasterTree> trees) {
-        if (!NATIVE_LOADED) {
-            throw new IllegalStateException("Native library not available");
-        }
-
-        ContiguousDfsForest base = ContiguousDfsForest.fromFasterTrees(numAttributes, trees);
-        return fromContiguousDfsForest(base);
+        throw new UnsupportedOperationException("Native AVX2 forest requires Java 22+");
     }
 
-    /**
-     * Build from an existing ContiguousDfsForest by copying its arrays to off-heap memory.
-     */
     public static NativePanamaForestAvx2 fromContiguousDfsForest(ContiguousDfsForest base) {
-        if (!NATIVE_LOADED) {
-            throw new IllegalStateException("Native library not available");
-        }
-
-        Arena arena = Arena.ofShared();
-        try {
-            MemorySegment handle = createForestHandle(arena, base);
-            return new NativePanamaForestAvx2(base.numTrees, base.numAttributes, arena, handle);
-        } catch (RuntimeException e) {
-            arena.close();
-            throw e;
-        } catch (Throwable t) {
-            arena.close();
-            throw new RuntimeException("Failed to create native forest", t);
-        }
+        throw new UnsupportedOperationException("Native AVX2 forest requires Java 22+");
     }
 }

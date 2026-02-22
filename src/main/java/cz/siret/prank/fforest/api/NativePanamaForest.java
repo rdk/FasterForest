@@ -6,356 +6,69 @@ import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
 
-import java.lang.foreign.*;
-import java.lang.invoke.MethodHandle;
 import java.util.List;
 
 /**
- * Native C implementation of forest prediction using Panama FFM (Java 22+).
- * Always uses scalar (non-SIMD) batch prediction. For AVX2, see
- * {@link NativePanamaForestAvx2}.
+ * Stub for Java 17 compatibility. The real implementation lives in
+ * {@code src/main/java22} and is loaded automatically on Java 22+ via
+ * the multi-release JAR (META-INF/versions/22/).
  *
- * <p>Delegates the hot prediction loop to a compiled C library that benefits from:
- * <ul>
- *   <li>No array bounds checks</li>
- *   <li>Branchless cmov for child selection</li>
- *   <li>Cache-line aligned data access</li>
- * </ul>
- *
- * <p>Data layout is identical to {@link ContiguousDfsForest} — separate int[]/double[]
- * arrays with contiguous per-tree DFS node ordering. The arrays are copied to off-heap
- * memory owned by an {@link Arena} and passed as raw pointers to the C library.
- *
- * <p>If the native library is not available on the current platform, use
- * {@link #isAvailable()} to check and fall back to {@link ContiguousDfsForest}.
+ * <p>On Java 17, {@link #isAvailable()} returns {@code false} and all
+ * factory/prediction methods throw {@link UnsupportedOperationException}.
  */
 public class NativePanamaForest implements BinaryForest, Classifier, AutoCloseable {
 
-    static final boolean NATIVE_LOADED;
-
-    // Method handles for native functions (resolved once at class load)
-    static final MethodHandle FF_FOREST_CREATE;
-    static final MethodHandle FF_FOREST_DESTROY;
-    static final MethodHandle FF_PREDICT;
-    static final MethodHandle FF_PREDICT_BATCH_SCALAR;
-    static final MethodHandle FF_PREDICT_BATCH_AUTO;
-    static final MethodHandle FF_SIMD_LEVEL;
-
-    static {
-        boolean loaded = false;
-        MethodHandle create = null, destroy = null, predict = null,
-                     batchScalar = null, batchAuto = null, simdLevel = null;
-
-        try {
-            loaded = NativeLoader.load();
-            if (loaded) {
-                Linker linker = Linker.nativeLinker();
-                SymbolLookup lookup = SymbolLookup.loaderLookup();
-
-                FunctionDescriptor batchDesc = FunctionDescriptor.ofVoid(
-                        ValueLayout.ADDRESS,
-                        ValueLayout.ADDRESS, ValueLayout.JAVA_INT,
-                        ValueLayout.ADDRESS);
-
-                create = linker.downcallHandle(
-                        lookup.find("ff_forest_create").orElseThrow(),
-                        FunctionDescriptor.of(ValueLayout.ADDRESS,
-                                ValueLayout.JAVA_INT, ValueLayout.JAVA_INT,
-                                ValueLayout.JAVA_INT, ValueLayout.JAVA_INT,
-                                ValueLayout.ADDRESS, ValueLayout.ADDRESS,
-                                ValueLayout.ADDRESS, ValueLayout.ADDRESS,
-                                ValueLayout.ADDRESS, ValueLayout.ADDRESS)
-                );
-
-                destroy = linker.downcallHandle(
-                        lookup.find("ff_forest_destroy").orElseThrow(),
-                        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)
-                );
-
-                predict = linker.downcallHandle(
-                        lookup.find("ff_predict").orElseThrow(),
-                        FunctionDescriptor.of(ValueLayout.JAVA_DOUBLE,
-                                ValueLayout.ADDRESS, ValueLayout.ADDRESS)
-                );
-
-                batchScalar = linker.downcallHandle(
-                        lookup.find("ff_predict_batch_scalar_only").orElseThrow(),
-                        batchDesc
-                );
-
-                batchAuto = linker.downcallHandle(
-                        lookup.find("ff_predict_batch").orElseThrow(),
-                        batchDesc
-                );
-
-                simdLevel = linker.downcallHandle(
-                        lookup.find("ff_simd_level").orElseThrow(),
-                        FunctionDescriptor.of(ValueLayout.JAVA_INT)
-                );
-            }
-        } catch (Throwable t) {
-            System.err.println("[FasterForest] Failed to initialize native bindings: " + t.getMessage());
-            loaded = false;
-        }
-
-        NATIVE_LOADED = loaded;
-        FF_FOREST_CREATE = create;
-        FF_FOREST_DESTROY = destroy;
-        FF_PREDICT = predict;
-        FF_PREDICT_BATCH_SCALAR = batchScalar;
-        FF_PREDICT_BATCH_AUTO = batchAuto;
-        FF_SIMD_LEVEL = simdLevel;
+    protected NativePanamaForest() {
     }
 
-//===============================================================================================//
-
-    protected final int numTrees;
-    protected final int numAttributes;
-    protected final Arena arena;
-    protected final MemorySegment forestHandle;
-    protected final MethodHandle ffPredictBatch;
-
-    protected NativePanamaForest(int numTrees, int numAttributes, Arena arena,
-                                 MemorySegment forestHandle, MethodHandle ffPredictBatch) {
-        this.numTrees = numTrees;
-        this.numAttributes = numAttributes;
-        this.arena = arena;
-        this.forestHandle = forestHandle;
-        this.ffPredictBatch = ffPredictBatch;
-    }
-
-//===============================================================================================//
-// Static factory
-//===============================================================================================//
-
-    /**
-     * Returns true if the native library is loaded and ready.
-     */
     public static boolean isAvailable() {
-        return NATIVE_LOADED;
+        return false;
     }
 
-    /**
-     * Returns the active SIMD level: 0=scalar, 2=AVX2, 3=AVX-512.
-     */
     public static int simdLevel() {
-        if (!NATIVE_LOADED) return -1;
-        try {
-            return (int) FF_SIMD_LEVEL.invokeExact();
-        } catch (Throwable t) {
-            throw new RuntimeException(t);
-        }
+        return -1;
     }
 
-    /**
-     * Build from trained FasterTrees. Uses the same data layout as
-     * {@link ContiguousDfsForest}.
-     *
-     * @throws IllegalStateException if native library is not available
-     */
     public static NativePanamaForest fromFasterTrees(int numAttributes, List<FasterTree> trees) {
-        if (!NATIVE_LOADED) {
-            throw new IllegalStateException("Native library not available");
-        }
-
-        // Build the flat arrays using ContiguousDfsForest's factory
-        ContiguousDfsForest base = ContiguousDfsForest.fromFasterTrees(numAttributes, trees);
-
-        return fromContiguousDfsForest(base);
+        throw new UnsupportedOperationException("Native forest requires Java 22+");
     }
 
-    /**
-     * Build from an existing ContiguousDfsForest by copying its arrays to off-heap memory.
-     */
     public static NativePanamaForest fromContiguousDfsForest(ContiguousDfsForest base) {
-        if (!NATIVE_LOADED) {
-            throw new IllegalStateException("Native library not available");
-        }
-
-        Arena arena = Arena.ofShared();
-        try {
-            MemorySegment handle = createForestHandle(arena, base);
-            return new NativePanamaForest(base.numTrees, base.numAttributes, arena, handle,
-                    FF_PREDICT_BATCH_SCALAR);
-        } catch (RuntimeException e) {
-            arena.close();
-            throw e;
-        } catch (Throwable t) {
-            arena.close();
-            throw new RuntimeException("Failed to create native forest", t);
-        }
+        throw new UnsupportedOperationException("Native forest requires Java 22+");
     }
-
-    /**
-     * Copy forest arrays to off-heap memory and create a native forest handle.
-     */
-    protected static MemorySegment createForestHandle(Arena arena, ContiguousDfsForest base) throws Throwable {
-        MemorySegment treeRootsSeg = arena.allocateFrom(ValueLayout.JAVA_INT, base.treeRoots);
-        MemorySegment childLeftSeg = arena.allocateFrom(ValueLayout.JAVA_INT, base.childLeft);
-        MemorySegment childRightSeg = arena.allocateFrom(ValueLayout.JAVA_INT, base.childRight);
-        MemorySegment attrIndexSeg = arena.allocateFrom(ValueLayout.JAVA_INT, base.attributeIndex);
-        MemorySegment splitPointSeg = arena.allocateFrom(ValueLayout.JAVA_DOUBLE, base.splitPoint);
-        MemorySegment scoreSeg = arena.allocateFrom(ValueLayout.JAVA_DOUBLE, base.score);
-
-        int totalNodes = base.childLeft.length;
-        int totalLeaves = base.score.length;
-
-        MemorySegment handle = (MemorySegment) FF_FOREST_CREATE.invokeExact(
-                base.numTrees, base.numAttributes,
-                totalNodes, totalLeaves,
-                treeRootsSeg, childLeftSeg,
-                childRightSeg, attrIndexSeg,
-                splitPointSeg, scoreSeg
-        );
-
-        if (handle.equals(MemorySegment.NULL)) {
-            throw new RuntimeException("ff_forest_create returned NULL");
-        }
-
-        return handle;
-    }
-
-//===============================================================================================//
 
     @Override
     public int getNumAttributes() {
-        return numAttributes;
+        throw new UnsupportedOperationException("Native forest requires Java 22+");
     }
 
     @Override
     public int getNumTrees() {
-        return numTrees;
+        throw new UnsupportedOperationException("Native forest requires Java 22+");
     }
 
     @Override
     public int getMaxDepth() {
-        return -1; // not tracked in native handle
+        throw new UnsupportedOperationException("Native forest requires Java 22+");
     }
-
-//===============================================================================================//
-// Prediction
-//===============================================================================================//
 
     @Override
     public double predict(double[] instanceAttributes) {
-        try (Arena tempArena = Arena.ofConfined()) {
-            MemorySegment instSeg = tempArena.allocateFrom(ValueLayout.JAVA_DOUBLE, instanceAttributes);
-            return (double) FF_PREDICT.invokeExact(forestHandle, instSeg);
-        } catch (Throwable t) {
-            throw new RuntimeException("Native predict failed", t);
-        }
+        throw new UnsupportedOperationException("Native forest requires Java 22+");
     }
 
     @Override
     public double[] predictForBatch(double[][] instances) {
-        final int n = instances.length;
-        if (n == 0) return new double[0];
-
-        try (Arena callArena = Arena.ofConfined()) {
-            // Use numAttributes as the row stride for the C side. Instance arrays
-            // may be shorter (e.g. Weka numAttributes includes the class column but
-            // prediction arrays exclude it). Zero-fill handles the padding — the C
-            // code only accesses attribute indices that exist in the trained trees.
-            final long rowBytes = (long) numAttributes * Double.BYTES;
-
-            MemorySegment instanceBuffer = callArena.allocate(
-                    (long) n * numAttributes * Double.BYTES, Double.BYTES);
-            MemorySegment outputBuffer = callArena.allocate(
-                    (long) n * Double.BYTES, Double.BYTES);
-
-            // Flatten double[][] to contiguous off-heap buffer
-            for (int i = 0; i < n; i++) {
-                MemorySegment src = MemorySegment.ofArray(instances[i]);
-                long copyBytes = (long) instances[i].length * Double.BYTES;
-                MemorySegment.copy(src, 0, instanceBuffer, (long) i * rowBytes, copyBytes);
-            }
-
-            // Call native batch prediction
-            ffPredictBatch.invokeExact(forestHandle, instanceBuffer, n, outputBuffer);
-
-            // Copy results back to Java array
-            double[] result = new double[n];
-            MemorySegment dst = MemorySegment.ofArray(result);
-            MemorySegment.copy(outputBuffer, 0, dst, 0, (long) n * Double.BYTES);
-            return result;
-        } catch (Throwable t) {
-            throw new RuntimeException("Native predictForBatch failed", t);
-        }
+        throw new UnsupportedOperationException("Native forest requires Java 22+");
     }
-
-    /**
-     * Batch prediction from a contiguous off-heap buffer. Zero-copy path -- no data
-     * marshalling overhead.
-     *
-     * <p>The data segment must contain {@code n} rows of {@code numAttributes} doubles
-     * in row-major order (row 0 attr 0, row 0 attr 1, ..., row 1 attr 0, ...).
-     * Total size must be at least {@code n * numAttributes * Double.BYTES} bytes.
-     *
-     * @param data contiguous off-heap MemorySegment with instance data (row-major doubles)
-     * @param n    number of instances (rows) in the data segment
-     * @return prediction scores (one per instance)
-     */
-    public double[] predictForBatchContiguous(MemorySegment data, int n) {
-        if (n == 0) return new double[0];
-
-        try (Arena callArena = Arena.ofConfined()) {
-            MemorySegment outputBuffer = callArena.allocate(
-                    (long) n * Double.BYTES, Double.BYTES);
-
-            ffPredictBatch.invokeExact(forestHandle, data, n, outputBuffer);
-
-            double[] result = new double[n];
-            MemorySegment dst = MemorySegment.ofArray(result);
-            MemorySegment.copy(outputBuffer, 0, dst, 0, (long) n * Double.BYTES);
-            return result;
-        } catch (Throwable t) {
-            throw new RuntimeException("Native predictForBatchContiguous failed", t);
-        }
-    }
-
-    /**
-     * Flatten a {@code double[][]} into a contiguous off-heap MemorySegment suitable for
-     * {@link #predictForBatchContiguous(MemorySegment, int)}.
-     *
-     * <p>The returned segment is allocated in the given arena and lives until that arena
-     * is closed. Callers who reuse the same instances across multiple predictions should
-     * flatten once and call {@code predictForBatchContiguous} repeatedly.
-     *
-     * @param instances Java double[][] array (each row has numAttributes elements)
-     * @param targetArena arena that owns the returned segment
-     * @return contiguous row-major off-heap segment
-     */
-    public static MemorySegment flattenToOffHeap(double[][] instances, int numAttributes, Arena targetArena) {
-        final int n = instances.length;
-        final long rowBytes = (long) numAttributes * Double.BYTES;
-        MemorySegment seg = targetArena.allocate(n * rowBytes, Double.BYTES);
-        for (int i = 0; i < n; i++) {
-            MemorySegment src = MemorySegment.ofArray(instances[i]);
-            long copyBytes = (long) instances[i].length * Double.BYTES;
-            MemorySegment.copy(src, 0, seg, (long) i * rowBytes, copyBytes);
-        }
-        return seg;
-    }
-
-//===============================================================================================//
 
     @Override
     public void close() {
-        try {
-            FF_FOREST_DESTROY.invokeExact(forestHandle);
-        } catch (Throwable t) {
-            // ignore
-        }
-        arena.close();
+        // no-op
     }
-
-//===============================================================================================//
-// Classifier interface (for Weka compatibility)
-//===============================================================================================//
 
     @Override
     public void buildClassifier(Instances data) throws Exception {
-        // do nothing
     }
 
     @Override

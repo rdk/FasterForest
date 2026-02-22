@@ -3,12 +3,39 @@ apply plugin:'maven-publish'
 
 
 group = 'cz.siret.prank'
-version = '2.8.1'
+version = '2.9.0'
 description = "Fast Random Forest implementations for Weka. Streamlined version of Fans Supek's FastRandomForest."
 
 java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+// Java 22 source set for Panama FFM native classes
+sourceSets {
+    java22 {
+        java {
+            srcDir 'src/main/java22'
+        }
+    }
+}
+
+tasks.named('compileJava22Java') {
     sourceCompatibility = JavaVersion.VERSION_22
     targetCompatibility = JavaVersion.VERSION_22
+    options.release = 22
+    classpath = sourceSets.main.output + sourceSets.main.compileClasspath
+}
+
+// Tests compile at Java 22 so they can use Panama FFM APIs directly.
+// At runtime the multi-release JAR provides the real native classes.
+// java22 output must come BEFORE main output so the real classes
+// (with MemorySegment methods) take precedence over the Java 17 stubs.
+tasks.named('compileTestJava') {
+    sourceCompatibility = JavaVersion.VERSION_22
+    targetCompatibility = JavaVersion.VERSION_22
+    options.release = 22
+    classpath = sourceSets.java22.output + classpath
 }
 
 
@@ -22,10 +49,17 @@ repositories {
 jar {
     manifest {
         attributes 'Main-Class': 'cz.siret.prank.ffutils.Main'
+        attributes 'Multi-Release': 'true'
+    }
+
+    into('META-INF/versions/22') {
+        from sourceSets.java22.output
     }
 }
 
 test {
+    // Ensure java22 real classes take precedence over Java 17 stubs at runtime
+    classpath = sourceSets.java22.output + classpath
 
     testLogging {
         events "failed" // "standardOut", "standardError", "passed", "skipped"
@@ -103,4 +137,5 @@ dependencies {
     implementation 'com.carrotsearch:hppc:0.10.0'
 
     testImplementation 'junit:junit:4.13.2'
+    testImplementation sourceSets.java22.output
 }

@@ -87,7 +87,14 @@ publishing {
     }
 }
 
-assemble.dependsOn generatePomFileForMavenPublication
+tasks.register('copyPomToLibs', Copy) {
+    dependsOn generatePomFileForMavenPublication
+    from generatePomFileForMavenPublication.destination
+    into layout.buildDirectory.dir('libs')
+    rename { "${project.name}-${project.version}.pom" }
+}
+
+assemble.dependsOn copyPomToLibs
 
 dependencies {
     implementation 'org.apache.commons:commons-lang3:3.18.0'

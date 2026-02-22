@@ -82,6 +82,7 @@ tasks.register('benchmark', Test) {
 publishing {
     publications {
         maven(MavenPublication) {
+            artifactId = 'FasterForest'
             from components.java
         }
     }

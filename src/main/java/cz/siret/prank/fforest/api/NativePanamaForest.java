@@ -233,6 +233,10 @@ public class NativePanamaForest implements BinaryForest, Classifier, AutoCloseab
         if (n == 0) return new double[0];
 
         try (Arena callArena = Arena.ofConfined()) {
+            // Use numAttributes as the row stride for the C side. Instance arrays
+            // may be shorter (e.g. Weka numAttributes includes the class column but
+            // prediction arrays exclude it). Zero-fill handles the padding — the C
+            // code only accesses attribute indices that exist in the trained trees.
             final long rowBytes = (long) numAttributes * Double.BYTES;
 
             MemorySegment instanceBuffer = callArena.allocate(
@@ -243,7 +247,8 @@ public class NativePanamaForest implements BinaryForest, Classifier, AutoCloseab
             // Flatten double[][] to contiguous off-heap buffer
             for (int i = 0; i < n; i++) {
                 MemorySegment src = MemorySegment.ofArray(instances[i]);
-                MemorySegment.copy(src, 0, instanceBuffer, (long) i * rowBytes, rowBytes);
+                long copyBytes = (long) instances[i].length * Double.BYTES;
+                MemorySegment.copy(src, 0, instanceBuffer, (long) i * rowBytes, copyBytes);
             }
 
             // Call native batch prediction
@@ -307,7 +312,8 @@ public class NativePanamaForest implements BinaryForest, Classifier, AutoCloseab
         MemorySegment seg = targetArena.allocate(n * rowBytes, Double.BYTES);
         for (int i = 0; i < n; i++) {
             MemorySegment src = MemorySegment.ofArray(instances[i]);
-            MemorySegment.copy(src, 0, seg, (long) i * rowBytes, rowBytes);
+            long copyBytes = (long) instances[i].length * Double.BYTES;
+            MemorySegment.copy(src, 0, seg, (long) i * rowBytes, copyBytes);
         }
         return seg;
     }

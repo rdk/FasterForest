@@ -56,6 +56,23 @@ Guarded `computeImportances()` call in `computeInteractions()` with
 `if (m_FeatureImportances == null)`. Importances are no longer recomputed when
 both importances and interactions are enabled.
 
+### Native `predictForBatch` IndexOutOfBoundsException — FIXED
+
+`NativePanamaForest.predictForBatch()` threw `IndexOutOfBoundsException` when copying
+instance data to off-heap memory. Weka's `numAttributes()` includes the class attribute,
+so the forest stored N+1 as the row width. But instance arrays passed at prediction time
+contain only the N feature values (class excluded). The code copied `numAttributes` doubles
+per row from a source array that was one element shorter.
+
+The pure-Java `ContiguousDfsForest` was unaffected because it accesses `inst[attr]` by index
+without any stride.
+
+**Fix:** Copy `instances[i].length` doubles per row instead of `numAttributes`. The off-heap
+buffer is still allocated with `numAttributes` stride (required by the C batch functions),
+and unused positions remain zero-filled. Tree attribute indices never reference the class
+column, so padded positions are never read. Applied to `predictForBatch()` and
+`flattenToOffHeap()`.
+
 ### #1 NPE in `buildRootTree` when `classIndex == 0` (FasterForest) — DOCUMENTED
 
 Warning comment added in `FasterTreeTrainable.java:1021`. OK in practice because Weka

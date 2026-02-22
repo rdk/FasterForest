@@ -174,6 +174,14 @@ FF_API void ff_predict_batch(
     g_batch_fn(f, instances, n, out);
 }
 
+FF_API void ff_predict_batch_scalar_only(
+    const FfForest* f,
+    const double* instances, int32_t n,
+    double* out)
+{
+    ff_predict_batch_scalar(f, instances, n, out);
+}
+
 FF_API int ff_simd_level(void) {
     if (g_batch_fn == ff_predict_batch_avx2) return 2;
     return 0;

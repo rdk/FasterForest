@@ -21,7 +21,8 @@ public class FasterForestConverter {
         BranchlessBfsForest,
         ContiguousDfsForest,
         IlpDfsForest,
-        NativePanamaForest
+        NativePanamaForest,
+        NativePanamaForestAvx2
     }
 
     public static BinaryForest convertFasterForest(TrainableFasterForest forest, ForestType targetType) {
@@ -52,10 +53,9 @@ public class FasterForestConverter {
             case IlpDfsForest:
                 return IlpDfsForest.fromFasterTrees(numAttributes, trees);
             case NativePanamaForest:
-                if (NativePanamaForest.isAvailable())
-                    return NativePanamaForest.fromFasterTrees(numAttributes, trees);
-                else
-                    return ContiguousDfsForest.fromFasterTrees(numAttributes, trees);
+                return NativePanamaForest.fromFasterTrees(numAttributes, trees);
+            case NativePanamaForestAvx2:
+                return NativePanamaForestAvx2.fromFasterTrees(numAttributes, trees);
             default:
                 throw new IllegalArgumentException("Unknown forest type: " + targetType);
         }

@@ -59,12 +59,23 @@ FF_API double ff_predict(
 );
 
 /**
- * Predict a batch of instances.
+ * Predict a batch of instances (auto-dispatches to best SIMD level).
  * instances: contiguous row-major double[n * num_attributes]
  * out:       output double[n], caller-allocated
  * n:         number of instances
  */
 FF_API void ff_predict_batch(
+    const FfForest* forest,
+    const double*   instances,
+    int32_t         n,
+    double*         out
+);
+
+/**
+ * Predict a batch of instances using scalar (non-SIMD) code only.
+ * Same interface as ff_predict_batch.
+ */
+FF_API void ff_predict_batch_scalar_only(
     const FfForest* forest,
     const double*   instances,
     int32_t         n,

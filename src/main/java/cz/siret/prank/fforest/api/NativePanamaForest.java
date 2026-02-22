@@ -12,12 +12,13 @@ import java.util.List;
 
 /**
  * Native C implementation of forest prediction using Panama FFM (Java 22+).
+ * Always uses scalar (non-SIMD) batch prediction. For AVX2, see
+ * {@link NativePanamaForestAvx2}.
  *
  * <p>Delegates the hot prediction loop to a compiled C library that benefits from:
  * <ul>
  *   <li>No array bounds checks</li>
  *   <li>Branchless cmov for child selection</li>
- *   <li>AVX2 SIMD batch prediction (4 instances in parallel)</li>
  *   <li>Cache-line aligned data access</li>
  * </ul>
  *
@@ -30,24 +31,31 @@ import java.util.List;
  */
 public class NativePanamaForest implements BinaryForest, Classifier, AutoCloseable {
 
-    private static final boolean NATIVE_LOADED;
+    static final boolean NATIVE_LOADED;
 
     // Method handles for native functions (resolved once at class load)
-    private static final MethodHandle FF_FOREST_CREATE;
-    private static final MethodHandle FF_FOREST_DESTROY;
-    private static final MethodHandle FF_PREDICT;
-    private static final MethodHandle FF_PREDICT_BATCH;
-    private static final MethodHandle FF_SIMD_LEVEL;
+    static final MethodHandle FF_FOREST_CREATE;
+    static final MethodHandle FF_FOREST_DESTROY;
+    static final MethodHandle FF_PREDICT;
+    static final MethodHandle FF_PREDICT_BATCH_SCALAR;
+    static final MethodHandle FF_PREDICT_BATCH_AUTO;
+    static final MethodHandle FF_SIMD_LEVEL;
 
     static {
         boolean loaded = false;
-        MethodHandle create = null, destroy = null, predict = null, predictBatch = null, simdLevel = null;
+        MethodHandle create = null, destroy = null, predict = null,
+                     batchScalar = null, batchAuto = null, simdLevel = null;
 
         try {
             loaded = NativeLoader.load();
             if (loaded) {
                 Linker linker = Linker.nativeLinker();
                 SymbolLookup lookup = SymbolLookup.loaderLookup();
+
+                FunctionDescriptor batchDesc = FunctionDescriptor.ofVoid(
+                        ValueLayout.ADDRESS,
+                        ValueLayout.ADDRESS, ValueLayout.JAVA_INT,
+                        ValueLayout.ADDRESS);
 
                 create = linker.downcallHandle(
                         lookup.find("ff_forest_create").orElseThrow(),
@@ -70,12 +78,14 @@ public class NativePanamaForest implements BinaryForest, Classifier, AutoCloseab
                                 ValueLayout.ADDRESS, ValueLayout.ADDRESS)
                 );
 
-                predictBatch = linker.downcallHandle(
+                batchScalar = linker.downcallHandle(
+                        lookup.find("ff_predict_batch_scalar_only").orElseThrow(),
+                        batchDesc
+                );
+
+                batchAuto = linker.downcallHandle(
                         lookup.find("ff_predict_batch").orElseThrow(),
-                        FunctionDescriptor.ofVoid(
-                                ValueLayout.ADDRESS,
-                                ValueLayout.ADDRESS, ValueLayout.JAVA_INT,
-                                ValueLayout.ADDRESS)
+                        batchDesc
                 );
 
                 simdLevel = linker.downcallHandle(
@@ -92,22 +102,26 @@ public class NativePanamaForest implements BinaryForest, Classifier, AutoCloseab
         FF_FOREST_CREATE = create;
         FF_FOREST_DESTROY = destroy;
         FF_PREDICT = predict;
-        FF_PREDICT_BATCH = predictBatch;
+        FF_PREDICT_BATCH_SCALAR = batchScalar;
+        FF_PREDICT_BATCH_AUTO = batchAuto;
         FF_SIMD_LEVEL = simdLevel;
     }
 
 //===============================================================================================//
 
-    private final int numTrees;
-    private final int numAttributes;
-    private final Arena arena;
-    private final MemorySegment forestHandle;
+    protected final int numTrees;
+    protected final int numAttributes;
+    protected final Arena arena;
+    protected final MemorySegment forestHandle;
+    protected final MethodHandle ffPredictBatch;
 
-    private NativePanamaForest(int numTrees, int numAttributes, Arena arena, MemorySegment forestHandle) {
+    protected NativePanamaForest(int numTrees, int numAttributes, Arena arena,
+                                 MemorySegment forestHandle, MethodHandle ffPredictBatch) {
         this.numTrees = numTrees;
         this.numAttributes = numAttributes;
         this.arena = arena;
         this.forestHandle = forestHandle;
+        this.ffPredictBatch = ffPredictBatch;
     }
 
 //===============================================================================================//
@@ -160,33 +174,9 @@ public class NativePanamaForest implements BinaryForest, Classifier, AutoCloseab
 
         Arena arena = Arena.ofShared();
         try {
-            // Copy Java arrays to off-heap memory
-            MemorySegment treeRootsSeg = arena.allocateFrom(ValueLayout.JAVA_INT, base.treeRoots);
-            MemorySegment childLeftSeg = arena.allocateFrom(ValueLayout.JAVA_INT, base.childLeft);
-            MemorySegment childRightSeg = arena.allocateFrom(ValueLayout.JAVA_INT, base.childRight);
-            MemorySegment attrIndexSeg = arena.allocateFrom(ValueLayout.JAVA_INT, base.attributeIndex);
-            MemorySegment splitPointSeg = arena.allocateFrom(ValueLayout.JAVA_DOUBLE, base.splitPoint);
-            MemorySegment scoreSeg = arena.allocateFrom(ValueLayout.JAVA_DOUBLE, base.score);
-
-            int totalNodes = base.childLeft.length;
-            int totalLeaves = base.score.length;
-
-            // Create native forest handle
-            MemorySegment handle = (MemorySegment) FF_FOREST_CREATE.invokeExact(
-                    base.numTrees, base.numAttributes,
-                    totalNodes, totalLeaves,
-                    treeRootsSeg, childLeftSeg,
-                    childRightSeg, attrIndexSeg,
-                    splitPointSeg, scoreSeg
-            );
-
-            if (handle.equals(MemorySegment.NULL)) {
-                arena.close();
-                throw new RuntimeException("ff_forest_create returned NULL");
-            }
-
-            return new NativePanamaForest(base.numTrees, base.numAttributes, arena, handle);
-
+            MemorySegment handle = createForestHandle(arena, base);
+            return new NativePanamaForest(base.numTrees, base.numAttributes, arena, handle,
+                    FF_PREDICT_BATCH_SCALAR);
         } catch (RuntimeException e) {
             arena.close();
             throw e;
@@ -194,6 +184,35 @@ public class NativePanamaForest implements BinaryForest, Classifier, AutoCloseab
             arena.close();
             throw new RuntimeException("Failed to create native forest", t);
         }
+    }
+
+    /**
+     * Copy forest arrays to off-heap memory and create a native forest handle.
+     */
+    protected static MemorySegment createForestHandle(Arena arena, ContiguousDfsForest base) throws Throwable {
+        MemorySegment treeRootsSeg = arena.allocateFrom(ValueLayout.JAVA_INT, base.treeRoots);
+        MemorySegment childLeftSeg = arena.allocateFrom(ValueLayout.JAVA_INT, base.childLeft);
+        MemorySegment childRightSeg = arena.allocateFrom(ValueLayout.JAVA_INT, base.childRight);
+        MemorySegment attrIndexSeg = arena.allocateFrom(ValueLayout.JAVA_INT, base.attributeIndex);
+        MemorySegment splitPointSeg = arena.allocateFrom(ValueLayout.JAVA_DOUBLE, base.splitPoint);
+        MemorySegment scoreSeg = arena.allocateFrom(ValueLayout.JAVA_DOUBLE, base.score);
+
+        int totalNodes = base.childLeft.length;
+        int totalLeaves = base.score.length;
+
+        MemorySegment handle = (MemorySegment) FF_FOREST_CREATE.invokeExact(
+                base.numTrees, base.numAttributes,
+                totalNodes, totalLeaves,
+                treeRootsSeg, childLeftSeg,
+                childRightSeg, attrIndexSeg,
+                splitPointSeg, scoreSeg
+        );
+
+        if (handle.equals(MemorySegment.NULL)) {
+            throw new RuntimeException("ff_forest_create returned NULL");
+        }
+
+        return handle;
     }
 
 //===============================================================================================//
@@ -252,7 +271,7 @@ public class NativePanamaForest implements BinaryForest, Classifier, AutoCloseab
             }
 
             // Call native batch prediction
-            FF_PREDICT_BATCH.invokeExact(forestHandle, instanceBuffer, n, outputBuffer);
+            ffPredictBatch.invokeExact(forestHandle, instanceBuffer, n, outputBuffer);
 
             // Copy results back to Java array
             double[] result = new double[n];
@@ -283,7 +302,7 @@ public class NativePanamaForest implements BinaryForest, Classifier, AutoCloseab
             MemorySegment outputBuffer = callArena.allocate(
                     (long) n * Double.BYTES, Double.BYTES);
 
-            FF_PREDICT_BATCH.invokeExact(forestHandle, data, n, outputBuffer);
+            ffPredictBatch.invokeExact(forestHandle, data, n, outputBuffer);
 
             double[] result = new double[n];
             MemorySegment dst = MemorySegment.ofArray(result);

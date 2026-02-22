@@ -30,9 +30,12 @@ static int detect_simd_level(void) {
 
 static ff_batch_fn g_batch_fn = NULL;
 
-static void ensure_dispatch(void) {
-    if (g_batch_fn) return;
-
+/* Eagerly initialize SIMD dispatch at library load time (before any exported
+   function can be called).  Eliminates the TOCTOU race on g_batch_fn. */
+#if defined(__GNUC__) || defined(__clang__)
+__attribute__((constructor))
+#endif
+static void init_dispatch(void) {
     int level = detect_simd_level();
 #if defined(__x86_64__) || defined(_M_X64)
     if (level >= 2) {
@@ -43,6 +46,16 @@ static void ensure_dispatch(void) {
     (void)level;
     g_batch_fn = ff_predict_batch_scalar;
 }
+
+#if defined(_MSC_VER)
+/* MSVC: run init_dispatch via DllMain */
+#include <windows.h>
+BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
+    (void)hinstDLL; (void)lpvReserved;
+    if (fdwReason == DLL_PROCESS_ATTACH) init_dispatch();
+    return TRUE;
+}
+#endif
 
 /* ========================================================================= */
 /* Forest create / destroy                                                   */
@@ -72,8 +85,7 @@ FF_API FfForest* ff_forest_create(
     f->score          = score;
     f->inv_num_trees  = 1.0 / num_trees;
 
-    /* Eagerly resolve dispatch on first forest creation */
-    ensure_dispatch();
+    /* init_dispatch() runs at library load via constructor/__attribute__. */
 
     return f;
 }
@@ -159,12 +171,10 @@ FF_API void ff_predict_batch(
     const double* instances, int32_t n,
     double* out)
 {
-    ensure_dispatch();
     g_batch_fn(f, instances, n, out);
 }
 
 FF_API int ff_simd_level(void) {
-    ensure_dispatch();
     if (g_batch_fn == ff_predict_batch_avx2) return 2;
     return 0;
 }

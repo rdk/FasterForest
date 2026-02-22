@@ -103,12 +103,6 @@ public class NativePanamaForest implements BinaryForest, Classifier, AutoCloseab
     private final Arena arena;
     private final MemorySegment forestHandle;
 
-    // Pre-allocated reusable buffers for batch prediction (avoids per-call allocation)
-    private MemorySegment instanceBuffer;
-    private int instanceBufferCapacity;
-    private MemorySegment outputBuffer;
-    private int outputBufferCapacity;
-
     private NativePanamaForest(int numTrees, int numAttributes, Arena arena, MemorySegment forestHandle) {
         this.numTrees = numTrees;
         this.numAttributes = numAttributes;
@@ -238,11 +232,13 @@ public class NativePanamaForest implements BinaryForest, Classifier, AutoCloseab
         final int n = instances.length;
         if (n == 0) return new double[0];
 
-        try {
+        try (Arena callArena = Arena.ofConfined()) {
             final long rowBytes = (long) numAttributes * Double.BYTES;
 
-            // Ensure pre-allocated buffers are large enough
-            ensureBufferCapacity(n);
+            MemorySegment instanceBuffer = callArena.allocate(
+                    (long) n * numAttributes * Double.BYTES, Double.BYTES);
+            MemorySegment outputBuffer = callArena.allocate(
+                    (long) n * Double.BYTES, Double.BYTES);
 
             // Flatten double[][] to contiguous off-heap buffer
             for (int i = 0; i < n; i++) {
@@ -278,8 +274,9 @@ public class NativePanamaForest implements BinaryForest, Classifier, AutoCloseab
     public double[] predictForBatchContiguous(MemorySegment data, int n) {
         if (n == 0) return new double[0];
 
-        try {
-            ensureOutputCapacity(n);
+        try (Arena callArena = Arena.ofConfined()) {
+            MemorySegment outputBuffer = callArena.allocate(
+                    (long) n * Double.BYTES, Double.BYTES);
 
             FF_PREDICT_BATCH.invokeExact(forestHandle, data, n, outputBuffer);
 
@@ -313,21 +310,6 @@ public class NativePanamaForest implements BinaryForest, Classifier, AutoCloseab
             MemorySegment.copy(src, 0, seg, (long) i * rowBytes, rowBytes);
         }
         return seg;
-    }
-
-    private void ensureBufferCapacity(int n) {
-        if (n > instanceBufferCapacity) {
-            instanceBuffer = arena.allocate((long) n * numAttributes * Double.BYTES, Double.BYTES);
-            instanceBufferCapacity = n;
-        }
-        ensureOutputCapacity(n);
-    }
-
-    private void ensureOutputCapacity(int n) {
-        if (n > outputBufferCapacity) {
-            outputBuffer = arena.allocate((long) n * Double.BYTES, Double.BYTES);
-            outputBufferCapacity = n;
-        }
     }
 
 //===============================================================================================//

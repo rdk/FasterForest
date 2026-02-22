@@ -2,11 +2,11 @@
 
 ## Summary
 
-Native C prediction via Panama FFM (Java 22+) is **34% slower** than the best pure-Java
-implementation. A zero-copy path (`predictForBatchContiguous`) was tested and showed
-**less than 1% improvement** over the regular copy path, disproving the hypothesis that
-data marshalling was the bottleneck. The native C prediction loop itself is fundamentally
-slower than Java's JIT-compiled code for this workload.
+Native C prediction via Panama FFM (Java 22+) is slower than the best pure-Java
+implementation on both Windows (**34% slower**) and Linux (**25% slower**). A zero-copy
+path (`predictForBatchContiguous`) showed negligible improvement on both platforms,
+disproving the hypothesis that data marshalling was the bottleneck. The native C prediction
+loop itself is fundamentally slower than Java's JIT-compiled code for this workload.
 
 ## Benchmark Results (2026-02-17, run 2 - with zero-copy)
 
@@ -38,6 +38,42 @@ Difference: **< 1%** (55 ms, within noise)
 
 This disproves the hypothesis that data marshalling overhead was responsible for the
 native path being slower. The C prediction loop itself is the bottleneck.
+
+## Benchmark Results (2026-02-22, Linux)
+
+Environment: Linux 6.14 (Ryzen 5 9600X), GraalVM JDK 24, AVX2 (SIMD level 2), GCC 14.2 `-O2 -ffp-contract=off`
+Dataset: 6950 instances, 29 attributes, 100 trees, max depth 25
+Config: warmup=3, measured=10, iters=400 (2,780,000 predictions/round)
+
+| #  | Forest                | Mean ms | Std ms | Pred/sec | vs Best |
+|----|-----------------------|---------|--------|----------|---------|
+|  1 | ContiguousDfs         |  5036.1 |   27.5 |  552,014 |       - |
+|  2 | SeparateArraysBfs     |  5062.4 |   38.5 |  549,147 |     -1% |
+|  3 | LegacyFlat            |  5124.0 |   27.4 |  542,545 |     -2% |
+|  4 | Flat                  |  5124.5 |   11.3 |  542,492 |     -2% |
+|  5 | ShortLegacy           |  5148.7 |   25.3 |  539,942 |     -2% |
+|  6 | Original (FF)         |  5218.1 |   16.2 |  532,761 |     -4% |
+|  7 | ContiguousBfsDouble   |  5356.2 |    7.4 |  519,025 |     -6% |
+|  8 | InterleavedBfsDouble  |  5514.8 |   24.9 |  504,098 |     -9% |
+|  9 | InterleavedBfs        |  5862.3 |   43.9 |  474,217 |    -14% |
+| 10 | **NativePanama0copy** |  6313.1 |   24.0 |  440,354 |  **-25%** |
+| 11 | **NativePanama**      |  6423.8 |   17.1 |  432,766 |  **-28%** |
+| 12 | IlpDfs                |  6775.9 |   26.9 |  410,278 |    -26% |
+| 13 | BranchlessBfs         |  8221.9 |    4.8 |  338,121 |    -39% |
+
+### Cross-platform observations
+
+- **Native gap is smaller on Linux** (25-28%) than Windows (34-35%) — GCC produces
+  better code than MSVC for this workload
+- **Java is faster on Linux** too: ContiguousDfs 5036 ms (Linux) vs 5373 ms (Windows),
+  a ~6% improvement likely due to GraalVM JIT vs HotSpot JDK 22
+- **Standard deviations are much lower on Linux** — more stable measurements across
+  the board (e.g. InterleavedBfs std 44 ms vs 1488 ms on Windows)
+- **LegacyFlat and ShortLegacy rank much higher on Linux** — the large std deviations
+  that hurt them on Windows disappear here
+- **Zero-copy gap slightly larger on Linux**: 110 ms (1.7%) vs 55 ms (<1%) — still
+  small, confirming that data copy is not the bottleneck on either platform
+- The overall conclusion holds: **pure Java beats native C+AVX2 on both platforms**
 
 ## Why Native is Slower (updated analysis)
 
@@ -82,7 +118,8 @@ The actual bottleneck is the **native prediction loop itself**:
 
 Native C + AVX2 SIMD is **not a viable optimization** for random forest inference at this
 scale. Java's JIT compiler produces equally good or better code for the simple tree traversal
-loop. The 34% slowdown is intrinsic to the native code, not the FFM bridge overhead.
+loop. The 25-35% slowdown (depending on platform) is intrinsic to the native code, not the
+FFM bridge overhead.
 
 This result aligns with the broader pattern: for compute-bound loops with simple data access
 patterns, the JVM's JIT is competitive with ahead-of-time compiled C. Native code wins when

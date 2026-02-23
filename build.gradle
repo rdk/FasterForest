@@ -62,7 +62,7 @@ test {
     classpath = sourceSets.java22.output + classpath
 
     testLogging {
-        events "failed" // "standardOut", "standardError", "passed", "skipped"
+        events "passed", "failed", "skipped"
 
         showExceptions true
         exceptionFormat "full"
@@ -70,6 +70,21 @@ test {
         showStackTraces true
 
         showStandardStreams = false
+    }
+
+    afterSuite { desc, result ->
+        if (desc.parent == null) { // root suite — print summary
+            def style = result.failedTestCount > 0 ? 'FAILURE' : 'SUCCESS'
+            println ""
+            println "=========================================="
+            println "  Test Summary: ${style}"
+            println "  Total: ${result.testCount}  " +
+                    "Passed: ${result.successfulTestCount}  " +
+                    "Failed: ${result.failedTestCount}  " +
+                    "Skipped: ${result.skippedTestCount}"
+            println "  Time:  ${(result.endTime - result.startTime) / 1000.0}s"
+            println "=========================================="
+        }
     }
 
     // pass -Dbenchmark=true to enable benchmark tests

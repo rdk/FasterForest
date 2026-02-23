@@ -93,3 +93,35 @@ callers (options serialization, toString) updated to use `getMaxDepthLimit()`.
 
 `getNumTrees()` now delegates to `m_bagger.getClassifiers().length` after building.
 Before building, falls back to the configured `m_numTrees` parameter.
+
+## Findings from BinaryForestInferenceTest
+
+Added `BinaryForestInferenceTest` — 13 tests verifying prediction equivalence across
+all 17 BinaryForest implementations. Three behavioral properties were confirmed:
+
+### Float split-point casting causes path divergence (not a bug)
+
+Float-precision forests (InterleavedBfsForest, FlatBinaryFloatForest, IlpDfsFloatForest,
+NativePanamaFloatForest) cast double split points to float during construction. When an
+instance's feature value falls between the double and float representations of a split
+point, the tree traversal takes a different path, producing a completely different leaf
+score. With 128 trees, a single divergent tree produces a prediction difference of
+`1/128 = 0.0078125` — far beyond any accumulation-precision tolerance.
+
+**Consequence:** Float forests cannot be validated against double-precision references.
+They must be compared against each other using a float-family reference
+(FlatBinaryFloatForest). All float forests agree with each other within `1e-6`.
+
+### Legacy ground truth has ULP-level accumulation differences (not a bug)
+
+`FasterForest.distributionForInstance()` and `LegacyFlatBinaryForest.distributionForInst()`
+both implement the same legacy class-probs computation but through different code paths
+(tree objects vs flattened arrays). Differences appear at the 16th significant digit
+(e.g., `0.07059420220059569` vs `0.07059420220059565`). Tolerance of `1e-15` is required,
+consistent with the existing `DELTA_15` in `FasterForestTest`.
+
+### Native forests do not track `maxDepth` (not a bug)
+
+`NativePanamaForest.getMaxDepth()` and `NativePanamaFloatForest.getMaxDepth()` return
+`-1`. The native C implementation does not store tree depth metadata. Structure validation
+for native forests checks only `numTrees` and `numAttributes`.

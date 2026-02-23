@@ -125,3 +125,50 @@ consistent with the existing `DELTA_15` in `FasterForestTest`.
 `NativePanamaForest.getMaxDepth()` and `NativePanamaFloatForest.getMaxDepth()` return
 `-1`. The native C implementation does not store tree depth metadata. Structure validation
 for native forests checks only `numTrees` and `numAttributes`.
+
+## Findings from TrainingDeterminismTest
+
+### Training IS deterministic given fixed seed (confirmed, not a bug)
+
+Thorough trace of the complete RNG chain for both FasterForest (FF1) and FasterForest2
+(FF2) confirmed that training is fully deterministic given the same seed and input data.
+The chain was verified through: seed propagation in `FastRfBagging`, parallel sort in
+`IndexParallelSorter` (stable TimSort with stable merge), bootstrap sampling in
+`DataCache.resample()`/`DataCache2.resample()`, `getRandomNumberGenerator()` data
+signature mixing, and tree building in `FasterTreeTrainable`/`FasterForest2Tree`.
+
+Key properties that ensure determinism:
+- Seeds are pre-computed into an `int[]` array sequentially before parallel tree building
+- Each tree gets its own `Random` instance from a deterministic seed
+- The parallel sort (`IndexParallelSorter`) uses `IndexTimSort` (stable) with stable
+  merge (`<=` takes left on ties); partition boundaries are determined by array sizes,
+  not thread scheduling
+- No shared mutable state exists between parallel tree builders; each tree's `DataCache`
+  is a shallow copy with its own `inBag`, `instWeights`, and `whatGoesWhere` arrays
+- The mother `DataCache`'s `vals` and `sortedIndices` are only read during tree building
+
+`TrainingDeterminismTest` (7 tests) verifies: same seed → bit-identical tree structures
+and predictions for both FF1 and FF2, including across different thread counts (1 vs 4).
+
+### `getRandomNumberGenerator()` could hit null `sortedIndices[classIndex]` — HARDENED
+
+`DataCache.getRandomNumberGenerator()` and `DataCache2.getRandomNumberGenerator()` pick
+a random attribute index via `r.nextInt(numAttributes)` to compute a data signature from
+`sortedIndices`. Since `sortedIndices[classIndex]` is null (the class attribute is skipped
+during sorting), this could select a null array. `Arrays.hashCode(null)` returns 0, which
+is deterministic but loses the data signature mixing (the RNG seed degenerates to just the
+input seed).
+
+**Fix:** Skip classIndex when picking the attribute: `if (attIdx == classIndex) attIdx =
+(attIdx + 1) % numAttributes`. Applied to both `DataCache.java` and `DataCache2.java`.
+
+### Stale comment in `DataCache2.getRandomNumberGenerator()` — FIXED
+
+The comment `"ignore data signature since sortedIndices are not sorted in a stable way"`
+was wrong — the sort IS stable (IndexTimSort). The comment was likely a historical artifact
+from when quickSort was used. Updated to accurately document the current behavior.
+
+### ForkJoinPool resource leak in DataCache constructors — FIXED
+
+Both `DataCache` and `DataCache2` constructors created a `ForkJoinPool` for parallel
+sorting but never shut it down. Added `pool.shutdown()` after the sorting loop.

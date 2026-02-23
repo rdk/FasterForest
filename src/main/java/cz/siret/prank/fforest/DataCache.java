@@ -164,6 +164,8 @@ public class DataCache {
       } // ---------------------------------------------------------- attr kind
 
     } // ========================================================= attr by attr
+
+    pool.shutdown();
   }
 
   
@@ -304,8 +306,12 @@ public class DataCache {
 
     Random r = new Random(seed);
 
-    //    long dataSignature = Arrays.toString( sortedIndices[ r.nextInt( numAttributes ) ] ).hashCode();
-    long dataSignature = Arrays.hashCode( sortedIndices[ r.nextInt( numAttributes ) ] );
+    // Pick a non-class attribute for data signature (sortedIndices[classIndex] is null)
+    int attIdx = r.nextInt(numAttributes);
+    if (attIdx == classIndex) {
+      attIdx = (attIdx + 1) % numAttributes;
+    }
+    long dataSignature = Arrays.hashCode( sortedIndices[ attIdx ] );
     r.setSeed( dataSignature + seed );
 
     return r;

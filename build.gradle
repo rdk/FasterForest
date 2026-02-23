@@ -3,7 +3,7 @@ apply plugin:'maven-publish'
 
 
 group = 'cz.siret.prank'
-version = '2.10.1'
+version = '2.10.2'
 description = "Fast Random Forest implementations for Weka. Streamlined version of Fans Supek's FastRandomForest."
 
 java {

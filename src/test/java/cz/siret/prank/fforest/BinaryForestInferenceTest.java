@@ -53,11 +53,13 @@ public class BinaryForestInferenceTest {
     static BinaryForest branchlessBfsForest;
     static BinaryForest contiguousDfsForest;
     static BinaryForest ilpDfsForest;
+    static BinaryForest blockedIlpDfsForest;
 
     // Score-based float-precision forests
     static BinaryForest interleavedBfsForest;
     static BinaryForest flatBinaryFloatForest;
     static BinaryForest ilpDfsFloatForest;
+    static BinaryForest blockedIlpDfsFloatForest;
 
     // Legacy class-probs reference
     static BinaryForest legacyFlatBinaryForest;
@@ -95,11 +97,13 @@ public class BinaryForestInferenceTest {
         branchlessBfsForest        = convert(FasterForestConverter.ForestType.BranchlessBfsForest);
         contiguousDfsForest        = convert(FasterForestConverter.ForestType.ContiguousDfsForest);
         ilpDfsForest               = convert(FasterForestConverter.ForestType.IlpDfsForest);
+        blockedIlpDfsForest        = convert(FasterForestConverter.ForestType.BlockedIlpDfsForest);
 
         // Score-based float-precision
-        interleavedBfsForest  = convert(FasterForestConverter.ForestType.InterleavedBfsForest);
-        flatBinaryFloatForest = convert(FasterForestConverter.ForestType.FlatBinaryFloatForest);
-        ilpDfsFloatForest     = convert(FasterForestConverter.ForestType.IlpDfsFloatForest);
+        interleavedBfsForest       = convert(FasterForestConverter.ForestType.InterleavedBfsForest);
+        flatBinaryFloatForest      = convert(FasterForestConverter.ForestType.FlatBinaryFloatForest);
+        ilpDfsFloatForest          = convert(FasterForestConverter.ForestType.IlpDfsFloatForest);
+        blockedIlpDfsFloatForest   = convert(FasterForestConverter.ForestType.BlockedIlpDfsFloatForest);
 
         // Legacy class-probs
         legacyFlatBinaryForest = convert(FasterForestConverter.ForestType.LegacyFlatBinaryForest);
@@ -120,6 +124,7 @@ public class BinaryForestInferenceTest {
         forests.put("BranchlessBfs", branchlessBfsForest);
         forests.put("ContiguousDfs", contiguousDfsForest);
         forests.put("IlpDfs", ilpDfsForest);
+        forests.put("BlockedIlpDfs", blockedIlpDfsForest);
 
         for (Map.Entry<String, BinaryForest> entry : forests.entrySet()) {
             assertStructureMatches(entry.getKey(), flatBinaryForest, entry.getValue());
@@ -139,6 +144,7 @@ public class BinaryForestInferenceTest {
         Map<String, BinaryForest> forests = new LinkedHashMap<>();
         forests.put("InterleavedBfs", interleavedBfsForest);
         forests.put("IlpDfsFloat", ilpDfsFloatForest);
+        forests.put("BlockedIlpDfsFloat", blockedIlpDfsFloatForest);
 
         for (Map.Entry<String, BinaryForest> entry : forests.entrySet()) {
             assertStructureMatches(entry.getKey(), flatBinaryFloatForest, entry.getValue());
@@ -250,8 +256,18 @@ public class BinaryForestInferenceTest {
     }
 
     @Test
+    public void batchMatchesSingle_blockedIlpDfs() {
+        assertBatchMatchesSingle("BlockedIlpDfs", blockedIlpDfsForest, DELTA_EXACT);
+    }
+
+    @Test
     public void batchMatchesSingle_ilpDfsFloat() {
         assertBatchMatchesSingle("IlpDfsFloat", ilpDfsFloatForest, DELTA_EXACT);
+    }
+
+    @Test
+    public void batchMatchesSingle_blockedIlpDfsFloat() {
+        assertBatchMatchesSingle("BlockedIlpDfsFloat", blockedIlpDfsFloatForest, DELTA_EXACT);
     }
 
     @Test

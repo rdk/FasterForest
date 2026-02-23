@@ -48,7 +48,9 @@ public class PredictionSpeedBenchmark {
     static final boolean ENABLE_BRANCHLESS_BFS     = true;
     static final boolean ENABLE_CONTIGUOUS_DFS     = true;
     static final boolean ENABLE_ILP_DFS            = true;
+    static final boolean ENABLE_BLOCKED_ILP_DFS    = true;
     static final boolean ENABLE_ILP_DFS_FLOAT      = true;
+    static final boolean ENABLE_BLOCKED_ILP_DFS_FLOAT = true;
     static final boolean ENABLE_FLAT_FLOAT         = true;
     static final boolean ENABLE_NATIVE_PANAMA      = true;
     static final boolean ENABLE_NATIVE_PANAMA_0COPY = true;
@@ -85,7 +87,9 @@ public class PredictionSpeedBenchmark {
     BinaryForest branchlessBfsForest;
     BinaryForest contiguousDfsForest;
     BinaryForest ilpDfsForest;
+    BinaryForest blockedIlpDfsForest;
     BinaryForest ilpDfsFloatForest;
+    BinaryForest blockedIlpDfsFloatForest;
     BinaryForest flatFloatForest;
     BinaryForest nativePanamaForest;
     BinaryForest nativePanamaAvx2Forest;
@@ -177,8 +181,14 @@ public class PredictionSpeedBenchmark {
         if (ENABLE_ILP_DFS) {
             ilpDfsForest = FasterForestConverter.convertFasterForest(ff, FasterForestConverter.ForestType.IlpDfsForest);
         }
+        if (ENABLE_BLOCKED_ILP_DFS) {
+            blockedIlpDfsForest = FasterForestConverter.convertFasterForest(ff, FasterForestConverter.ForestType.BlockedIlpDfsForest);
+        }
         if (ENABLE_ILP_DFS_FLOAT) {
             ilpDfsFloatForest = FasterForestConverter.convertFasterForest(ff, FasterForestConverter.ForestType.IlpDfsFloatForest);
+        }
+        if (ENABLE_BLOCKED_ILP_DFS_FLOAT) {
+            blockedIlpDfsFloatForest = FasterForestConverter.convertFasterForest(ff, FasterForestConverter.ForestType.BlockedIlpDfsFloatForest);
         }
         if (ENABLE_FLAT_FLOAT) {
             flatFloatForest = FasterForestConverter.convertFasterForest(ff, FasterForestConverter.ForestType.FlatBinaryFloatForest);
@@ -324,7 +334,9 @@ public class PredictionSpeedBenchmark {
         if (ENABLE_BRANCHLESS_BFS) forests.put("BranchlessBfs", branchlessBfsForest);
         if (ENABLE_CONTIGUOUS_DFS) forests.put("ContiguousDfs", contiguousDfsForest);
         if (ENABLE_ILP_DFS) forests.put("IlpDfs", ilpDfsForest);
+        if (ENABLE_BLOCKED_ILP_DFS) forests.put("BlockedIlpDfs", blockedIlpDfsForest);
         if (ENABLE_ILP_DFS_FLOAT) forests.put("IlpDfsFloat", ilpDfsFloatForest);
+        if (ENABLE_BLOCKED_ILP_DFS_FLOAT) forests.put("BlockedIlpDfsFloat", blockedIlpDfsFloatForest);
         if (ENABLE_FLAT_FLOAT) forests.put("FlatFloat", flatFloatForest);
         if (ENABLE_NATIVE_PANAMA && nativePanamaForest != null) forests.put("NativePanama", nativePanamaForest);
         if (ENABLE_NATIVE_PANAMA_AVX2 && nativePanamaAvx2Forest != null) forests.put("NativePanamaAvx2", nativePanamaAvx2Forest);

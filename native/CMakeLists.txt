@@ -6,6 +6,7 @@ set(CMAKE_C_STANDARD 11)
 # --- Scalar source (baseline, always built) ---
 add_library(fasterforest SHARED
     src/predict_scalar.c
+    src/predict_scalar_float.c
 )
 
 target_include_directories(fasterforest PUBLIC include PRIVATE src)
@@ -21,6 +22,7 @@ endif()
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64|amd64")
     add_library(fasterforest_avx2 OBJECT
         src/predict_avx2.c
+        src/predict_avx2_float.c
     )
     target_include_directories(fasterforest_avx2 PRIVATE include src)
 

@@ -88,6 +88,51 @@ FF_API void ff_predict_batch_scalar_only(
  */
 FF_API int ff_simd_level(void);
 
+/* ========================================================================= */
+/* Float-precision forest                                                    */
+/* ========================================================================= */
+
+typedef struct FfFloatForest FfFloatForest;
+
+/**
+ * Create a float-precision forest handle.
+ * split_point and score are float arrays; all other arrays are int32.
+ * Instance data at prediction time is still double[].
+ */
+FF_API FfFloatForest* ff_float_forest_create(
+    int32_t  num_trees,
+    int32_t  num_attributes,
+    int32_t  total_nodes,
+    int32_t  total_leaves,
+    const int32_t* tree_roots,
+    const int32_t* child_left,
+    const int32_t* child_right,
+    const int32_t* attr_index,
+    const float*   split_point,
+    const float*   score
+);
+
+FF_API void ff_float_forest_destroy(FfFloatForest* forest);
+
+FF_API double ff_float_predict(
+    const FfFloatForest* forest,
+    const double*        instance_attrs
+);
+
+FF_API void ff_float_predict_batch(
+    const FfFloatForest* forest,
+    const double*        instances,
+    int32_t              n,
+    double*              out
+);
+
+FF_API void ff_float_predict_batch_scalar_only(
+    const FfFloatForest* forest,
+    const double*        instances,
+    int32_t              n,
+    double*              out
+);
+
 #ifdef __cplusplus
 }
 #endif

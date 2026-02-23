@@ -54,6 +54,10 @@ public class PredictionSpeedBenchmark {
     static final boolean ENABLE_NATIVE_PANAMA_0COPY = true;
     static final boolean ENABLE_NATIVE_PANAMA_AVX2 = true;
     static final boolean ENABLE_NATIVE_PANAMA_AVX2_0COPY = true;
+    static final boolean ENABLE_NATIVE_FLOAT_PANAMA      = true;
+    static final boolean ENABLE_NATIVE_FLOAT_PANAMA_0COPY = true;
+    static final boolean ENABLE_NATIVE_FLOAT_PANAMA_AVX2 = true;
+    static final boolean ENABLE_NATIVE_FLOAT_PANAMA_AVX2_0COPY = true;
 
     // --- benchmark parameters (overridable via -D system properties) ---
 
@@ -85,12 +89,18 @@ public class PredictionSpeedBenchmark {
     BinaryForest flatFloatForest;
     BinaryForest nativePanamaForest;
     BinaryForest nativePanamaAvx2Forest;
+    BinaryForest nativeFloatPanamaForest;
+    BinaryForest nativeFloatPanamaAvx2Forest;
 
     // --- zero-copy native data ---
     Arena offHeapArena;
     MemorySegment offHeapInstances;
     Arena offHeapArenaAvx2;
     MemorySegment offHeapInstancesAvx2;
+    Arena offHeapArenaFloat;
+    MemorySegment offHeapInstancesFloat;
+    Arena offHeapArenaFloatAvx2;
+    MemorySegment offHeapInstancesFloatAvx2;
 
     // =========================================================================
 
@@ -190,6 +200,22 @@ public class PredictionSpeedBenchmark {
             offHeapInstancesAvx2 = NativePanamaForest.flattenToOffHeap(
                     instances, nativePanamaAvx2Forest.getNumAttributes(), offHeapArenaAvx2);
         }
+        if ((ENABLE_NATIVE_FLOAT_PANAMA || ENABLE_NATIVE_FLOAT_PANAMA_0COPY) && NativePanamaFloatForest.isAvailable()) {
+            nativeFloatPanamaForest = FasterForestConverter.convertFasterForest(ff, FasterForestConverter.ForestType.NativePanamaFloatForest);
+        }
+        if (ENABLE_NATIVE_FLOAT_PANAMA_0COPY && nativeFloatPanamaForest != null) {
+            offHeapArenaFloat = Arena.ofShared();
+            offHeapInstancesFloat = NativePanamaForest.flattenToOffHeap(
+                    instances, nativeFloatPanamaForest.getNumAttributes(), offHeapArenaFloat);
+        }
+        if ((ENABLE_NATIVE_FLOAT_PANAMA_AVX2 || ENABLE_NATIVE_FLOAT_PANAMA_AVX2_0COPY) && NativePanamaFloatForestAvx2.isAvx2Available()) {
+            nativeFloatPanamaAvx2Forest = FasterForestConverter.convertFasterForest(ff, FasterForestConverter.ForestType.NativePanamaFloatForestAvx2);
+        }
+        if (ENABLE_NATIVE_FLOAT_PANAMA_AVX2_0COPY && nativeFloatPanamaAvx2Forest != null) {
+            offHeapArenaFloatAvx2 = Arena.ofShared();
+            offHeapInstancesFloatAvx2 = NativePanamaForest.flattenToOffHeap(
+                    instances, nativeFloatPanamaAvx2Forest.getNumAttributes(), offHeapArenaFloatAvx2);
+        }
 
         System.out.printf("Dataset: %d instances, %d attributes%n", dataset.size(), dataset.numAttributes() - 1);
         System.out.printf("Forest: %d trees, max depth %d%n", ff.getNumTrees(), ff.calculateMaxTreeDepth());
@@ -245,6 +271,16 @@ public class PredictionSpeedBenchmark {
             results.put("NativePanamaAvx20copy", runNativeZeroCopyBenchmark(
                     (NativePanamaForest) nativePanamaAvx2Forest, offHeapInstancesAvx2));
         }
+        if (ENABLE_NATIVE_FLOAT_PANAMA_0COPY && nativeFloatPanamaForest != null) {
+            System.out.printf("Running: %s ...%n", "NativeFloatPanama0copy");
+            results.put("NativeFloatPanama0copy", runNativeFloatZeroCopyBenchmark(
+                    (NativePanamaFloatForest) nativeFloatPanamaForest, offHeapInstancesFloat));
+        }
+        if (ENABLE_NATIVE_FLOAT_PANAMA_AVX2_0COPY && nativeFloatPanamaAvx2Forest != null) {
+            System.out.printf("Running: %s ...%n", "NativeFloatPanamaAvx20copy");
+            results.put("NativeFloatPanamaAvx20copy", runNativeFloatZeroCopyBenchmark(
+                    (NativePanamaFloatForest) nativeFloatPanamaAvx2Forest, offHeapInstancesFloatAvx2));
+        }
 
         // JSON output
         System.out.println();
@@ -292,6 +328,8 @@ public class PredictionSpeedBenchmark {
         if (ENABLE_FLAT_FLOAT) forests.put("FlatFloat", flatFloatForest);
         if (ENABLE_NATIVE_PANAMA && nativePanamaForest != null) forests.put("NativePanama", nativePanamaForest);
         if (ENABLE_NATIVE_PANAMA_AVX2 && nativePanamaAvx2Forest != null) forests.put("NativePanamaAvx2", nativePanamaAvx2Forest);
+        if (ENABLE_NATIVE_FLOAT_PANAMA && nativeFloatPanamaForest != null) forests.put("NativeFloatPanama", nativeFloatPanamaForest);
+        if (ENABLE_NATIVE_FLOAT_PANAMA_AVX2 && nativeFloatPanamaAvx2Forest != null) forests.put("NativeFloatPanamaAvx2", nativeFloatPanamaAvx2Forest);
         return forests;
     }
 
@@ -308,6 +346,29 @@ public class PredictionSpeedBenchmark {
         }
 
         return new BenchResult(times, (long) ITERS_PER_ROUND * instances.length);
+    }
+
+    private BenchResult runNativeFloatZeroCopyBenchmark(NativePanamaFloatForest npf, MemorySegment data) {
+        int n = instances.length;
+
+        for (int w = 0; w < WARMUP_ROUNDS; w++) {
+            for (int i = 0; i < ITERS_PER_ROUND; i++) {
+                npf.predictForBatchContiguous(data, n);
+            }
+            System.gc();
+        }
+
+        long[] times = new long[MEASURE_ROUNDS];
+        for (int r = 0; r < MEASURE_ROUNDS; r++) {
+            long t0 = System.nanoTime();
+            for (int i = 0; i < ITERS_PER_ROUND; i++) {
+                npf.predictForBatchContiguous(data, n);
+            }
+            times[r] = (System.nanoTime() - t0) / 1_000_000;
+            System.gc();
+        }
+
+        return new BenchResult(times, (long) ITERS_PER_ROUND * n);
     }
 
     private BenchResult runNativeZeroCopyBenchmark(NativePanamaForest npf, MemorySegment data) {

@@ -24,7 +24,9 @@ public class FasterForestConverter {
         IlpDfsFloatForest,
         FlatBinaryFloatForest,
         NativePanamaForest,
-        NativePanamaForestAvx2
+        NativePanamaForestAvx2,
+        NativePanamaFloatForest,
+        NativePanamaFloatForestAvx2
     }
 
     public static BinaryForest convertFasterForest(TrainableFasterForest forest, ForestType targetType) {
@@ -62,6 +64,10 @@ public class FasterForestConverter {
                 return NativePanamaForest.fromFasterTrees(numAttributes, trees);
             case NativePanamaForestAvx2:
                 return NativePanamaForestAvx2.fromFasterTrees(numAttributes, trees);
+            case NativePanamaFloatForest:
+                return NativePanamaFloatForest.fromFasterTrees(numAttributes, trees);
+            case NativePanamaFloatForestAvx2:
+                return NativePanamaFloatForestAvx2.fromFasterTrees(numAttributes, trees);
             default:
                 throw new IllegalArgumentException("Unknown forest type: " + targetType);
         }

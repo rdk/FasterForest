@@ -156,10 +156,7 @@ class IndexTimSort<T> {
         int tlen = (len < 2 * INITIAL_TMP_STORAGE_LENGTH) ?
             len >>> 1 : INITIAL_TMP_STORAGE_LENGTH;
         if (work == null || workLen < tlen || workBase + tlen > work.length) {
-            @SuppressWarnings({"UnnecessaryLocalVariable"})
-            int[] newArray = (int[])java.lang.reflect.Array.newInstance
-                (a.getClass().getComponentType(), tlen);
-            tmp = newArray;
+            tmp = new int[tlen];
             tmpBase = 0;
             tmpLen = tlen;
         }

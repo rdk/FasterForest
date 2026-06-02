@@ -3,8 +3,8 @@ apply plugin:'maven-publish'
 
 
 group = 'cz.siret.prank'
-version = '2.10.2'
-description = "Fast Random Forest implementations for Weka. Streamlined version of Fans Supek's FastRandomForest."
+version = '2.10.3'
+description = "Fast Random Forest implementations in Java."
 
 java {
     sourceCompatibility = JavaVersion.VERSION_17
@@ -25,6 +25,32 @@ tasks.named('compileJava22Java') {
     targetCompatibility = JavaVersion.VERSION_22
     options.release = 22
     classpath = sourceSets.main.output + sourceSets.main.compileClasspath
+}
+
+// --- JMH microbenchmark source set (kept separate from the legacy hand-rolled
+//     PredictionSpeedBenchmark, which still runs via the `benchmark` task) ---
+sourceSets {
+    jmh {
+        java.srcDir 'src/jmh/java'
+        // main + java22 outputs are needed to compile/run against the forest API
+        compileClasspath += sourceSets.main.output + sourceSets.java22.output
+        runtimeClasspath += sourceSets.main.output + sourceSets.java22.output
+    }
+}
+
+// Inherit the production dependencies (weka, hppc, commons-lang3)
+configurations {
+    jmhImplementation.extendsFrom implementation
+    jmhRuntimeOnly.extendsFrom runtimeOnly
+}
+
+// JMH benchmarks use the Panama FFM API directly, so compile at Java 22 with
+// the real java22 classes taking precedence over the Java 17 stubs.
+tasks.named('compileJmhJava') {
+    sourceCompatibility = JavaVersion.VERSION_22
+    targetCompatibility = JavaVersion.VERSION_22
+    options.release = 22
+    classpath = sourceSets.java22.output + classpath
 }
 
 // Tests compile at Java 22 so they can use Panama FFM APIs directly.
@@ -99,12 +125,14 @@ tasks.register('benchmark', Test) {
     group = 'verification'
 
     testClassesDirs = testing.suites.test.sources.output.classesDirs
-    classpath = testing.suites.test.sources.runtimeClasspath
+    // java22 output first so the real Panama classes win over the Java 17 stubs
+    // (otherwise NativePanamaForest.isAvailable() returns false and native forests are skipped)
+    classpath = sourceSets.java22.output + testing.suites.test.sources.runtimeClasspath
 
     systemProperty 'benchmark', 'true'
 
     // forward bench.* params to the JVM running the tests
-    ['bench.numTrees', 'bench.treeDepth', 'bench.measureRounds', 'bench.itersPerRound'].each { key ->
+    ['bench.numTrees', 'bench.treeDepth', 'bench.measureRounds', 'bench.itersPerRound', 'bench.batchSize'].each { key ->
         if (System.getProperty(key) != null) {
             systemProperty key, System.getProperty(key)
         }
@@ -126,6 +154,31 @@ tasks.register('benchmark', Test) {
 
     // benchmarks may take a long time
     timeout = Duration.ofMinutes(30)
+}
+
+// Run the JMH microbenchmarks. Examples:
+//   ./gradlew jmh
+//   ./gradlew jmh -PjmhArgs="ForestPredict -p forestType=Flat -f 3"
+//   ./gradlew jmh -PjmhArgs="NativeZeroCopy -prof gc"
+tasks.register('jmh', JavaExec) {
+    group = 'verification'
+    description = 'Run JMH prediction-speed microbenchmarks (see also: benchmark task for the legacy harness)'
+    dependsOn 'jmhClasses'
+
+    mainClass = 'org.openjdk.jmh.Main'
+    // java22 output first so the real Panama classes win over the Java 17 stubs
+    classpath = sourceSets.java22.output + sourceSets.jmh.runtimeClasspath
+
+    jvmArgs '--enable-native-access=ALL-UNNAMED'
+
+    // Don't abort the whole run if a native variant is unavailable on this box.
+    args '-foe', 'false'
+    // Append user-supplied JMH args, e.g. -PjmhArgs="ForestPredict -f 3"
+    if (project.hasProperty('jmhArgs')) {
+        args(project.property('jmhArgs').toString().trim().split('\\s+'))
+    }
+
+    timeout = Duration.ofMinutes(60)
 }
 
 publishing {
@@ -153,4 +206,8 @@ dependencies {
 
     testImplementation 'junit:junit:4.13.2'
     testImplementation sourceSets.java22.output
+
+    // JMH microbenchmark harness (jmh source set)
+    jmhImplementation 'org.openjdk.jmh:jmh-core:1.37'
+    jmhAnnotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess:1.37'
 }

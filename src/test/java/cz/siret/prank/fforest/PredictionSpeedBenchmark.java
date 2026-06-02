@@ -68,6 +68,8 @@ public class PredictionSpeedBenchmark {
     static final int WARMUP_ROUNDS = 1;
     static final int MEASURE_ROUNDS = Integer.getInteger("bench.measureRounds", 5);
     static final int ITERS_PER_ROUND = Integer.getInteger("bench.itersPerRound", 100);
+    // Batch row count; rows are tiled from the real dataset. 0 = use dataset as-is.
+    static final int BATCH_SIZE = Integer.getInteger("bench.batchSize", 0);
 
     Instances dataset;
     double[][] instances;
@@ -121,7 +123,7 @@ public class PredictionSpeedBenchmark {
                 Boolean.getBoolean("benchmark"));
 
         dataset = loadDataset(DATA_DIR + "p2rank-train.arff.gz");
-        instances = instancesToArrays(dataset);
+        instances = tileToSize(instancesToArrays(dataset), BATCH_SIZE);
 
         ff = new FasterForest();
         ff.setNumTrees(NUM_TREES);
@@ -446,6 +448,21 @@ public class PredictionSpeedBenchmark {
             result[i] = data.get(i).toDoubleArray();
         }
         return result;
+    }
+
+    /**
+     * Tiles {@code base} to {@code targetSize} rows by repeating rows (references
+     * shared, not copied). {@code targetSize <= 0} returns {@code base} unchanged.
+     */
+    private static double[][] tileToSize(double[][] base, int targetSize) {
+        if (targetSize <= 0 || targetSize == base.length) {
+            return base;
+        }
+        double[][] out = new double[targetSize][];
+        for (int i = 0; i < targetSize; i++) {
+            out[i] = base[i % base.length];
+        }
+        return out;
     }
 
     // =========================================================================

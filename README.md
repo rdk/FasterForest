@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="/build.gradle"><img src="https://img.shields.io/badge/version-2.6.0-brightgreen.svg" alt="version 2.6.0"></a>
+  <a href="/build.gradle"><img src="https://img.shields.io/badge/version-2.10.3-brightgreen.svg" alt="version 2.10.3"></a>
   <a href="https://github.com/rdk/FasterForest/actions/workflows/main.yml"><img src="https://github.com/rdk/FasterForest/actions/workflows/main.yml/badge.svg" alt="Build Status"></a>
   <a href="https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html"><img src="https://img.shields.io/badge/License-GPL%20v2-blue.svg" alt="License: GPL v2"></a>
   <img src="https://img.shields.io/badge/Java-17+-orange.svg" alt="Java 17+">
@@ -16,8 +16,10 @@
 ---
 
 **FasterForest** is a streamlined, high-performance **Random Forest library for Java**.
-It provides multiple forest representations optimized for different speed/memory trade-offs, in particular **`InterleavedBfsForest`**
-with cache-optimized layouts that achieve **3-4x speedup** over the standard flat array representation **`FlatBinaryForest`**.
+It provides multiple interchangeable forest representations optimized for different speed/memory
+trade-offs. The fastest layout is **JIT-dependent** and benchmark-driven — see
+[PERFORMANCE-LESSONS.md](PERFORMANCE-LESSONS.md) for current, JVM-stated rankings, and
+[VARIANTS.md](VARIANTS.md) for which representation to pick.
 For inference, **`FlatBinaryForest`** alone is already **1.5x** faster than Fran Supek's **`FastRandomForest`**,
 which itself was a significant improvement over Weka's standard **`RandomForest`**.
 
@@ -46,7 +48,7 @@ These are inference-only representations converted from a trained forest.
 | **`LegacyFlatBinaryForest`** | Parallel arrays + full class probs | Keeps per-leaf class probabilities and reproduces the trained model exactly (1e-15). Score-preserving "legacy" family. |
 | **`ShortLegacyFlatBinaryForest`** | `float` arrays | ~50% memory reduction vs. double, minimal precision loss. Legacy family. |
 | **`InterleavedBfsForest`** | Interleaved layout + BFS ordering | 4 ints per node = 1 cache line per 4 nodes; BFS ordering keeps hot nodes in L1/L2. Score-based. (Ranking is JIT-dependent — see [PERFORMANCE-LESSONS.md](PERFORMANCE-LESSONS.md).) |
-| **`OptimizingFlatBinaryForest`** | Access-pattern reordering | Profiles node access counts, then reorders for cache locality. Multiple strategies (by tree, depth, count). |
+| **`OptimizingFlatBinaryForest`** | Access-pattern reordering | Profiles node access counts, then reorders for cache locality. Multiple strategies (by tree, depth, count). Constructed directly from a `LegacyFlatBinaryForest` (not exposed as a `ForestType`). |
 
 > ⚠️ **Not all representations compute the same prediction.** They split into two families —
 > *score-based* (`FlatBinaryForest` and all the Interleaved/Contiguous/Separate/Branchless/ILP/Float/
@@ -148,7 +150,7 @@ import cz.siret.prank.fforest.api.BinaryForest;
 // Convert to FlatBinaryForest (baseline flat representation)
 BinaryForest flat = FasterForestConverter.convertFasterForest(forest, ForestType.FlatBinaryForest);
 
-// Convert to InterleavedBfsForest (fastest, cache-optimized)
+// Convert to InterleavedBfsForest (cache-optimized layout; ranking is JIT-dependent — see PERFORMANCE-LESSONS.md)
 BinaryForest fast = FasterForestConverter.convertFasterForest(forest, ForestType.InterleavedBfsForest);
 
 // All BinaryForest implementations share the same prediction API

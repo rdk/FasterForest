@@ -1,7 +1,7 @@
 # Development Guide
 
 High-performance Random Forest library for Java. Trains a single model (FasterForest),
-then converts it to one of 17 optimized inference-only representations via a unified
+then converts it to one of 19 optimized inference-only representations via a unified
 `BinaryForest` interface. Numeric attributes only.
 
 ## Project Structure
@@ -21,11 +21,11 @@ src/main/java/cz/siret/prank/
 │       ├── FasterForestConverter.java  # Factory: ForestType enum → BinaryForest
 │       ├── FlatBinaryForest.java       # Score-based reference implementation
 │       ├── LegacyFlatBinaryForest.java # Legacy class-probs reference
-│       ├── InterleavedBfsForest.java   # Fastest Java: cache-optimized BFS, float
+│       ├── InterleavedBfsForest.java   # cache-optimized BFS layout, float
 │       ├── ContiguousDfsForest.java    # DFS layout (base for native forests)
 │       ├── IlpDfsForest.java           # ILP 4-lane batch prediction
 │       ├── NativeLoader.java           # Dynamic .so/.dll loading
-│       └── ... (17 forest types total)
+│       └── ... (19 forest types total)
 │
 ├── fforest2/                   # Extended classifier (v2)
 │   └── FasterForest2.java      #   Adds dropout importance, interaction analysis
@@ -45,7 +45,7 @@ native/                         # C source for prediction kernels
 
 src/test/java/cz/siret/prank/fforest/
 ├── FasterForestTest.java            # Training, conversion, round-trip tests
-├── BinaryForestInferenceTest.java   # Prediction equivalence across all 17 types
+├── BinaryForestInferenceTest.java   # Prediction equivalence across all 19 types
 └── PredictionSpeedBenchmark.java    # Throughput benchmark (all types)
 ```
 
@@ -54,7 +54,7 @@ src/test/java/cz/siret/prank/fforest/
 **TrainableFasterForest** — Training interface. Implementations: `FasterForest`, `FasterForest2`.
 Exposes `getTrees()` returning `List<FasterTree>` (linked tree nodes with classProbs and scores).
 
-**BinaryForest** — Inference interface. All 17 forest types implement this.
+**BinaryForest** — Inference interface. All 19 forest types implement this.
 Core methods: `predict(double[])`, `predictForBatch(double[][])`, `getNumTrees()`, `getNumAttributes()`.
 
 **FasterForestConverter** — One-line conversion from any `TrainableFasterForest` to any `ForestType`:
@@ -85,15 +85,18 @@ NativePanamaFloatForest) cast split points to float, which causes path divergenc
 instances traverse different tree branches. They must be compared against a float-family
 reference, not the double reference. See RESOLVED.md for details.
 
-## All 17 Forest Types
+## All 19 Forest Types
+
+Status (production / reference / experimental / regression) and selection guidance live in
+[VARIANTS.md](VARIANTS.md); current speed rankings in [PERFORMANCE-LESSONS.md](PERFORMANCE-LESSONS.md).
 
 | ForestType enum | Precision | Layout | Notes |
 |-----------------|-----------|--------|-------|
 | FlatBinaryForest | double | DFS | Score-based reference |
-| LegacyFlatBinaryForest | double | DFS | Legacy class-probs reference |
+| LegacyFlatBinaryForest | double | DFS | Legacy class-probs reference (faithful default) |
 | ShortFlatBinaryForest | float | DFS | Legacy, ~50% memory |
 | SuperShortLegacyFlatBinaryForest | float | DFS | Legacy, most compact |
-| InterleavedBfsForest | float | BFS | Fastest Java (cache-optimized, 4 ints/node) |
+| InterleavedBfsForest | float | BFS | cache-optimized, 4 ints/node |
 | InterleavedBfsDoubleForest | double | BFS | Double-precision interleaved |
 | ContiguousBfsDoubleForest | double | BFS | Contiguous per-tree |
 | SeparateArraysBfsForest | double | BFS | Separate int[]/double[] arrays |
@@ -101,6 +104,8 @@ reference, not the double reference. See RESOLVED.md for details.
 | ContiguousDfsForest | double | DFS | Base for native forests |
 | IlpDfsForest | double | DFS | ILP 4-lane batch prediction |
 | IlpDfsFloatForest | float | DFS | ILP 4-lane, float |
+| BlockedIlpDfsForest | double | DFS | Blocked ILP batch prediction |
+| BlockedIlpDfsFloatForest | float | DFS | Blocked ILP, float |
 | FlatBinaryFloatForest | float | DFS | Float-precision flat |
 | NativePanamaForest | double | DFS | C via Panama FFM |
 | NativePanamaForestAvx2 | double | DFS | C + AVX2 SIMD |

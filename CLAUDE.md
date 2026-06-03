@@ -55,7 +55,31 @@ PERFORMANCE-LESSONS.md. The README links; it does not own numbers.
 branch-misprediction explanation, "leaves are normalized") — a short experiment settled each. The sibling
 repo `../FasterMolecularSurface/docs/performance-lessons.md` is the model for this discipline.
 
+## Gotchas (this repo) — read before benchmarking/testing
+
+These cost real time to rediscover; they are intentional, not bugs.
+
+- **Test stdout is hidden.** The `test` task sets `showStandardStreams=false`, so `System.out` from a
+  test prints nothing on the console. To see it, read `build/test-results/test/TEST-*.xml` (or run a
+  throwaway via the `benchmark` task, which has streams on).
+- **`-D` system properties are NOT forwarded to the test JVM** unless explicitly listed in `build.gradle`
+  (only `benchmark` and `golden.regenerate` are). Add a `systemProperty` line if you need a new one.
+- **`java22` output must precede `main` on the classpath**, or the Java 17 Panama *stubs* win and
+  `NativePanamaForest.isAvailable()` silently returns false (native forests vanish). All tasks already
+  do this; preserve it if you touch `build.gradle`. Never delete `src/main/java22/` — tests compile
+  against it.
+- **`-PjmhArgs` is whitespace-split**, then each token is passed to JMH. Multi-word JVM args must be a
+  single token: `-jvmArgs=--enable-native-access=ALL-UNNAMED` (with `=`), never `-jvmArgs --enable-...`.
+- **JMH holds a global `/tmp/jmh.lock`** — only one JMH run at a time on a machine. Run Graal and C2
+  comparisons sequentially, not concurrently.
+- **`perf` profiling is likely blocked** (`perf_event_paranoid` high, no hsdis) — so `-prof perfasm/
+  perfnorm` won't read counters. Attribute codegen behaviourally (controlled experiments), as in
+  PERFORMANCE-LESSONS.md.
+- **Benchmark a specific JVM** while the build pins a toolchain by pointing JMH at it:
+  `./gradlew jmh -PjmhArgs="ForestPredict -jvm /path/to/java -jvmArgs=--enable-native-access=ALL-UNNAMED"`.
+
 ## Git
 
 - Commit/push only when asked. Branch first if on the default branch (`develop`).
 - No `Co-Authored-By` lines in commit messages.
+- When committing docs that cross-link, verify every linked file is tracked before pushing.

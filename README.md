@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="/build.gradle"><img src="https://img.shields.io/badge/version-2.10.3-brightgreen.svg" alt="version 2.10.3"></a>
+  <a href="/build.gradle"><img src="https://img.shields.io/badge/version-2.11.0-brightgreen.svg" alt="version 2.11.0"></a>
   <a href="https://github.com/rdk/FasterForest/actions/workflows/main.yml"><img src="https://github.com/rdk/FasterForest/actions/workflows/main.yml/badge.svg" alt="Build Status"></a>
   <a href="https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html"><img src="https://img.shields.io/badge/License-GPL%20v2-blue.svg" alt="License: GPL v2"></a>
   <img src="https://img.shields.io/badge/Java-17+-orange.svg" alt="Java 17+">

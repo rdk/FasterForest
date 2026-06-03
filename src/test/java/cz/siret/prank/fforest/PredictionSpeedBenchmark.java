@@ -425,8 +425,13 @@ public class PredictionSpeedBenchmark {
     }
 
     private void printConfig() {
-        System.out.printf("Config: warmup=%d, measured=%d, iters=%d, instances=%d%n",
-                WARMUP_ROUNDS, MEASURE_ROUNDS, ITERS_PER_ROUND, instances.length);
+        // Provenance: perf numbers are only meaningful with the JVM stated (rankings differ Graal vs C2).
+        System.out.printf("JVM: %s %s (%s)%n",
+                System.getProperty("java.vm.name"),
+                System.getProperty("java.runtime.version"),
+                System.getProperty("java.vm.vendor"));
+        System.out.printf("Config: warmup=%d, measured=%d, iters=%d, instances=%d, trees=%d%n",
+                WARMUP_ROUNDS, MEASURE_ROUNDS, ITERS_PER_ROUND, instances.length, NUM_TREES);
         System.out.printf("Total predictions per round: %,d%n", (long) ITERS_PER_ROUND * instances.length);
         System.out.println();
     }

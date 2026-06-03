@@ -2,9 +2,9 @@ name: Main Build
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, develop ]
   pull_request:
-    branches: [ master ]
+    branches: [ master, develop ]
 
 jobs:
   build:
@@ -15,14 +15,21 @@ jobs:
       matrix:
         os: [ ubuntu-latest, windows-latest, macos-latest ]
         java-version: [ '17', '21', '25' ]
+        distribution: [ 'temurin' ]
+        include:
+          # Deployment JVM. The Graal JIT optimizes the prediction loops differently from HotSpot C2
+          # (perf rankings invert — see PERFORMANCE-LESSONS.md), so validate correctness on it too.
+          - os: ubuntu-latest
+            java-version: '25'
+            distribution: 'graalvm'
 
     steps:
     - uses: actions/checkout@v4
-    - name: Set up JDK ${{ matrix.java-version }}
+    - name: Set up JDK ${{ matrix.java-version }} (${{ matrix.distribution }})
       uses: actions/setup-java@v4
       with:
         java-version: ${{ matrix.java-version }}
-        distribution: 'temurin'
+        distribution: ${{ matrix.distribution }}
         cache: 'gradle'
     - name: Validate Gradle wrapper
       uses: gradle/actions/wrapper-validation@v4
@@ -35,6 +42,6 @@ jobs:
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: test-results-${{ matrix.os }}-jdk${{ matrix.java-version }}
+        name: test-results-${{ matrix.os }}-${{ matrix.distribution }}-jdk${{ matrix.java-version }}
         path: build/reports/tests/
         retention-days: 14

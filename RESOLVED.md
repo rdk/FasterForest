@@ -1,5 +1,28 @@
 # Resolved Bugs
 
+### #7 Missing `m_ZeroR` guard in `distributionForAttributes` (FasterForest and FasterForest2) — FIXED
+
+**Files:**
+- `src/main/java/cz/siret/prank/fforest/FasterForest.java`, `.../fforest2/FasterForest2.java`
+- `src/main/java/cz/siret/prank/fforest/FastRfBagging.java`, `.../fforest2/FastRfBagging.java`
+
+When the training data has only the class attribute, `buildClassifier` falls back to a `m_ZeroR`
+model and previously returned early without initializing `m_bagger`. `distributionForInstance()`
+was guarded, but `distributionForAttributes()`, `predict()`, and `predictForBatch()` called the null
+`m_bagger` and threw a `NullPointerException`.
+
+Fixed by absorbing the degenerate case into the object graph instead of special-casing the prediction
+paths: the ZeroR branch now installs a real `FastRfBagging` holding a single leaf tree that carries
+ZeroR's constant class prior (`FastRfBagging.initConstantLeaf`, added in both packages). Sum-then-
+normalize over one leaf reproduces the prior exactly, so the hot prediction methods stay byte-for-byte
+unchanged — benchmarked indistinguishable from baseline on GraalVM (`singlePredict`/`Original`, 5
+forks: baseline 2467 ± 25, fixed 2480 ± 22 ns/op, overlapping CIs). `distributionForInstance` keeps
+its existing `m_ZeroR` guard.
+
+Covered by `FasterForestZeroRTest` (FF1 + FF2). Limitation: fixes models built after this change; an
+already-serialized degenerate model still deserializes with a null `m_bagger` (deserialization does
+not re-run `buildClassifier`).
+
 ### #6 FF2 split evaluation skips potentially optimal split points (FasterForest2) — FIXED
 
 **File:** `src/main/java/cz/siret/prank/fforest2/FasterForest2Tree.java:746`

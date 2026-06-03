@@ -65,7 +65,8 @@ All trainable forests implement `FlattableForest` and can be converted via `Fast
 FasterForest ff = new FasterForest();
 ff.buildClassifier(data);
 
-BinaryForest fast = FasterForestConverter.convertFasterForest(ff, ForestType.InterleavedBfsForest);
+// FlatBinaryForest is the fastest layout on the deployment JIT (GraalVM); see VARIANTS.md / PERFORMANCE-LESSONS.md
+BinaryForest fast = FasterForestConverter.convertFasterForest(ff, ForestType.FlatBinaryForest);
 
 double   score  = fast.predict(instance);
 double[] scores = fast.predictForBatch(instances);
@@ -104,15 +105,12 @@ achieving 10-20x training speedup and ~2-5x memory reduction over Weka on multi-
 `FasterForest` further streamlines the tree building code, reducing training time to ~75% and
 memory usage to ~50% of `FastRandomForest`.
 
-### InterleavedBfsForest optimizations
+### Layout experiments
 
-| Optimization | Speedup | Mechanism |
-|---|---|---|
-| **P1 - Interleaved layout** | 2-3x | Single `int[]` array, 4 ints/node (16 bytes). 4 nodes fit in one 64-byte cache line. |
-| **P2 - BFS node ordering** | 1.2-1.4x | Breadth-first allocation. Top 6 levels (~63 nodes) fit in L1. |
-| **P3 - Inlined traversal** | 1.1-1.3x | Local variable caching, `do-while` loop, multiply instead of divide. |
-
-**Combined: ~3-4x** over the baseline `FlatBinaryForest` (historical; see the note above).
+The repo carries many cache-layout variants (interleaved/BFS/DFS/ILP/native). Their *measured*
+rankings — and the finding that the fastest one is JIT-dependent (and that several are net
+regressions) — live in [PERFORMANCE-LESSONS.md](PERFORMANCE-LESSONS.md); their status (production /
+experimental / regression) is in [VARIANTS.md](VARIANTS.md).
 
 ## 👨‍💻 Usage
 
@@ -174,7 +172,16 @@ double[] importances = forest.getFeatureImportances();
 
 ### Benchmarking
 
-Run prediction speed benchmarks:
+There are two harnesses (not interchangeable — see [DEVELOPMENT.md](DEVELOPMENT.md)):
+
+- **JMH (use this for rankings)** — forks a fresh JVM per benchmark: `./jmh.sh` (or `./gradlew jmh`).
+  Benchmark on **GraalVM** (the deployment JIT; rankings invert vs HotSpot C2).
+- **Legacy** quick relative checks: `./benchmark.sh`.
+
+> Prediction correctness is anchored by `PredictionGoldenTest` (a pinned baseline in the standard
+> `./gradlew test` run), so hot-path refactors that change output are caught automatically.
+
+Legacy harness:
 
 ```bash
 ./benchmark.sh                            # run with defaults

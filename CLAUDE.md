@@ -63,7 +63,7 @@ These cost real time to rediscover; they are intentional, not bugs.
   test prints nothing on the console. To see it, read `build/test-results/test/TEST-*.xml` (or run a
   throwaway via the `benchmark` task, which has streams on).
 - **`-D` system properties are NOT forwarded to the test JVM** unless explicitly listed in `build.gradle`
-  (only `benchmark` and `golden.regenerate` are). Add a `systemProperty` line if you need a new one.
+  (only `benchmark`, `golden.regenerate`, and `ci.native.required` are). Add a `systemProperty` line if you need a new one.
 - **`java22` output must precede `main` on the classpath**, or the Java 17 Panama *stubs* win and
   `NativePanamaForest.isAvailable()` silently returns false (native forests vanish). All tasks already
   do this; preserve it if you touch `build.gradle`. Never delete `src/main/java22/` — tests compile

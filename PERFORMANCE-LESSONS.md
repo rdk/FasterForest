@@ -138,9 +138,8 @@ Single-prediction latency (8 threads, ns/op): `Flat` ≈ 1,966 (Graal) / 1,957 (
 
 - **Verify the AVX2 downclock hypothesis** (lesson 5): instrument the native path, and try a 256-bit /
   scalar native variant à la FasterMolecularSurface lesson 2.
-- **Add GraalVM to CI and to the reported benchmark JVM** — CI currently runs Temurin (HotSpot) only,
-  which is the *opposite* JIT from deployment, and the rankings differ.
 - **Quantify the score-vs-legacy prediction delta** on the p2rank model (ties to PREDICTION-SEMANTICS):
   we measured the leaf sums (mean 1.51) but not the resulting end-to-end probability divergence.
-- **A pinned golden prediction baseline** so refactors of the hot path are caught automatically, in
-  addition to the cross-representation equivalence tests.
+
+*Done since first draft:* GraalVM is now in CI alongside HotSpot (the deployment JIT is validated), and
+a pinned golden prediction baseline (`PredictionGoldenTest`) anchors the hot path in the standard suite.

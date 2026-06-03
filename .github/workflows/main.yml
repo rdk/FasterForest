@@ -6,22 +6,29 @@ on:
   pull_request:
     branches: [ master, develop ]
 
+# Cancel superseded runs on the same branch / PR.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
 
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
 
     strategy:
       matrix:
-        os: [ ubuntu-latest, windows-latest, macos-latest ]
-        java-version: [ '17', '21', '25' ]
-        distribution: [ 'temurin' ]
+        # The java22 multi-release source set compiles with release 22, so the build JDK must be >= 22
+        # (this is why 17/21 are absent). Full JDK sweep on Linux incl. GraalVM (the deployment JIT —
+        # rankings invert vs HotSpot C2, see PERFORMANCE-LESSONS.md); other OSes get the current JDK
+        # only, since macOS runners bill at ~10x.
         include:
-          # Deployment JVM. The Graal JIT optimizes the prediction loops differently from HotSpot C2
-          # (perf rankings invert — see PERFORMANCE-LESSONS.md), so validate correctness on it too.
-          - os: ubuntu-latest
-            java-version: '25'
-            distribution: 'graalvm'
+          - { os: ubuntu-latest,  java-version: '22', distribution: 'temurin' }
+          - { os: ubuntu-latest,  java-version: '25', distribution: 'temurin' }
+          - { os: ubuntu-latest,  java-version: '25', distribution: 'graalvm' }
+          - { os: windows-latest, java-version: '25', distribution: 'temurin' }
+          - { os: macos-latest,   java-version: '25', distribution: 'temurin' }
 
     steps:
     - uses: actions/checkout@v4
@@ -38,6 +45,9 @@ jobs:
       run: chmod +x ./gradlew
     - name: Build with Gradle
       run: ./gradlew build --no-daemon
+    - name: Verify native (Panama) library actually loads on Linux
+      if: matrix.os == 'ubuntu-latest'
+      run: ./gradlew cleanTest test --tests "*NativeAvailabilityTest" -Dci.native.required=true --no-daemon
     - name: Upload test results
       if: always()
       uses: actions/upload-artifact@v4

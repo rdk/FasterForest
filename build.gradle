@@ -117,6 +117,8 @@ test {
     systemProperty 'benchmark', System.getProperty('benchmark')
     // pass -Dgolden.regenerate=true to re-pin PredictionGoldenTest's baseline
     systemProperty 'golden.regenerate', System.getProperty('golden.regenerate')
+    // pass -Dci.native.required=true to make NativeAvailabilityTest fail (not skip) if native is absent
+    systemProperty 'ci.native.required', System.getProperty('ci.native.required')
 
     // Panama FFM requires native access
     jvmArgs '--enable-native-access=ALL-UNNAMED'

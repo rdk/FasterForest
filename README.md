@@ -42,11 +42,18 @@ These are inference-only representations converted from a trained forest.
 
 | Implementation | Key Optimization | Notes |
 |---|---|---|
-| **`FlatBinaryForest`** | Parallel arrays | Baseline flat representation. |
-| **`LegacyFlatBinaryForest`** | Parallel arrays + full class probs | Preserves both class probabilities for legacy compatibility. |
-| **`ShortLegacyFlatBinaryForest`** | `float` arrays | ~50% memory reduction vs. double, minimal precision loss. |
-| **`InterleavedBfsForest`** | Interleaved layout + BFS ordering | **Fastest.** 4 ints per node = 1 cache line per 4 nodes. BFS ordering keeps hot nodes in L1/L2. 3-4x faster than flat. |
+| **`FlatBinaryForest`** | Parallel arrays | Baseline flat representation. Score-based (see note below). |
+| **`LegacyFlatBinaryForest`** | Parallel arrays + full class probs | Keeps per-leaf class probabilities and reproduces the trained model exactly (1e-15). Score-preserving "legacy" family. |
+| **`ShortLegacyFlatBinaryForest`** | `float` arrays | ~50% memory reduction vs. double, minimal precision loss. Legacy family. |
+| **`InterleavedBfsForest`** | Interleaved layout + BFS ordering | **Fastest.** 4 ints per node = 1 cache line per 4 nodes. BFS ordering keeps hot nodes in L1/L2. 3-4x faster than flat. Score-based. |
 | **`OptimizingFlatBinaryForest`** | Access-pattern reordering | Profiles node access counts, then reorders for cache locality. Multiple strategies (by tree, depth, count). |
+
+> ⚠️ **Not all representations compute the same prediction.** They split into two families —
+> *score-based* (`FlatBinaryForest` and all the Interleaved/Contiguous/Separate/Branchless/ILP/Float/
+> Native variants) and *legacy class-probs* (`LegacyFlatBinaryForest`, `ShortLegacy…`, `SuperShortLegacy…`).
+> Only the legacy family reproduces the trained `FasterForest`'s probabilities exactly; the score family
+> can diverge because trained leaves generally do **not** sum to 1. If you depend on absolute
+> probabilities (not just ranking), this matters — see **[PREDICTION-SEMANTICS.md](PREDICTION-SEMANTICS.md)**.
 
 ### Conversion
 

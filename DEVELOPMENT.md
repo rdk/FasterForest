@@ -74,6 +74,12 @@ The forests split into two mathematically incompatible prediction families:
 Score-based: FlatBinaryForest, all Interleaved/Contiguous/Separate/Branchless/ILP/Float/Native variants.
 Legacy: LegacyFlatBinaryForest, ShortLegacyFlatBinaryForest, SuperShortLegacyFlatBinaryForest.
 
+The two families agree only when leaves sum to 1, which is **not** the usual case — trained leaves
+encode mean bootstrap multiplicity (mean ≈ 1.25–1.50 on the test dataset). Only the legacy family
+reproduces the trained model exactly. For the full explanation (leaf normalization, what a non-unit
+leaf sum means, and how this relates to FastRandomForest/Weka) see
+[PREDICTION-SEMANTICS.md](PREDICTION-SEMANTICS.md).
+
 Float-precision forests (InterleavedBfsForest, FlatBinaryFloatForest, IlpDfsFloatForest,
 NativePanamaFloatForest) cast split points to float, which causes path divergence — some
 instances traverse different tree branches. They must be compared against a float-family

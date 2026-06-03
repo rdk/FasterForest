@@ -689,6 +689,17 @@ public class FasterForest2
           + "using ZeroR model instead!");
       m_ZeroR = new weka.classifiers.rules.ZeroR();
       m_ZeroR.buildClassifier(data);
+      // Absorb the degenerate case into a single-leaf bagger so the attribute-array prediction
+      // paths stay unconditional (no null m_bagger). ZeroR ignores the instance → constant prior.
+      double[] prior;
+      if (data.numInstances() > 0) {
+        prior = m_ZeroR.distributionForInstance(data.instance(0));
+      } else {
+        prior = new double[data.numClasses()];
+        java.util.Arrays.fill(prior, 1.0 / data.numClasses());
+      }
+      m_bagger = new FastRfBagging();
+      m_bagger.initConstantLeaf(prior);
       return;
     }
     else{

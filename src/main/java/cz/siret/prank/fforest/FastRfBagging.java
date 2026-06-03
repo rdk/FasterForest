@@ -215,6 +215,21 @@ public class FastRfBagging extends RandomizableIteratedSingleClassifierEnhancer
     }
   }
 
+  /**
+   * Configure this bagger as a degenerate single-leaf model that returns a constant class
+   * distribution from every prediction path. Used when only a ZeroR model is possible, so that
+   * {@link FasterForest}'s prediction methods stay unconditional (no null bagger to special-case).
+   * The single leaf carries {@code classProbs}; the (unchanged) sum-then-normalize aggregation over
+   * one tree reproduces it exactly.
+   *
+   * @param classProbs the constant (normalized) class prior
+   */
+  public void initConstantLeaf(double[] classProbs) {
+    FasterTree leaf = new FasterTree(null, null, -1, Double.NaN, classProbs.clone());
+    m_Classifiers = new Classifier[] { leaf };
+    m_NumIterations = 1;
+  }
+
   public Classifier[] getClassifiers() {
     return m_Classifiers;
   }

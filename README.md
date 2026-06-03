@@ -45,7 +45,7 @@ These are inference-only representations converted from a trained forest.
 | **`FlatBinaryForest`** | Parallel arrays | Baseline flat representation. Score-based (see note below). |
 | **`LegacyFlatBinaryForest`** | Parallel arrays + full class probs | Keeps per-leaf class probabilities and reproduces the trained model exactly (1e-15). Score-preserving "legacy" family. |
 | **`ShortLegacyFlatBinaryForest`** | `float` arrays | ~50% memory reduction vs. double, minimal precision loss. Legacy family. |
-| **`InterleavedBfsForest`** | Interleaved layout + BFS ordering | **Fastest.** 4 ints per node = 1 cache line per 4 nodes. BFS ordering keeps hot nodes in L1/L2. 3-4x faster than flat. Score-based. |
+| **`InterleavedBfsForest`** | Interleaved layout + BFS ordering | 4 ints per node = 1 cache line per 4 nodes; BFS ordering keeps hot nodes in L1/L2. Score-based. (Ranking is JIT-dependent — see [PERFORMANCE-LESSONS.md](PERFORMANCE-LESSONS.md).) |
 | **`OptimizingFlatBinaryForest`** | Access-pattern reordering | Profiles node access counts, then reorders for cache locality. Multiple strategies (by tree, depth, count). |
 
 > ⚠️ **Not all representations compute the same prediction.** They split into two families —
@@ -70,6 +70,13 @@ double[] scores = fast.predictForBatch(instances);
 ```
 
 ## 🚀 Performance
+
+> 📊 **The figures in this section are historical** — rough order-of-magnitude ratios vs.
+> CDK/Weka/`FastRandomForest` from earlier runs. The single source of truth for current speed claims is
+> **[PERFORMANCE-LESSONS.md](PERFORMANCE-LESSONS.md)** (JMH-measured, with the JVM stated), which also
+> documents that the fastest layout is **JIT-dependent** (Graal favours `Flat`, HotSpot C2 favours the
+> original tree), that the ILP/Blocked/Branchless variants are net regressions, and that native AVX2
+> underperforms. Any perf number without a JVM + harness + date belongs there, not here.
 
 ### Inference speedup vs. predecessors
 
@@ -103,7 +110,7 @@ memory usage to ~50% of `FastRandomForest`.
 | **P2 - BFS node ordering** | 1.2-1.4x | Breadth-first allocation. Top 6 levels (~63 nodes) fit in L1. |
 | **P3 - Inlined traversal** | 1.1-1.3x | Local variable caching, `do-while` loop, multiply instead of divide. |
 
-**Combined: ~3-4x** over the baseline `FlatBinaryForest`.
+**Combined: ~3-4x** over the baseline `FlatBinaryForest` (historical; see the note above).
 
 ## 👨‍💻 Usage
 
@@ -207,9 +214,20 @@ cz.siret.prank.fforest
     ├── FlatBinaryForest          # Flat array forest
     ├── LegacyFlatBinaryForest    # Flat with full class probs
     ├── ShortLegacyFlatBinaryForest
-    ├── InterleavedBfsForest      # Cache-optimized (fastest)
+    ├── InterleavedBfsForest      # Cache-optimized layout
     └── OptimizingFlatBinaryForest
 ```
+
+## 📚 Documentation
+
+| Doc | Owns (single source of truth for…) |
+|---|---|
+| `README.md` | what the library is and how to use it |
+| [`VARIANTS.md`](VARIANTS.md) | every forest representation: family, status, when to use which |
+| [`PREDICTION-SEMANTICS.md`](PREDICTION-SEMANTICS.md) | correctness — the score vs. legacy (faithful) prediction families |
+| [`PERFORMANCE-LESSONS.md`](PERFORMANCE-LESSONS.md) | all speed claims + benchmarking methodology (JVM-stated) |
+| [`DEVELOPMENT.md`](DEVELOPMENT.md) | architecture, how to benchmark, how to add a variant |
+| `CLAUDE.md` | conventions / definition-of-done for agents and contributors |
 
 ## 🙏 Acknowledgments
 

@@ -130,6 +130,28 @@ The project targets Java 17 but uses Java 22 Panama FFM for native interop:
 
 See [BUILDING.md](BUILDING.md) for native library compilation.
 
+## Benchmarking
+
+Two harnesses, **not interchangeable**:
+
+- **JMH** (`./jmh.sh` or `./gradlew jmh`, sources in `src/jmh`) — forks a fresh JVM per benchmark;
+  use this for **rankings**. `ForestPredictBenchmark` reports `batchPredict` (µs/op) and `singlePredict`
+  (ns/op) with `forestType` / `numTrees` / `batchSize` params; `NativeZeroCopyBenchmark` covers the
+  off-heap native path.
+- **Legacy** (`./benchmark.sh` or `./gradlew benchmark`, `PredictionSpeedBenchmark`) — one long-lived
+  JVM, median of rounds; fast relative sanity checks only (it warm-profiles later forests, over-rating
+  them).
+
+Rules (also in [CLAUDE.md](CLAUDE.md)):
+
+- Benchmark on **GraalVM** — it is the deployment JIT and rankings invert vs HotSpot C2.
+- Compare **ratios on the same JVM**, never absolute ms across runs; don't mix the two harnesses in one
+  table.
+- A perf claim states JVM + harness + date and lives in
+  [PERFORMANCE-LESSONS.md](PERFORMANCE-LESSONS.md), which is the single source of truth for speed.
+- To benchmark on a specific JVM while the build pins a toolchain, point JMH at it:
+  `./gradlew jmh -PjmhArgs="ForestPredict -jvm /path/to/java -jvmArgs=--enable-native-access=ALL-UNNAMED"`.
+
 ## Dependencies
 
 - **weka-dev 3.9.6** — Weka ML framework (Instance, Instances, AbstractClassifier)

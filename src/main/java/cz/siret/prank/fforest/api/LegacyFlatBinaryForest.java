@@ -7,8 +7,16 @@ import java.io.Serial;
 import static cz.siret.prank.ffutils.NormalizationUtils.normalizedClass1ProbsReuseArray;
 
 /**
- * FlatBinaryForest that remembers classProbabilities for both classes in each leaf
- * to accomodate for bugs in other RF implementations that could return probability >1 for some trees.
+ * The <b>faithful</b> flat forest: it is the reference / recommended default, <b>not</b> deprecated
+ * despite the "Legacy" name. It remembers the class probabilities of both classes in each leaf and
+ * aggregates them <i>sum-then-normalize</i>, so it reproduces the trained {@link FasterForest}'s
+ * predictions exactly (to 1e-15). This matters because trained leaves generally do not sum to 1 (they
+ * encode mean bootstrap multiplicity); the scalar-{@code score} variants pre-normalize each leaf and so
+ * can diverge from the trained model. Use this (or {@link ShortLegacyFlatBinaryForest}) when exact
+ * agreement with the trained model is required. See {@code PREDICTION-SEMANTICS.md} and {@code VARIANTS.md}.
+ *
+ * <p>(The dual-class storage also accommodates other RF implementations that can return a per-tree
+ * probability &gt; 1.)
  */
 public class LegacyFlatBinaryForest extends FlatBinaryForest {
 

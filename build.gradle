@@ -115,6 +115,8 @@ test {
 
     // pass -Dbenchmark=true to enable benchmark tests
     systemProperty 'benchmark', System.getProperty('benchmark')
+    // pass -Dgolden.regenerate=true to re-pin PredictionGoldenTest's baseline
+    systemProperty 'golden.regenerate', System.getProperty('golden.regenerate')
 
     // Panama FFM requires native access
     jvmArgs '--enable-native-access=ALL-UNNAMED'

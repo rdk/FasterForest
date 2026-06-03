@@ -19,6 +19,11 @@ unchanged — benchmarked indistinguishable from baseline on GraalVM (`singlePre
 forks: baseline 2467 ± 25, fixed 2480 ± 22 ns/op, overlapping CIs). `distributionForInstance` keeps
 its existing `m_ZeroR` guard.
 
+The auxiliary methods were also made ZeroR-safe: `FasterForest2.getNumTrees()` gained the bagger guard
+`FasterForest` already had, and `calculateTreeDepths()`/`evalTrees()` in both now loop over
+`getNumTrees()` (the actual built count, 1 for a ZeroR model) instead of the configured `m_numTrees`,
+so they no longer index past the single-leaf bagger.
+
 Covered by `FasterForestZeroRTest` (FF1 + FF2). Limitation: fixes models built after this change; an
 already-serialized degenerate model still deserializes with a null `m_bagger` (deserialization does
 not re-run `buildClassifier`).

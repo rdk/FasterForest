@@ -225,7 +225,9 @@ public class FasterForest2
    * @return Value of numTrees.
    */
   public int getNumTrees(){
-
+    if (m_bagger != null) {
+      return m_bagger.getClassifiers().length;  // actual built count (1 for a ZeroR fallback model)
+    }
     return m_numTrees;
   }
 
@@ -949,16 +951,18 @@ public class FasterForest2
   }
 
   public int[] calculateTreeDepths() {
-    int[] depths = new int[m_numTrees];
-    for (int i=0; i!=m_numTrees; ++i) {
+    int n = getNumTrees();  // actual built count (1 for a ZeroR fallback model), not the configured m_numTrees
+    int[] depths = new int[n];
+    for (int i=0; i!=n; ++i) {
       depths[i] = getTree(i).getDepth();
     }
     return depths;
   }
 
   public double[][] evalTrees(double[] attributes) {
-    double[][] res = new double[m_numTrees][];
-    for (int i=0; i!=m_numTrees; ++i) {
+    int n = getNumTrees();
+    double[][] res = new double[n][];
+    for (int i=0; i!=n; ++i) {
       res[i] = getTree(i).distributionForAttributes(attributes);
     }
     return res;

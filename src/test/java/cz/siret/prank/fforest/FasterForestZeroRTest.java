@@ -45,6 +45,11 @@ public class FasterForestZeroRTest {
         assertEquals("predict = positive prior", 1.0 / 3, ff.predict(new double[]{0}), 1e-9);
         assertArrayEquals("batch = constant prior", new double[]{1.0 / 3, 1.0 / 3, 1.0 / 3},
                 ff.predictForBatch(new double[][]{{0}, {0}, {0}}), 1e-9);
+
+        // auxiliary methods must reflect the degenerate single-tree model, not the configured count
+        assertEquals("ZeroR model has one (leaf) tree", 1, ff.getNumTrees());
+        ff.calculateMaxTreeDepth();                              // must not AIOOBE (loops getNumTrees())
+        assertEquals(1, ff.evalTrees(new double[]{0}).length);
     }
 
     @Test
@@ -57,5 +62,9 @@ public class FasterForestZeroRTest {
         assertArrayEquals(new double[]{2.0 / 3, 1.0 / 3}, ff.distributionForAttributes(new double[]{0}, 2), 1e-9);
         assertEquals(1.0 / 3, ff.predict(new double[]{0}), 1e-9);
         assertArrayEquals(new double[]{1.0 / 3, 1.0 / 3}, ff.predictForBatch(new double[][]{{0}, {0}}), 1e-9);
+
+        assertEquals("ZeroR model has one (leaf) tree", 1, ff.getNumTrees());
+        ff.calculateMaxTreeDepth();
+        assertEquals(1, ff.evalTrees(new double[]{0}).length);
     }
 }

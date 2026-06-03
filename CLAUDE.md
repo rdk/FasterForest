@@ -16,6 +16,12 @@ them.
    result is only meaningful with its JVM stated. Benchmark on GraalVM; CI runs both.
 4. **Bit-exact equivalence is a contract.** Every inference variant is validated against a reference of
    its family. Build/keep the oracle; optimize fearlessly behind it.
+5. **Don't break serialization of the persisted forests.** Trained models are Java-serialized and shipped
+   (p2rank distributes its default as a `LegacyFlatBinaryForest`). Keep a stable class name,
+   `serialVersionUID`, and field layout for `LegacyFlatBinaryForest` / `FlatBinaryForest`,
+   `FasterForest` / `FasterForest2`, and their object graph (`FastRfBagging`, `FasterTree`). Adding a
+   field is OK (old streams default it); renaming the class or removing/retyping a serialized field is
+   not. (This is why we *kept* the misleading `LegacyFlatBinaryForest` name instead of renaming it.)
 
 ## Single sources of truth (update the owner, not a copy)
 

@@ -72,6 +72,21 @@ double   score  = fast.predict(instance);
 double[] scores = fast.predictForBatch(instances);
 ```
 
+### Serialization compatibility
+
+Trained models are persisted with Java serialization, so a few classes are **load-bearing for backward
+compatibility** — changing their `serialVersionUID`, removing/retyping a serialized field, or renaming
+the class would break already-serialized models:
+
+- **`LegacyFlatBinaryForest`** (+ its superclass **`FlatBinaryForest`**) — the distributed flat model
+  format; e.g. p2rank ships its default model as a `LegacyFlatBinaryForest`.
+- **`FasterForest` / `FasterForest2`** and their serialized object graph (**`FastRfBagging`**,
+  **`FasterTree`**) — when a model is saved un-flattened.
+
+These carry pinned `@Serial serialVersionUID`s. When editing them, *adding* fields is safe (old streams
+default them), but do **not** rename the class, change the `serialVersionUID`, or remove/retype an
+existing serialized field. Any other `BinaryForest` variant you persist as a model format joins this list.
+
 ## 🚀 Performance
 
 > 📊 **The figures in this section are historical** — rough order-of-magnitude ratios vs.
